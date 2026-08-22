@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+
 export interface BreadcrumbItem {
   label: string;
   href?: string;
@@ -16,17 +18,17 @@ export default function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
   };
 
   return (
-    <nav aria-label="Ruta de navegación" className="text-sm text-slate-500">
+    <nav aria-label="Ruta de navegación" className="text-sm font-medium" style={{ color: "var(--muted-foreground)" }}>
       <ol className="flex flex-wrap items-center gap-1">
         {items.map((item, i) => (
           <li key={i} className="flex items-center gap-1">
-            {i > 0 && <span aria-hidden="true">/</span>}
+            {i > 0 && <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />}
             {item.href ? (
-              <a href={item.href} className="hover:underline">
+              <a href={item.href} className="hover:underline decoration-2 underline-offset-2">
                 {item.label}
               </a>
             ) : (
-              <span className="text-slate-700">{item.label}</span>
+              <span style={{ color: "var(--foreground)" }}>{item.label}</span>
             )}
           </li>
         ))}

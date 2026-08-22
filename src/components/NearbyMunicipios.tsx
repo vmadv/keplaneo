@@ -16,17 +16,15 @@ export default async function NearbyMunicipios({
   if (cercanos.length === 0) return null;
 
   return (
-    <section className="mt-10 border-t pt-6">
-      <h2 className="text-lg font-semibold mb-3">Planes cerca de {municipio.nombre}</h2>
-      <ul className="flex flex-wrap gap-3 text-sm">
+    <section className="mt-10 pt-8" style={{ borderTop: "2px dashed var(--border)" }}>
+      <h2 className="text-lg font-extrabold mb-3">Planes cerca de {municipio.nombre}</h2>
+      <div className="flex flex-wrap gap-3">
         {cercanos.map((m) => (
-          <li key={m.id}>
-            <Link href={`/${comunidadSlug}/${m.slug}/hoy`} className="hover:underline">
-              Qué hacer hoy en {m.nombre}
-            </Link>
-          </li>
+          <Link key={m.id} href={`/${comunidadSlug}/${m.slug}/hoy`} className="btn-secondary">
+            Qué hacer hoy en {m.nombre}
+          </Link>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }

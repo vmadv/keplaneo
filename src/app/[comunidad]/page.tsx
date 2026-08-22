@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MapPin } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import { getComunidadBySlug, getMunicipiosByComunidad } from "@/lib/queries";
 
 export const revalidate = 86400;
+
+const COLORES = ["var(--secondary)", "var(--tertiary)", "var(--quaternary)"];
 
 export default async function ComunidadPage({
   params,
@@ -17,23 +20,29 @@ export default async function ComunidadPage({
   const municipios = await getMunicipiosByComunidad(comunidad.id);
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-16">
-      <Breadcrumb
-        items={[{ label: "Inicio", href: "/" }, { label: comunidad.nombre }]}
-      />
-      <h1 className="text-3xl font-bold mt-4 mb-8">
-        Qué hacer en {comunidad.nombre}
-      </h1>
+    <main className="flex-1 bg-dots">
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <Breadcrumb items={[{ label: "Inicio", href: "/" }, { label: comunidad.nombre }]} />
+        <h1 className="text-4xl font-extrabold mt-4 mb-8 text-balance">
+          Qué hacer en {comunidad.nombre}
+        </h1>
 
-      <ul className="grid gap-2">
-        {municipios.map((m) => (
-          <li key={m.id}>
-            <Link href={`/${comunidad.slug}/${m.slug}`} className="text-lg hover:underline">
-              {m.nombre}
-            </Link>
-          </li>
-        ))}
-      </ul>
+        <ul className="grid sm:grid-cols-2 gap-5">
+          {municipios.map((m, i) => (
+            <li key={m.id}>
+              <Link href={`/${comunidad.slug}/${m.slug}`} className="card-sticker flex items-center gap-3 p-5">
+                <span
+                  className="icon-chip w-10 h-10 shrink-0"
+                  style={{ background: COLORES[i % COLORES.length] }}
+                >
+                  <MapPin size={18} strokeWidth={2.5} />
+                </span>
+                <span className="text-lg font-bold">{m.nombre}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </main>
   );
 }

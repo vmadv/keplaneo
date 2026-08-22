@@ -18,14 +18,15 @@ export default function Mapa({
   const hrefGoogle = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccionTexto ?? `${lat},${lon}`)}`;
 
   return (
-    <div className="mb-6">
+    <div>
       <iframe
         title={`Mapa de ${etiqueta}`}
         src={srcOsm}
-        className="w-full h-64 rounded-lg border-0"
+        className="w-full h-64 rounded-xl"
+        style={{ border: "2px solid var(--foreground)" }}
         loading="lazy"
       />
-      <div className="flex gap-4 text-xs text-slate-500 mt-1">
+      <div className="flex gap-4 text-xs font-medium mt-2 px-1" style={{ color: "var(--muted-foreground)" }}>
         <a href={hrefOsm} className="hover:underline" rel="noopener noreferrer">
           Ver mapa más grande
         </a>

@@ -22,23 +22,25 @@ export default function PlanesPageLayout({
   breadcrumbExtra: BreadcrumbItem[];
 }) {
   return (
-    <main className="max-w-3xl mx-auto px-6 py-16">
-      <Breadcrumb
-        items={[
-          { label: "Inicio", href: "/" },
-          { label: municipio.comunidad.nombre, href: `/${comunidadSlug}` },
-          { label: municipio.nombre, href: `/${comunidadSlug}/${municipioSlug}` },
-          ...breadcrumbExtra,
-        ]}
-      />
-      <h1 className="text-3xl font-bold mt-4 mb-8">{titulo}</h1>
-      <PlanList planes={planes} base={`/${comunidadSlug}/${municipioSlug}`} />
-      <MunicipioPageNav
-        comunidadSlug={comunidadSlug}
-        municipioSlug={municipioSlug}
-        municipioNombre={municipio.nombre}
-        current={current}
-      />
+    <main className="flex-1 bg-dots">
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <Breadcrumb
+          items={[
+            { label: "Inicio", href: "/" },
+            { label: municipio.comunidad.nombre, href: `/${comunidadSlug}` },
+            { label: municipio.nombre, href: `/${comunidadSlug}/${municipioSlug}` },
+            ...breadcrumbExtra,
+          ]}
+        />
+        <h1 className="text-4xl font-extrabold mt-4 mb-8 text-balance">{titulo}</h1>
+        <PlanList planes={planes} base={`/${comunidadSlug}/${municipioSlug}`} />
+        <MunicipioPageNav
+          comunidadSlug={comunidadSlug}
+          municipioSlug={municipioSlug}
+          municipioNombre={municipio.nombre}
+          current={current}
+        />
+      </div>
     </main>
   );
 }

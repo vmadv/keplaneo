@@ -27,29 +27,31 @@ export default async function MesPage({
   const base = `/${comunidadSlug}/${municipioSlug}`;
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-16">
-      <Breadcrumb
-        items={[
-          { label: "Inicio", href: "/" },
-          { label: municipio.comunidad.nombre, href: `/${comunidadSlug}` },
-          { label: municipio.nombre, href: base },
-          { label: mes.charAt(0).toUpperCase() + mes.slice(1) },
-        ]}
-      />
-      <h1 className="text-3xl font-bold mt-4 mb-8 capitalize">
-        Qué hacer en {municipio.nombre} en {mes}
-      </h1>
+    <main className="flex-1 bg-dots">
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <Breadcrumb
+          items={[
+            { label: "Inicio", href: "/" },
+            { label: municipio.comunidad.nombre, href: `/${comunidadSlug}` },
+            { label: municipio.nombre, href: base },
+            { label: mes.charAt(0).toUpperCase() + mes.slice(1) },
+          ]}
+        />
+        <h1 className="text-4xl font-extrabold mt-4 mb-8 capitalize text-balance">
+          Qué hacer en {municipio.nombre} en {mes}
+        </h1>
 
-      <PlanList planes={planes} base={base} />
+        <PlanList planes={planes} base={base} />
 
-      <nav className="mt-10 border-t pt-6">
-        <h2 className="text-lg font-semibold mb-3">También te puede interesar</h2>
-        <ul className="flex flex-wrap gap-4 text-sm">
-          <li><Link href={`${base}/hoy`} className="hover:underline">Qué hacer hoy</Link></li>
-          <li><Link href={`${base}/fin-de-semana`} className="hover:underline">Qué hacer este fin de semana</Link></li>
-          <li><Link href={base} className="hover:underline">Ver todos los planes de {municipio.nombre}</Link></li>
-        </ul>
-      </nav>
+        <nav className="mt-10 pt-8" style={{ borderTop: "2px dashed var(--border)" }}>
+          <h2 className="text-lg font-extrabold mb-3">También te puede interesar</h2>
+          <div className="flex flex-wrap gap-3">
+            <Link href={`${base}/hoy`} className="btn-secondary">Qué hacer hoy</Link>
+            <Link href={`${base}/fin-de-semana`} className="btn-secondary">Qué hacer este fin de semana</Link>
+            <Link href={base} className="btn-primary">Ver todos los planes de {municipio.nombre}</Link>
+          </div>
+        </nav>
+      </div>
     </main>
   );
 }

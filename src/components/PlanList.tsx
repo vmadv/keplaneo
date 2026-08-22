@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Sun, Moon, Sparkles } from "lucide-react";
 import type { Plan } from "@/lib/types";
 
 export default function PlanList({ planes, base }: { planes: Plan[]; base: string }) {
   if (planes.length === 0) {
     return (
-      <p className="text-slate-500">
+      <p style={{ color: "var(--muted-foreground)" }}>
         Todavía no hay planes específicos para esta combinación. Vuelve a
         revisar en unas horas, o consulta las otras variantes más abajo.
       </p>
@@ -12,43 +13,59 @@ export default function PlanList({ planes, base }: { planes: Plan[]; base: strin
   }
 
   return (
-    <ol className="grid gap-4">
-      {planes.map((plan) => (
-        <li key={plan.id} className="border rounded-lg p-4">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500 mb-1">
-            <span>{plan.momento === "dia" ? "Día" : "Noche"}</span>
-            {plan.tipo === "excepcional" && (
-              <span className="text-amber-700">· Evento puntual</span>
-            )}
-          </div>
-          <h3 className="font-semibold text-base">
-            {plan.evento_slug ? (
-              <Link href={`${base}/eventos/${plan.evento_slug}`} className="hover:underline">
-                {plan.titulo}
-              </Link>
-            ) : (
-              plan.titulo
-            )}
-          </h3>
-          <p className="text-sm text-slate-600 mt-1 line-clamp-2">{plan.descripcion}</p>
-          <div className="mt-2 flex gap-4 text-sm">
-            {plan.evento_slug && (
-              <Link href={`${base}/eventos/${plan.evento_slug}`} className="font-medium text-blue-700 hover:underline">
-                Más información →
-              </Link>
-            )}
+    <ol className="grid gap-5">
+      {planes.map((plan) => {
+        const contenido = (
+          <>
+            <div className="flex items-start gap-3">
+              <span
+                className="icon-chip w-9 h-9 shrink-0"
+                style={{ background: plan.momento === "noche" ? "var(--foreground)" : "var(--tertiary)" }}
+              >
+                {plan.momento === "noche" ? (
+                  <Moon size={16} strokeWidth={2.5} color="var(--background)" />
+                ) : (
+                  <Sun size={16} strokeWidth={2.5} />
+                )}
+              </span>
+              <div className="min-w-0">
+                {plan.tipo === "excepcional" && (
+                  <span className="badge-pill mb-1.5" style={{ background: "var(--secondary)", color: "var(--secondary-foreground)", borderColor: "var(--secondary)" }}>
+                    <Sparkles size={11} strokeWidth={2.5} className="mr-1" />
+                    Evento puntual
+                  </span>
+                )}
+                <h3 className="font-extrabold text-base">{plan.titulo}</h3>
+                <p className="text-sm mt-1 line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
+                  {plan.descripcion}
+                </p>
+              </div>
+            </div>
             {plan.enlace_afiliado && (
               <a
                 href={plan.enlace_afiliado}
-                className="font-medium text-blue-700 hover:underline"
+                className="inline-block mt-3 text-sm font-bold hover:underline"
+                style={{ color: "var(--accent)" }}
                 rel="nofollow sponsored"
               >
                 Reservar →
               </a>
             )}
-          </div>
-        </li>
-      ))}
+          </>
+        );
+
+        return (
+          <li key={plan.id}>
+            {plan.evento_slug ? (
+              <Link href={`${base}/eventos/${plan.evento_slug}`} className="card-sticker block p-4">
+                {contenido}
+              </Link>
+            ) : (
+              <div className="card-sticker p-4">{contenido}</div>
+            )}
+          </li>
+        );
+      })}
     </ol>
   );
 }
