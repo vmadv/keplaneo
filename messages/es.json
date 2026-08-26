@@ -68,7 +68,8 @@
     "titulo": "Qué hacer en {comunidad}"
   },
   "MunicipioHome": {
-    "titulo": "Qué hacer en {municipio}"
+    "titulo": "Qué hacer en {municipio}",
+    "hoyFecha": "Hoy, {fecha}"
   },
   "Hoy": {
     "titulo": "Qué hacer hoy en {municipio}",
