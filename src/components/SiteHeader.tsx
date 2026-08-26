@@ -13,17 +13,20 @@ import SelectorMunicipio from "./SelectorMunicipio";
 // elegir ciudad, no a Sevilla a lo tonto.
 //
 // Fase 1 (ver conversación): planes ya vive en /{municipio}/... plano, sin
-// comunidad. Rankings TODAVÍA no se ha movido (sigue en
-// /rankings/{comunidad}/{municipio}/...) — se actualizará en la Fase 2.
+// comunidad. Rankings vive en /rankings/espana/{ccaa}/{provincia}/{municipio}/...
+// — solo hay una comunidad y una provincia con contenido real hoy, así que
+// se quedan fijas aquí (mismo criterio que en el resto del proyecto,
+// p.ej. la home) hasta que haga falta resolverlas de verdad.
 const ANDALUCIA_SLUG = "andalucia";
+const SEVILLA_PROVINCIA_SLUG = "sevilla";
 
 export default function SiteHeader({ municipios }: { municipios: { slug: string; nombre: string }[] }) {
   const pathname = usePathname();
   const t = useTranslations("Nav");
 
   // El slug de municipio candidato vive en una posición distinta según el
-  // árbol: en rankings (sin aplanar todavía) es el 3er segmento
-  // (/rankings/{comunidad}/{municipio}); en planes es el 1º
+  // árbol: en rankings es el 5º segmento
+  // (/rankings/espana/{ccaa}/{provincia}/{municipio}); en planes es el 1º
   // (/{municipio}/...). /negocio y /elige-ciudad nunca llevan municipio en
   // la URL. Se valida contra la lista real cargada — si no coincide con
   // ningún municipio (ej. /elige-ciudad/pareja, donde "pareja" no es una
@@ -31,7 +34,7 @@ export default function SiteHeader({ municipios }: { municipios: { slug: string;
   const segmentos = pathname.split("/").filter(Boolean);
   const candidato =
     segmentos[0] === "rankings"
-      ? segmentos[2]
+      ? segmentos[4]
       : segmentos[0] === "negocio" || segmentos[0] === "elige-ciudad"
         ? undefined
         : segmentos[0];
@@ -46,7 +49,10 @@ export default function SiteHeader({ municipios }: { municipios: { slug: string;
       <Link href={base ?? "/"} className="btn-secondary text-sm px-4 py-1.5">
         {t("queHacer")}
       </Link>
-      <Link href={base ? `/rankings/${ANDALUCIA_SLUG}${base}` : "/rankings"} className="btn-secondary text-sm px-4 py-1.5">
+      <Link
+        href={base ? `/rankings/espana/${ANDALUCIA_SLUG}/${SEVILLA_PROVINCIA_SLUG}${base}` : "/rankings"}
+        className="btn-secondary text-sm px-4 py-1.5"
+      >
         {t("listados")}
       </Link>
     </>

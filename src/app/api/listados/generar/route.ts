@@ -57,14 +57,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data: municipio } = await supabaseAdmin
+  const { data: municipioFila } = await supabaseAdmin
     .from("municipios")
-    .select("id, slug, nombre, comunidades!inner(slug)")
+    .select("id, slug, nombre, comunidades!inner(slug), provincias(slug)")
     .eq("slug", municipioSlug)
     .eq("comunidades.slug", comunidadSlug)
     .maybeSingle();
-  if (!municipio) {
+  if (!municipioFila) {
     return NextResponse.json({ error: "Municipio no encontrado" }, { status: 404 });
+  }
+  const { provincias, ...municipio } = municipioFila as unknown as {
+    id: string;
+    slug: string;
+    nombre: string;
+    provincias: { slug: string } | { slug: string }[] | null;
+  };
+  const provinciaSlug = (Array.isArray(provincias) ? provincias[0] : provincias)?.slug;
+  if (!provinciaSlug) {
+    return NextResponse.json(
+      { error: "El municipio no tiene provincia asignada (¿falta correr la migración 0014?)" },
+      { status: 500 }
+    );
   }
 
   // 1. Quién entra y en qué orden lo decide la fama específica en el tema
@@ -210,10 +223,13 @@ export async function POST(request: NextRequest) {
   // aparte de las páginas de planes de este municipio — ver conversación:
   // la miga de pan de un ranking nunca debe llevar de vuelta al hub de
   // Planes de este municipio.
-  const base = `/rankings/${comunidadSlug}/${municipioSlug}`;
-  [`${base}`, `${base}/${slug}`, ...lugaresGuardados.map((l) => `${base}/lugares/${l.slug}`)].forEach((path) =>
-    revalidatePath(path)
-  );
+  const base = `/rankings/espana/${comunidadSlug}/${provinciaSlug}/${municipioSlug}`;
+  [
+    `/rankings/espana/${comunidadSlug}/${provinciaSlug}`,
+    base,
+    `${base}/${slug}`,
+    ...lugaresGuardados.map((l) => `${base}/lugares/${l.slug}`),
+  ].forEach((path) => revalidatePath(path));
 
   // $35/1000 es el precio de lista del SKU "Enterprise" de Places (el que
   // pedimos, por incluir rating) — informativo, porque las primeras 1000

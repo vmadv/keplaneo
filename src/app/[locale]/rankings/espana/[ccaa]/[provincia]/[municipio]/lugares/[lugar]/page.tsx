@@ -9,13 +9,14 @@ import MapaEvento from "@/components/MapaEvento";
 import TextoConNegritas from "@/components/TextoConNegritas";
 import GaleriaFotos from "@/components/GaleriaFotos";
 import SolicitarEdicionNegocio from "@/components/SolicitarEdicionNegocio";
-import { getListadosDeLugar, getLugar, getMunicipio } from "@/lib/queries";
+import { getListadosDeLugar, getLugar, getMunicipioConProvincia } from "@/lib/queries";
 
 export const revalidate = 86400;
 
-async function cargar(comunidadSlug: string, municipioSlug: string, lugarSlug: string) {
-  const municipio = await getMunicipio(municipioSlug);
+async function cargar(ccaaSlug: string, provinciaSlug: string, municipioSlug: string, lugarSlug: string) {
+  const municipio = await getMunicipioConProvincia(municipioSlug);
   if (!municipio) return null;
+  if (municipio.comunidad.slug !== ccaaSlug || municipio.provinciaGeo?.slug !== provinciaSlug) return null;
   const lugar = await getLugar(municipio.id, lugarSlug);
   if (!lugar) return null;
   const listados = await getListadosDeLugar(lugar.id);
@@ -25,10 +26,10 @@ async function cargar(comunidadSlug: string, municipioSlug: string, lugarSlug: s
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ comunidad: string; municipio: string; lugar: string }>;
+  params: Promise<{ ccaa: string; provincia: string; municipio: string; lugar: string }>;
 }): Promise<Metadata> {
-  const { comunidad, municipio, lugar } = await params;
-  const datos = await cargar(comunidad, municipio, lugar);
+  const { ccaa, provincia, municipio, lugar } = await params;
+  const datos = await cargar(ccaa, provincia, municipio, lugar);
   if (!datos) return {};
   return {
     title: `${datos.lugar.nombre} | Planes España`,
@@ -39,15 +40,15 @@ export async function generateMetadata({
 export default async function LugarPage({
   params,
 }: {
-  params: Promise<{ comunidad: string; municipio: string; lugar: string }>;
+  params: Promise<{ ccaa: string; provincia: string; municipio: string; lugar: string }>;
 }) {
-  const { comunidad: comunidadSlug, municipio: municipioSlug, lugar: lugarSlug } = await params;
-  const datos = await cargar(comunidadSlug, municipioSlug, lugarSlug);
+  const { ccaa: ccaaSlug, provincia: provinciaSlug, municipio: municipioSlug, lugar: lugarSlug } = await params;
+  const datos = await cargar(ccaaSlug, provinciaSlug, municipioSlug, lugarSlug);
   if (!datos) notFound();
   const { municipio, lugar, listados } = datos;
 
   const [tNav, t] = await Promise.all([getTranslations("Nav"), getTranslations("Lugar")]);
-  const base = `/rankings/${comunidadSlug}/${municipioSlug}`;
+  const base = `/rankings/espana/${ccaaSlug}/${provinciaSlug}/${municipioSlug}`;
 
   return (
     <main className="flex-1 bg-dots">
@@ -56,6 +57,10 @@ export default async function LugarPage({
           items={[
             { label: tNav("inicio"), href: "/" },
             { label: municipio.comunidad.nombre },
+            {
+              label: municipio.provinciaGeo?.nombre ?? municipio.comunidad.nombre,
+              href: `/rankings/espana/${ccaaSlug}/${provinciaSlug}`,
+            },
             { label: municipio.nombre, href: base },
             { label: t("breadcrumb") },
           ]}

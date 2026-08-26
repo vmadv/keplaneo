@@ -7,7 +7,7 @@ import { Star, MapPin, Trophy } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import MunicipioPageNav from "@/components/MunicipioPageNav";
 import TextoConNegritas from "@/components/TextoConNegritas";
-import { getListado, getMunicipio } from "@/lib/queries";
+import { getListado, getMunicipioConProvincia } from "@/lib/queries";
 import { urlDeFoto, RATING_MINIMO, RESENAS_MINIMAS, tieneRatingFiable } from "@/lib/places";
 import type { PuestoListado } from "@/lib/types";
 
@@ -19,9 +19,10 @@ import type { PuestoListado } from "@/lib/types";
 // tenga que "escaparse" hacia el hub de Planes de este municipio.
 export const revalidate = 86400;
 
-async function cargar(comunidadSlug: string, municipioSlug: string, rankingSlug: string) {
-  const municipio = await getMunicipio(municipioSlug);
+async function cargar(ccaaSlug: string, provinciaSlug: string, municipioSlug: string, rankingSlug: string) {
+  const municipio = await getMunicipioConProvincia(municipioSlug);
   if (!municipio) return null;
+  if (municipio.comunidad.slug !== ccaaSlug || municipio.provinciaGeo?.slug !== provinciaSlug) return null;
   const resultado = await getListado(municipio.id, rankingSlug);
   if (!resultado) return null;
   return { municipio, ...resultado };
@@ -30,10 +31,10 @@ async function cargar(comunidadSlug: string, municipioSlug: string, rankingSlug:
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ comunidad: string; municipio: string; ranking: string }>;
+  params: Promise<{ ccaa: string; provincia: string; municipio: string; ranking: string }>;
 }): Promise<Metadata> {
-  const { comunidad, municipio, ranking } = await params;
-  const datos = await cargar(comunidad, municipio, ranking);
+  const { ccaa, provincia, municipio, ranking } = await params;
+  const datos = await cargar(ccaa, provincia, municipio, ranking);
   if (!datos) return {};
   const { listado, puestos } = datos;
 
@@ -91,15 +92,20 @@ function Nota({ rating, numResenas, t }: { rating: number | null; numResenas: nu
 export default async function RankingPage({
   params,
 }: {
-  params: Promise<{ comunidad: string; municipio: string; ranking: string }>;
+  params: Promise<{ ccaa: string; provincia: string; municipio: string; ranking: string }>;
 }) {
-  const { comunidad: comunidadSlug, municipio: municipioSlug, ranking: rankingSlug } = await params;
-  const datos = await cargar(comunidadSlug, municipioSlug, rankingSlug);
+  const {
+    ccaa: ccaaSlug,
+    provincia: provinciaSlug,
+    municipio: municipioSlug,
+    ranking: rankingSlug,
+  } = await params;
+  const datos = await cargar(ccaaSlug, provinciaSlug, municipioSlug, rankingSlug);
   if (!datos) notFound();
   const { municipio, listado, puestos } = datos;
 
   const [tNav, t] = await Promise.all([getTranslations("Nav"), getTranslations("Listados")]);
-  const base = `/rankings/${comunidadSlug}/${municipioSlug}`;
+  const base = `/rankings/espana/${ccaaSlug}/${provinciaSlug}/${municipioSlug}`;
   const podio = puestos.slice(0, 3);
   const resto = puestos.slice(3);
 
@@ -110,6 +116,10 @@ export default async function RankingPage({
           items={[
             { label: tNav("inicio"), href: "/" },
             { label: municipio.comunidad.nombre },
+            {
+              label: municipio.provinciaGeo?.nombre ?? municipio.comunidad.nombre,
+              href: `/rankings/espana/${ccaaSlug}/${provinciaSlug}`,
+            },
             { label: municipio.nombre, href: base },
             { label: t("breadcrumb") },
           ]}

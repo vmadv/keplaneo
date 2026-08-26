@@ -43,7 +43,7 @@ export default async function RankingsHomePage() {
               <li key={m.id}>
                 <TarjetaCiudad
                   nombre={m.nombre}
-                  href={`/rankings/${m.comunidad.slug}/${m.slug}`}
+                  href={`/rankings/espana/${m.comunidad.slug}/${m.provinciaSlug}/${m.slug}`}
                   color={COLORES[i % COLORES.length]}
                   imagen={buscarImagenHero(m.slug)}
                 />

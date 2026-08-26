@@ -190,6 +190,11 @@
     "cine": "Cine",
     "otros": "Otro"
   },
+  "ListadosProvincia": {
+    "titulo": "Los mejores de la provincia de {provincia}",
+    "subtitulo": "Elige una ciudad de la provincia para ver sus rankings.",
+    "sinCiudades": "Todavía no hay rankings publicados en ninguna ciudad de esta provincia."
+  },
   "Listados": {
     "tituloGeneral": "Rankings",
     "subtituloGeneral": "Elige una ciudad para ver sus rankings: los mejores restaurantes, salud, educación y mucho más, elegidos por fama real y verificados con datos de Google Maps.",

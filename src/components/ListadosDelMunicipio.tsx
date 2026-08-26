@@ -37,10 +37,10 @@ export default async function ListadosDelMunicipio({
   ]);
   if (listados.length === 0) return null;
 
-  // Rankings todavía vive en /rankings/andalucia/{municipio}/... (Fase 2
-  // pendiente de mover a la jerarquía completa) — "andalucia" se queda fijo
-  // aquí a propósito mientras tanto.
-  const base = `/rankings/andalucia/${municipioSlug}`;
+  // Rankings vive en /rankings/espana/{ccaa}/{provincia}/{municipio}/... —
+  // solo hay una comunidad y una provincia con contenido real hoy, así que
+  // se quedan fijas aquí a propósito (mismo criterio que en SiteHeader).
+  const base = `/rankings/espana/andalucia/sevilla/${municipioSlug}`;
   const grupos = agruparPorSeccion(listados);
 
   return (

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const { data: lugar } = await supabaseAdmin
     .from("lugares")
-    .select("id, nombre, fotos, horario, municipio_id, slug, municipios(slug, comunidades(slug))")
+    .select("id, nombre, fotos, horario, municipio_id, slug, municipios(slug, comunidades(slug), provincias(slug))")
     .eq("id", solicitud.lugar_id)
     .maybeSingle();
   if (!lugar) return paginaHtml("Error", "El lugar de esta solicitud ya no existe.");
@@ -62,14 +62,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .update({ estado: "aprobada", actualizado_en: new Date().toISOString() })
     .eq("id", solicitud.id);
 
-  const municipios = lugar.municipios as unknown as { slug: string; comunidades: { slug: string } | { slug: string }[] } | null;
+  const municipios = lugar.municipios as unknown as {
+    slug: string;
+    comunidades: { slug: string } | { slug: string }[] | null;
+    provincias: { slug: string } | { slug: string }[] | null;
+  } | null;
   const comunidadSlug = municipios
     ? Array.isArray(municipios.comunidades)
       ? municipios.comunidades[0]?.slug
       : municipios.comunidades?.slug
     : undefined;
-  if (comunidadSlug && municipios) {
-    revalidatePath(`/rankings/${comunidadSlug}/${municipios.slug}/lugares/${lugar.slug}`);
+  const provinciaSlug = municipios
+    ? Array.isArray(municipios.provincias)
+      ? municipios.provincias[0]?.slug
+      : municipios.provincias?.slug
+    : undefined;
+  if (comunidadSlug && provinciaSlug && municipios) {
+    revalidatePath(`/rankings/espana/${comunidadSlug}/${provinciaSlug}/${municipios.slug}/lugares/${lugar.slug}`);
   }
 
   return paginaHtml("Aprobado ✅", `Los cambios de "${lugar.nombre}" ya están publicados.`);

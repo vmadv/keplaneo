@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import { hoyISO } from "./dates";
-import type { Categoria, Comunidad, Evento, Lugar, Listado, Municipio, Plan, PuestoListado } from "./types";
+import type { Categoria, Comunidad, Evento, Lugar, Listado, Municipio, Plan, Provincia, PuestoListado } from "./types";
 
 export async function getComunidades(): Promise<Comunidad[]> {
   const { data } = await supabase
@@ -36,12 +36,18 @@ export interface MunicipioConComunidad extends Municipio {
   comunidad: Comunidad;
 }
 
-// Sin "comunidad" en la URL (ver conversación), pero se sigue devolviendo
-// `.comunidad` para mostrarla en la miga de pan — informativa, no parte de
-// la ruta. Solo hay una comunidad hoy, pero el slug de municipio no tiene
-// unicidad global garantizada por esquema (solo `unique(comunidad_id,
-// slug)`), así que esto asume una única comunidad mientras no se añada esa
-// restricción.
+// Sin "comunidad" en la URL de planes (ver conversación), pero se sigue
+// devolviendo `.comunidad` para mostrarla en la miga de pan — informativa,
+// no parte de la ruta. Solo hay una comunidad hoy, pero el slug de
+// municipio no tiene unicidad global garantizada por esquema (solo
+// `unique(comunidad_id, slug)`), así que esto asume una única comunidad
+// mientras no se añada esa restricción.
+//
+// Deliberadamente NO incluye `provincia_id`/`provincias` en el select — lo
+// usan todas las páginas de Planes (Fase 1, ya en producción), así que no
+// puede depender del esquema de la migración 0014 (provincias). Para la
+// jerarquía de rankings, que sí necesita esa columna, usar
+// getMunicipioConProvincia en su lugar.
 export async function getMunicipio(municipioSlug: string): Promise<MunicipioConComunidad | null> {
   const { data } = await supabase
     .from("municipios")
@@ -58,6 +64,91 @@ export async function getMunicipio(municipioSlug: string): Promise<MunicipioConC
   };
 
   return { ...municipio, comunidad: comunidades };
+}
+
+export interface MunicipioConProvincia extends MunicipioConComunidad {
+  // Puede ser null si el municipio aún no tiene `provincia_id` asignado.
+  // No confundir con `Municipio.provincia` (texto suelto).
+  provinciaGeo: Provincia | null;
+}
+
+// Igual que getMunicipio, pero con la provincia real embebida — solo para
+// la jerarquía de rankings (rankings/espana/{ccaa}/{provincia}/{municipio}),
+// que necesita validar esos dos segmentos de la URL contra el municipio.
+export async function getMunicipioConProvincia(municipioSlug: string): Promise<MunicipioConProvincia | null> {
+  const { data } = await supabase
+    .from("municipios")
+    .select(
+      "id, comunidad_id, slug, nombre, provincia, provincia_id, poblacion, prioridad, lat, lon, comunidades!inner(id, slug, nombre), provincias(id, comunidad_id, slug, nombre)"
+    )
+    .eq("slug", municipioSlug)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const { comunidades, provincias, ...municipio } = data as unknown as Municipio & {
+    comunidades: Comunidad;
+    provincias: Provincia | Provincia[] | null;
+  };
+  const provinciaGeo = Array.isArray(provincias) ? (provincias[0] ?? null) : provincias;
+
+  return { ...municipio, comunidad: comunidades, provinciaGeo };
+}
+
+// Todas las provincias de una comunidad (para el redirect de
+// rankings/espana/{ccaa} a la primera con contenido, y en el futuro el
+// índice real de CCAA).
+export async function getProvincias(comunidadId: string): Promise<Provincia[]> {
+  const { data } = await supabase
+    .from("provincias")
+    .select("id, comunidad_id, slug, nombre")
+    .eq("comunidad_id", comunidadId)
+    .order("nombre");
+  return data ?? [];
+}
+
+export interface ProvinciaConComunidad extends Provincia {
+  comunidad: Comunidad;
+}
+
+// Para la cabecera real de rankings/espana/{ccaa}/{provincia} — valida a la
+// vez que la provincia existe y que cuelga de esa comunidad concreta.
+export async function getProvincia(
+  comunidadSlug: string,
+  provinciaSlug: string
+): Promise<ProvinciaConComunidad | null> {
+  const { data } = await supabase
+    .from("provincias")
+    .select("id, comunidad_id, slug, nombre, comunidades!inner(id, slug, nombre)")
+    .eq("slug", provinciaSlug)
+    .eq("comunidades.slug", comunidadSlug)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const { comunidades, ...provincia } = data as unknown as Provincia & { comunidades: Comunidad };
+  return { ...provincia, comunidad: comunidades };
+}
+
+// Municipios de una provincia que tienen al menos un ranking publicado —
+// para el hub real rankings/espana/{ccaa}/{provincia} (el único nivel de
+// esta jerarquía con contenido propio hoy, aparte de municipio).
+export async function getMunicipiosConRankingsPorProvincia(provinciaId: string): Promise<Municipio[]> {
+  const { data } = await supabase
+    .from("listados")
+    .select(
+      "municipios!inner(id, comunidad_id, slug, nombre, provincia, provincia_id, poblacion, prioridad, lat, lon)"
+    )
+    .eq("municipios.provincia_id", provinciaId);
+
+  const vistos = new Map<string, Municipio>();
+  for (const fila of (data ?? []) as unknown as Array<{ municipios: Municipio | Municipio[] | null }>) {
+    const m = Array.isArray(fila.municipios) ? fila.municipios[0] : fila.municipios;
+    if (!m || vistos.has(m.id)) continue;
+    vistos.set(m.id, m);
+  }
+
+  return Array.from(vistos.values()).sort((a, b) => a.prioridad - b.prioridad);
 }
 
 export async function getMunicipiosCercanos(
@@ -511,24 +602,35 @@ export async function getListadosDeLugar(lugarId: string): Promise<Array<{ lista
     .filter((p): p is { listado: Listado; posicion: number } => p !== null);
 }
 
-// Municipios que tienen al menos un ranking publicado, con su comunidad
-// embebida — para la página genérica /rankings (el "elige tu ciudad" del
-// vertical de rankings, aparte de la home de Planes).
-export async function getMunicipiosConRankings(): Promise<MunicipioConComunidad[]> {
+export interface MunicipioConRankingGeo extends MunicipioConComunidad {
+  provinciaSlug: string;
+}
+
+// Municipios que tienen al menos un ranking publicado, con su comunidad y
+// provincia embebidas — para la página genérica /rankings (el "elige tu
+// ciudad" del vertical de rankings, aparte de la home de Planes). Los
+// municipios sin provincia asignada todavía no se pueden enlazar en la
+// jerarquía /rankings/espana/... y se descartan aquí.
+export async function getMunicipiosConRankings(): Promise<MunicipioConRankingGeo[]> {
   const { data } = await supabase
     .from("listados")
     .select(
-      "municipios!inner(id, comunidad_id, slug, nombre, provincia, poblacion, prioridad, lat, lon, comunidades!inner(id, slug, nombre))"
+      "municipios!inner(id, comunidad_id, slug, nombre, provincia, provincia_id, poblacion, prioridad, lat, lon, comunidades!inner(id, slug, nombre), provincias(slug))"
     );
 
-  const vistos = new Map<string, MunicipioConComunidad>();
+  const vistos = new Map<string, MunicipioConRankingGeo>();
   for (const fila of (data ?? []) as unknown as Array<{
-    municipios: (Municipio & { comunidades: Comunidad }) | (Municipio & { comunidades: Comunidad })[] | null;
+    municipios:
+      | (Municipio & { comunidades: Comunidad; provincias: { slug: string } | { slug: string }[] | null })
+      | (Municipio & { comunidades: Comunidad; provincias: { slug: string } | { slug: string }[] | null })[]
+      | null;
   }>) {
     const m = Array.isArray(fila.municipios) ? fila.municipios[0] : fila.municipios;
     if (!m || vistos.has(m.id)) continue;
-    const { comunidades, ...municipio } = m;
-    vistos.set(m.id, { ...municipio, comunidad: comunidades });
+    const provinciaRel = Array.isArray(m.provincias) ? m.provincias[0] : m.provincias;
+    if (!provinciaRel) continue;
+    const { comunidades, provincias, ...municipio } = m;
+    vistos.set(m.id, { ...municipio, comunidad: comunidades, provinciaSlug: provinciaRel.slug });
   }
 
   return Array.from(vistos.values()).sort((a, b) => a.prioridad - b.prioridad);

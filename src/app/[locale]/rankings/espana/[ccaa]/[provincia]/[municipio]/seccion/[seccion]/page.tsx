@@ -5,16 +5,17 @@ import { Link } from "@/i18n/navigation";
 import { Trophy } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import MunicipioPageNav from "@/components/MunicipioPageNav";
-import { getListadosDelMunicipio, getMunicipio } from "@/lib/queries";
+import { getListadosDelMunicipio, getMunicipioConProvincia } from "@/lib/queries";
 import { seccionDeTipoLugar, seccionDesdeSlug } from "@/lib/categoriasListados";
 
 export const revalidate = 86400;
 
-async function cargar(comunidadSlug: string, municipioSlug: string, seccionSlug: string) {
+async function cargar(ccaaSlug: string, provinciaSlug: string, municipioSlug: string, seccionSlug: string) {
   const seccion = seccionDesdeSlug(seccionSlug);
   if (!seccion) return null;
-  const municipio = await getMunicipio(municipioSlug);
+  const municipio = await getMunicipioConProvincia(municipioSlug);
   if (!municipio) return null;
+  if (municipio.comunidad.slug !== ccaaSlug || municipio.provinciaGeo?.slug !== provinciaSlug) return null;
   const todos = await getListadosDelMunicipio(municipio.id);
   const listados = todos.filter((l) => seccionDeTipoLugar(l.tipo_lugar) === seccion);
   if (listados.length === 0) return null;
@@ -24,10 +25,10 @@ async function cargar(comunidadSlug: string, municipioSlug: string, seccionSlug:
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ comunidad: string; municipio: string; seccion: string }>;
+  params: Promise<{ ccaa: string; provincia: string; municipio: string; seccion: string }>;
 }): Promise<Metadata> {
-  const { comunidad, municipio: municipioSlug, seccion: seccionSlug } = await params;
-  const datos = await cargar(comunidad, municipioSlug, seccionSlug);
+  const { ccaa, provincia, municipio: municipioSlug, seccion: seccionSlug } = await params;
+  const datos = await cargar(ccaa, provincia, municipioSlug, seccionSlug);
   if (!datos) return {};
   const tSecciones = await getTranslations("ListadosSecciones");
   const t = await getTranslations("Listados");
@@ -39,10 +40,10 @@ export async function generateMetadata({
 export default async function SeccionRankingsPage({
   params,
 }: {
-  params: Promise<{ comunidad: string; municipio: string; seccion: string }>;
+  params: Promise<{ ccaa: string; provincia: string; municipio: string; seccion: string }>;
 }) {
-  const { comunidad: comunidadSlug, municipio: municipioSlug, seccion: seccionSlug } = await params;
-  const datos = await cargar(comunidadSlug, municipioSlug, seccionSlug);
+  const { ccaa: ccaaSlug, provincia: provinciaSlug, municipio: municipioSlug, seccion: seccionSlug } = await params;
+  const datos = await cargar(ccaaSlug, provinciaSlug, municipioSlug, seccionSlug);
   if (!datos) notFound();
   const { municipio, seccion, listados } = datos;
 
@@ -51,7 +52,7 @@ export default async function SeccionRankingsPage({
     getTranslations("Listados"),
     getTranslations("ListadosSecciones"),
   ]);
-  const base = `/rankings/${comunidadSlug}/${municipioSlug}`;
+  const base = `/rankings/espana/${ccaaSlug}/${provinciaSlug}/${municipioSlug}`;
 
   return (
     <main className="flex-1 bg-dots">
@@ -60,6 +61,10 @@ export default async function SeccionRankingsPage({
           items={[
             { label: tNav("inicio"), href: "/" },
             { label: municipio.comunidad.nombre },
+            {
+              label: municipio.provinciaGeo?.nombre ?? municipio.comunidad.nombre,
+              href: `/rankings/espana/${ccaaSlug}/${provinciaSlug}`,
+            },
             { label: municipio.nombre, href: base },
             { label: tSecciones(seccion) },
           ]}

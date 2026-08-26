@@ -1,5 +1,5 @@
 // Agrupación editorial de los listados por sección (Restaurantes, Salud...)
-// para el índice de /rankings/{comunidad}/{municipio} — vive aparte de
+// para el índice de /rankings/espana/{ccaa}/{provincia}/{municipio} — vive aparte de
 // `tipo_lugar` (que es libre,
 // pensado para guardar/filtrar por categoría concreta) porque una sección
 // agrupa varios tipos ("salud" cubre dentista, dermatólogo, otorrino...).
@@ -52,7 +52,7 @@ export function seccionDeTipoLugar(tipoLugar: string): SeccionListado {
   return SECCION_POR_TIPO[tipoLugar] ?? "otros";
 }
 
-// Slug de URL para /rankings/{comunidad}/{municipio}/seccion/[seccion] — en kebab-case aunque la
+// Slug de URL para /rankings/espana/{ccaa}/{provincia}/{municipio}/seccion/[seccion] — en kebab-case aunque la
 // clave interna esté en camelCase (bellezaBienestar -> belleza-bienestar).
 const SLUG_POR_SECCION: Record<SeccionListado, string> = {
   restaurantes: "restaurantes",

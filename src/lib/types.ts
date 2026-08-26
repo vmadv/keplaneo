@@ -14,10 +14,23 @@ export interface Municipio {
   slug: string;
   nombre: string;
   provincia: string | null;
+  // Opcional (no todas las consultas de Municipio la piden) para no
+  // arrastrar la dependencia de la migración 0014 a cada sitio que ya
+  // consulta municipios — ver getMunicipioConProvincia en queries.ts.
+  provincia_id?: string | null;
   poblacion: number | null;
   prioridad: number;
   lat: number | null;
   lon: number | null;
+}
+
+// Entidad real de provincia (rankings/espana/{ccaa}/{provincia}/...) — no
+// confundir con el campo de texto suelto `Municipio.provincia`.
+export interface Provincia {
+  id: string;
+  comunidad_id: string;
+  slug: string;
+  nombre: string;
 }
 
 export interface Plan {

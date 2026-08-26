@@ -190,6 +190,11 @@
     "cine": "Cinema",
     "otros": "Other"
   },
+  "ListadosProvincia": {
+    "titulo": "The best of the {provincia} province",
+    "subtitulo": "Choose a city in the province to see its rankings.",
+    "sinCiudades": "No rankings published yet in any city in this province."
+  },
   "Listados": {
     "tituloGeneral": "Rankings",
     "subtituloGeneral": "Choose a city to see its rankings: the best restaurants, health, education and much more, picked by real reputation and verified with Google Maps data.",
