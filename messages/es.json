@@ -1,7 +1,7 @@
 {
   "Sitio": {
-    "titulo": "Planes España",
-    "descripcion": "Qué hacer hoy, este fin de semana o este mes, municipio a municipio."
+    "titulo": "Keplaneo Sevilla",
+    "descripcion": "Qué hacer hoy, este fin de semana o este mes en Sevilla y los municipios de su provincia."
   },
   "Nav": {
     "inicio": "Inicio",
@@ -139,7 +139,20 @@
     "cuandoMes": "en {mes}"
   },
   "Home": {
-    "sinComunidades": "Todavía no hay comunidades cargadas."
+    "titulo": "Keplaneo",
+    "descripcion": "Los mejores planes de la provincia de Sevilla, ciudad a ciudad.",
+    "sinComunidades": "Todavía no hay comunidades cargadas.",
+    "sinMunicipios": "Todavía no hay municipios cargados.",
+    "tituloCiudades": "Ciudades disponibles",
+    "tituloHoy": "Qué hacer hoy",
+    "tituloFinde": "Qué hacer este fin de semana",
+    "tituloMes": "Qué hacer este mes",
+    "tituloSevilla": "Los mejores planes en Sevilla",
+    "tituloProvincia": "Los mejores planes en la provincia",
+    "tituloPareja": "En pareja",
+    "tituloFamilia": "En familia",
+    "tituloGratis": "Gratis",
+    "vacioSeccion": "Todavía no hay planes detectados para esto. Vuelve a revisar en unas horas."
   },
   "Newsletter": {
     "titulo": "No te pierdas los planes de {municipio}",

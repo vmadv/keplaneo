@@ -1,7 +1,7 @@
 {
   "Sitio": {
-    "titulo": "Planes España",
-    "descripcion": "What to do today, this weekend, or this month, town by town in Spain."
+    "titulo": "Keplaneo Sevilla",
+    "descripcion": "What to do today, this weekend, or this month in Seville and the towns of its province."
   },
   "Nav": {
     "inicio": "Home",
@@ -139,7 +139,20 @@
     "cuandoMes": "in {mes}"
   },
   "Home": {
-    "sinComunidades": "No regions loaded yet."
+    "titulo": "Keplaneo",
+    "descripcion": "The best plans in Seville's province, city by city.",
+    "sinComunidades": "No regions loaded yet.",
+    "sinMunicipios": "No towns loaded yet.",
+    "tituloCiudades": "Available cities",
+    "tituloHoy": "What to do today",
+    "tituloFinde": "What to do this weekend",
+    "tituloMes": "What to do this month",
+    "tituloSevilla": "The best plans in Seville",
+    "tituloProvincia": "The best plans in the province",
+    "tituloPareja": "As a couple",
+    "tituloFamilia": "With family",
+    "tituloGratis": "Free",
+    "vacioSeccion": "No plans detected for this yet. Check back in a few hours."
   },
   "Newsletter": {
     "titulo": "Don't miss out on plans in {municipio}",

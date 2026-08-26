@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import SiteHeader from "@/components/SiteHeader";
+import { getComunidadBySlug, getMunicipiosByComunidad } from "@/lib/queries";
 import "../globals.css";
 
 const outfit = Outfit({
@@ -53,11 +54,18 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
+  // MVP centrado en Sevilla y su provincia (ver conversación): el selector
+  // de municipio del header necesita la lista completa; se carga aquí en
+  // servidor (comunidad fija por ahora) y se pasa al header, que es client
+  // component.
+  const comunidad = await getComunidadBySlug("andalucia");
+  const municipios = comunidad ? await getMunicipiosByComunidad(comunidad.id) : [];
+
   return (
     <html lang={locale} className={`${outfit.variable} ${jakarta.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>
-          <SiteHeader />
+          <SiteHeader municipios={municipios.map((m) => ({ slug: m.slug, nombre: m.nombre }))} />
           {children}
         </NextIntlClientProvider>
       </body>
