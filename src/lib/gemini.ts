@@ -135,6 +135,8 @@ Busca activamente en TODAS estas categorías de eventos con fecha concreta (no t
 - Fiestas y tradición: fiestas patronales/verbenas, romerías, procesiones (Semana Santa) y eventos religiosos señalados, Carnaval, Cabalgata de Reyes/encendido de luces navideñas, desfiles (moda, comparsas).
 - Infantil/familiar puntual: exposiciones o talleres pensados para niños (ciencia, dinosaurios, arte manipulativo...) en museos y centros culturales, cine de verano con película familiar, actividades infantiles dentro de ferias/fiestas locales (carreras infantiles, circo, magia), cuentacuentos y espectáculos infantiles de temporada, jornadas en parques temáticos o acuáticos con programación puntual. Este bloque alimenta un filtro real del sitio ("qué hacer con niños") — búscalo con el mismo empeño que el resto, no lo dejes de relleno: si a un buscador le preguntasen directamente "qué hacer con niños este fin de semana" en esta ciudad y encontrase varias opciones reales, esas mismas deberían aparecer aquí.
 - Otros: fuegos artificiales, observación astronómica (lluvias de estrellas, eclipses), ferias de coches/motos clásicos, torneos de e-sports.
+
+De estos bloques, "conciertos" (dentro de Música), "exposiciones" (dentro de Arte y cultura) y "teatro"/"monólogos" (dentro de Escena y proyecciones) alimentan cada uno su propia página del sitio, igual que lo infantil/familiar — búscalos con el mismo empeño real, no como relleno de la categoría genérica que les toque.
 `.trim();
 
 const INSTRUCCIONES_FORMATO = `
@@ -150,6 +152,7 @@ Los planes "generico" deben ir siempre al final del array, después de todos los
 Dentro de cada uno de esos dos bloques (excepcional / generico), ordena de MAYOR a MENOR popularidad o interés esperado — el evento más multitudinario o relevante primero, el más de nicho al final. Además:
 - Procura variedad real de temática entre los eventos puntuales: si encuentras 8 conciertos y ningún otro tipo, busca más en las demás categorías antes de rendirte — no llenes el listado a base de repetir el mismo tipo de plan.
 - Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Si tiene un ángulo claro de pareja (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas) márcalo SOLO "pareja"; si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya llevas "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para cuando el plan de verdad no tenga ningún ángulo hacia una audiencia concreta. Esta etiqueta se usa para filtrar planes por audiencia en el sitio; si casi todo lleva "generico" además de su etiqueta específica, el filtro deja de servir de nada.
+- Busca activamente planes con ángulo de pareja, con el mismo empeño que lo infantil/familiar: catas nocturnas, conciertos o sesiones íntimas, experiencias con encanto (azoteas, miradores al atardecer, cenas con vistas, spas/relax), actividades pensadas para dos. También alimenta un filtro real del sitio ("qué hacer en pareja") — no lo dejes para lo que sobre de las demás categorías.
 
 Cada elemento debe tener EXACTAMENTE estos campos:
 - "titulo": string, corto y concreto
