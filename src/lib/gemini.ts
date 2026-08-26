@@ -133,7 +133,7 @@ Busca activamente en TODAS estas categorías de eventos con fecha concreta (no t
 - Deporte: partidos (fútbol, baloncesto, balonmano...), carreras populares/maratones/10K, torneos (pádel, tenis, ciclismo), exhibiciones deportivas, eventos náuticos si hay río o costa.
 - Ferias y mercados: ferias (del libro, gastronómicas, artesanales, del vino), mercadillos temáticos puntuales (navideños, medievales, vintage), catas puntuales (vino, cerveza, aceite), food trucks o eventos gastronómicos temporales.
 - Fiestas y tradición: fiestas patronales/verbenas, romerías, procesiones (Semana Santa) y eventos religiosos señalados, Carnaval, Cabalgata de Reyes/encendido de luces navideñas, desfiles (moda, comparsas).
-- Infantil/familiar puntual: cuentacuentos especiales o talleres puntuales con fecha, espectáculos infantiles de temporada.
+- Infantil/familiar puntual: exposiciones o talleres pensados para niños (ciencia, dinosaurios, arte manipulativo...) en museos y centros culturales, cine de verano con película familiar, actividades infantiles dentro de ferias/fiestas locales (carreras infantiles, circo, magia), cuentacuentos y espectáculos infantiles de temporada, jornadas en parques temáticos o acuáticos con programación puntual. Este bloque alimenta un filtro real del sitio ("qué hacer con niños") — búscalo con el mismo empeño que el resto, no lo dejes de relleno: si a un buscador le preguntasen directamente "qué hacer con niños este fin de semana" en esta ciudad y encontrase varias opciones reales, esas mismas deberían aparecer aquí.
 - Otros: fuegos artificiales, observación astronómica (lluvias de estrellas, eclipses), ferias de coches/motos clásicos, torneos de e-sports.
 `.trim();
 
