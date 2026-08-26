@@ -34,11 +34,10 @@ const SLUG_EXTRA_TEMPORAL: Record<Extra, string> = { pareja: "pareja", familia: 
 const SLUG_EXTRA_ATEMPORAL: Record<Extra, string> = { pareja: "en-pareja", familia: "con-ninos", gratis: "gratis" };
 
 export function hrefFiltro(base: string, vigencia: Vigencia, extra?: Extra): string {
-  // El hub (`base` a secas) por defecto sigue enseñando Hoy, como antes —
-  // "siempre" sin extra vive en /siempre en vez de en el hub (ver
-  // conversación). Con extra activo no hace falta ese segmento: /en-pareja,
-  // /con-ninos y /gratis ya son inequívocos por sí solos.
-  if (vigencia === "siempre" && !extra) return `${base}/siempre`;
+  // "siempre" sin extra es el hub a secas (`base`) — es la URL corta y
+  // canónica a la que ya apunta "Qué hacer" del menú, la que de verdad
+  // puede posicionar para "qué hacer en {municipio}" (ver conversación:
+  // "no podemos crear una url que se llame siempre").
   const segVigencia = vigencia === "siempre" ? "" : `/${SEGMENTO_VIGENCIA[vigencia]}`;
   if (!extra) return `${base}${segVigencia}`;
   const slugExtra = vigencia === "siempre" ? SLUG_EXTRA_ATEMPORAL[extra] : SLUG_EXTRA_TEMPORAL[extra];

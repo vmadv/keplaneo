@@ -69,7 +69,9 @@
   },
   "MunicipioHome": {
     "titulo": "Qué hacer en {municipio}",
-    "hoyFecha": "Hoy, {fecha}"
+    "hoyFecha": "Hoy, {fecha}",
+    "tituloDestacados": "Lo más destacado en {municipio}",
+    "tituloTodo": "Todo lo que puedes hacer en {municipio}"
   },
   "Hoy": {
     "titulo": "Qué hacer hoy en {municipio}",
