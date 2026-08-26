@@ -15,6 +15,8 @@
     "ciudad": "Ciudad"
   },
   "Filtros": {
+    "cuando": "Cuándo",
+    "filtraMas": "Filtra más",
     "hoy": "Hoy",
     "finde": "Este fin de semana",
     "semana": "Esta semana",
