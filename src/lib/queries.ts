@@ -184,9 +184,11 @@ async function getPlanesPorVigencia(
   }
 
   if (audiencia) {
-    // El plan aparece si está etiquetado para esa audiencia o si es "generico"
-    // (sirve para cualquier visitante).
-    query = query.or(`audiencia.cs.{${audiencia}},audiencia.cs.{generico}`);
+    // Estricto: solo lo etiquetado específicamente para esa audiencia, sin
+    // colar automáticamente lo "generico" — ver conversación. Con casi
+    // todo el contenido llevando "generico" de propina, meterlo aquí
+    // dejaba /pareja y /familia mostrando prácticamente la misma lista.
+    query = query.contains("audiencia", [audiencia]);
   }
 
   // "excepcional" ordena antes que "generico" alfabéticamente: los planes
@@ -458,10 +460,8 @@ async function getEventosDelMunicipio(
     .eq("activo", true);
   if (categoria) query = query.eq("categoria", categoria);
   if (audiencia) {
-    // El evento aparece si está etiquetado para esa audiencia o si es
-    // "generico" (sirve para cualquier visitante) — mismo criterio que
-    // getPlanesPorVigencia para audiencia en `planes`.
-    query = query.or(`audiencia.cs.{${audiencia}},audiencia.cs.{generico}`);
+    // Estricto, mismo criterio que getPlanesPorVigencia — ver conversación.
+    query = query.contains("audiencia", [audiencia]);
   }
   const { data } = await query.order("titulo");
   return data ?? [];
