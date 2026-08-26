@@ -1,3 +1,4 @@
+import { setRequestLocale } from "next-intl/server";
 import NewsletterPopup from "@/components/NewsletterPopup";
 import { getMunicipio } from "@/lib/queries";
 
@@ -10,9 +11,12 @@ export default async function MunicipioLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ municipio: string }>;
+  params: Promise<{ locale: string; municipio: string }>;
 }) {
-  const { municipio: municipioSlug } = await params;
+  const { locale, municipio: municipioSlug } = await params;
+  // Ver [locale]/layout.tsx: necesario en cada segmento para que las
+  // páginas hijas con generateStaticParams puedan pintarse estáticas.
+  setRequestLocale(locale);
   const municipio = await getMunicipio(municipioSlug);
 
   return (

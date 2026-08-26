@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import PlanList from "@/components/PlanList";
 import FiltroTemporal from "@/components/FiltroTemporal";
@@ -25,9 +25,10 @@ function capitalizar(texto: string): string {
 export default async function CategoriaMesPage({
   params,
 }: {
-  params: Promise<{ municipio: string; categoriaOMes: string; mes: string }>;
+  params: Promise<{ locale: string; municipio: string; categoriaOMes: string; mes: string }>;
 }) {
-  const { municipio: municipioSlug, categoriaOMes, mes } = await params;
+  const { locale, municipio: municipioSlug, categoriaOMes, mes } = await params;
+  setRequestLocale(locale);
   if (!esCategoriaConPagina(categoriaOMes) || !esMesSlugValido(mes)) notFound();
 
   const municipio = await getMunicipio(municipioSlug);

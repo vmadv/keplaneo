@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import PlanList from "@/components/PlanList";
 import ListaEventos from "@/components/ListaEventos";
@@ -31,9 +31,10 @@ function capitalizar(texto: string): string {
 export default async function CategoriaOMesPage({
   params,
 }: {
-  params: Promise<{ municipio: string; categoriaOMes: string }>;
+  params: Promise<{ locale: string; municipio: string; categoriaOMes: string }>;
 }) {
-  const { municipio: municipioSlug, categoriaOMes } = await params;
+  const { locale, municipio: municipioSlug, categoriaOMes } = await params;
+  setRequestLocale(locale);
 
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();

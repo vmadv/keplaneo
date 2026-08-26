@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import SiteHeader from "@/components/SiteHeader";
@@ -53,6 +53,13 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
+
+  // Necesario para que las rutas con generateStaticParams (hoy/[audiencia],
+  // [categoriaOMes], etc.) puedan pintarse estáticas: sin esto,
+  // getTranslations/getLocale más abajo en el árbol leen el locale de
+  // forma dinámica y Next tira DYNAMIC_SERVER_USAGE en build de producción
+  // (ver conversación — así estaba roto en Vercel).
+  setRequestLocale(locale);
 
   // MVP centrado en Sevilla y su provincia (ver conversación): el selector
   // de municipio del header necesita la lista completa; se carga aquí en

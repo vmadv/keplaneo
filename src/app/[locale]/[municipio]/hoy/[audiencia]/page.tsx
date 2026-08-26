@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesHoy } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
@@ -27,20 +27,22 @@ function minuscula(texto: string): string {
 export default async function HoyAudienciaPage({
   params,
 }: {
-  params: Promise<{ municipio: string; audiencia: string }>;
+  params: Promise<{ locale: string; municipio: string; audiencia: string }>;
 }) {
-  const { municipio: municipioSlug, audiencia } = await params;
+  const { locale, municipio: municipioSlug, audiencia } = await params;
+  // Ver [locale]/layout.tsx: necesario para que esta ruta con
+  // generateStaticParams pueda pintarse estática.
+  setRequestLocale(locale);
   if (!esAudienciaValida(audiencia)) notFound();
 
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tHoy, tAudiencia, tFiltros, locale] = await Promise.all([
+  const [planes, tHoy, tAudiencia, tFiltros] = await Promise.all([
     getPlanesHoy(municipio.id, audiencia),
     getTranslations("Hoy"),
     getTranslations("Audiencia"),
     getTranslations("Filtros"),
-    getLocale(),
   ]);
   const etiquetaAudiencia = minuscula(tAudiencia(audiencia));
 

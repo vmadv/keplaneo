@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import FiltrosPagina from "@/components/FiltrosPagina";
 import ListaEventos from "@/components/ListaEventos";
@@ -30,16 +30,17 @@ function minuscula(texto: string): string {
 export default async function EstaSemanaAudienciaPage({
   params,
 }: {
-  params: Promise<{ municipio: string; audiencia: string }>;
+  params: Promise<{ locale: string; municipio: string; audiencia: string }>;
 }) {
-  const { municipio: municipioSlug, audiencia } = await params;
+  const { locale, municipio: municipioSlug, audiencia } = await params;
+  setRequestLocale(locale);
   if (!esAudienciaValida(audiencia)) notFound();
 
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
   const base = `/${municipioSlug}`;
-  const [todos, primarios, secundarios, tNav, tFiltros, tSemana, tAudiencia, tPlanList, locale] =
+  const [todos, primarios, secundarios, tNav, tFiltros, tSemana, tAudiencia, tPlanList] =
     await Promise.all([
       getEventosActivos(municipio.id, audiencia),
       construirFiltrosTemporales(base, "semana"),
@@ -49,7 +50,6 @@ export default async function EstaSemanaAudienciaPage({
       getTranslations("Semana"),
       getTranslations("Audiencia"),
       getTranslations("PlanList"),
-      getLocale(),
     ]);
   const { eventos, etiquetas } = ordenarPorDiaDeSemana(todos, locale);
   const etiquetaAudiencia = minuscula(tAudiencia(audiencia));
