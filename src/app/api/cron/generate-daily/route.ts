@@ -15,19 +15,6 @@ export const maxDuration = 300;
 // real con un título ligeramente distinto cada día). Los lunes no hace
 // nada: ese día ya está cubierto por el cron semanal.
 
-interface MunicipioConComunidadSlug {
-  id: string;
-  slug: string;
-  nombre: string;
-  comunidades: { slug: string } | { slug: string }[] | null;
-}
-
-function comunidadSlugDe(m: MunicipioConComunidadSlug): string | null {
-  const c = m.comunidades;
-  if (!c) return null;
-  return Array.isArray(c) ? (c[0]?.slug ?? null) : c.slug;
-}
-
 function pathsDelMunicipio(base: string): string[] {
   return [
     base,
@@ -68,7 +55,7 @@ export async function GET(request: NextRequest) {
 
   const { data: municipios, error } = await supabaseAdmin
     .from("municipios")
-    .select("id, slug, nombre, comunidades(slug)")
+    .select("id, slug, nombre")
     .order("prioridad");
 
   if (error || !municipios) {
@@ -77,7 +64,7 @@ export async function GET(request: NextRequest) {
 
   const resultados = [];
 
-  for (const municipio of municipios as unknown as MunicipioConComunidadSlug[]) {
+  for (const municipio of municipios) {
     try {
       const { data: conocidos, error: errorConocidos } = await supabaseAdmin
         .from("eventos")
@@ -133,13 +120,10 @@ export async function GET(request: NextRequest) {
         coste_estimado: estimarCoste(usage),
       });
 
-      const comunidadSlug = comunidadSlugDe(municipio);
-      if (comunidadSlug) {
-        const base = `/${comunidadSlug}/${municipio.slug}`;
-        [...pathsDelMunicipio(base), ...vinculosNuevos.map((slug) => `${base}/eventos/${slug}`)].forEach((path) =>
-          revalidatePath(path)
-        );
-      }
+      const base = `/${municipio.slug}`;
+      [...pathsDelMunicipio(base), ...vinculosNuevos.map((slug) => `${base}/eventos/${slug}`)].forEach((path) =>
+        revalidatePath(path)
+      );
 
       resultados.push({ municipio: municipio.slug, estado: "ok", novedades: planes.length, filas: filasInsertadas });
     } catch (err) {

@@ -13,7 +13,7 @@ export const revalidate = 86400;
 async function cargar(comunidadSlug: string, municipioSlug: string, seccionSlug: string) {
   const seccion = seccionDesdeSlug(seccionSlug);
   if (!seccion) return null;
-  const municipio = await getMunicipio(comunidadSlug, municipioSlug);
+  const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return null;
   const todos = await getListadosDelMunicipio(municipio.id);
   const listados = todos.filter((l) => seccionDeTipoLugar(l.tipo_lugar) === seccion);
@@ -80,7 +80,7 @@ export default async function SeccionRankingsPage({
           ))}
         </div>
 
-        <MunicipioPageNav comunidadSlug={comunidadSlug} municipioSlug={municipioSlug} municipioNombre={municipio.nombre} />
+        <MunicipioPageNav municipioSlug={municipioSlug} municipioNombre={municipio.nombre} />
       </div>
     </main>
   );

@@ -10,7 +10,6 @@ import { buscarImagenHero } from "@/lib/heroImage";
 
 export default async function PlanesPageLayout({
   municipio,
-  comunidadSlug,
   municipioSlug,
   titulo,
   fecha,
@@ -19,7 +18,6 @@ export default async function PlanesPageLayout({
   breadcrumbExtra,
 }: {
   municipio: MunicipioConComunidad;
-  comunidadSlug: string;
   municipioSlug: string;
   titulo: string;
   fecha?: string;
@@ -27,7 +25,7 @@ export default async function PlanesPageLayout({
   current: { vigencia: "hoy" | "finde"; audiencia?: "pareja" | "familia" };
   breadcrumbExtra: BreadcrumbItem[];
 }) {
-  const base = `/${comunidadSlug}/${municipioSlug}`;
+  const base = `/${municipioSlug}`;
   const [primarios, secundarios, tNav] = await Promise.all([
     construirFiltrosTemporales(base, current.vigencia),
     construirFiltrosSecundarios(base, { tipo: current.vigencia }, current.audiencia),
@@ -41,7 +39,7 @@ export default async function PlanesPageLayout({
         <Breadcrumb
           items={[
             { label: tNav("inicio"), href: "/" },
-            { label: municipio.comunidad.nombre, href: `/${comunidadSlug}` },
+            { label: municipio.comunidad.nombre },
             { label: municipio.nombre, href: base },
             ...breadcrumbExtra,
           ]}

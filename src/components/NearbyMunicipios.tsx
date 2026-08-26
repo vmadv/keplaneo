@@ -6,13 +6,7 @@ import type { Municipio } from "@/lib/types";
 // Segundo eje de enlazado del blueprint: cada municipio enlaza a 3-5
 // municipios cercanos de la misma comunidad, para repartir autoridad
 // lateralmente y no depender solo del hub de comunidad.
-export default async function NearbyMunicipios({
-  municipio,
-  comunidadSlug,
-}: {
-  municipio: Municipio;
-  comunidadSlug: string;
-}) {
+export default async function NearbyMunicipios({ municipio }: { municipio: Municipio }) {
   const [cercanos, t] = await Promise.all([getMunicipiosCercanos(municipio), getTranslations("NearbyMunicipios")]);
   if (cercanos.length === 0) return null;
 
@@ -21,7 +15,7 @@ export default async function NearbyMunicipios({
       <h2 className="text-lg font-extrabold mb-3">{t("titulo", { municipio: municipio.nombre })}</h2>
       <div className="flex flex-wrap gap-3">
         {cercanos.map((m) => (
-          <Link key={m.id} href={`/${comunidadSlug}/${m.slug}/hoy`} className="btn-secondary">
+          <Link key={m.id} href={`/${m.slug}/hoy`} className="btn-secondary">
             {t("queHacerHoyEn", { municipio: m.nombre })}
           </Link>
         ))}

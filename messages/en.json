@@ -11,7 +11,8 @@
     "tematica": "Category",
     "verTodosLosPlanes": "See all plans in {municipio} →",
     "queHacer": "What to do",
-    "listados": "Rankings"
+    "listados": "Rankings",
+    "ciudad": "City"
   },
   "Filtros": {
     "hoy": "Today",
@@ -141,18 +142,21 @@
   "Home": {
     "titulo": "Keplaneo",
     "descripcion": "The best plans in Seville's province, city by city.",
-    "sinComunidades": "No regions loaded yet.",
     "sinMunicipios": "No towns loaded yet.",
     "tituloCiudades": "Available cities",
-    "tituloHoy": "What to do today",
-    "tituloFinde": "What to do this weekend",
-    "tituloMes": "What to do this month",
+    "verMasCiudades": "See more cities",
+    "verMenosCiudades": "See less",
+    "tituloFiltros": "Discover more plans",
+    "tituloCategorias": "By category",
     "tituloSevilla": "The best plans in Seville",
     "tituloProvincia": "The best plans in the province",
     "tituloPareja": "As a couple",
     "tituloFamilia": "With family",
     "tituloGratis": "Free",
     "vacioSeccion": "No plans detected for this yet. Check back in a few hours."
+  },
+  "ElegirCiudad": {
+    "subtitulo": "Choose a city to see these plans."
   },
   "Newsletter": {
     "titulo": "Don't miss out on plans in {municipio}",

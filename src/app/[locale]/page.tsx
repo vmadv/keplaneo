@@ -1,83 +1,46 @@
+import { Heart, Users, Gift } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import TarjetaCiudad from "@/components/TarjetaCiudad";
+import ListaCiudadesHome from "@/components/ListaCiudadesHome";
+import TarjetaEnlaceFiltro from "@/components/TarjetaEnlaceFiltro";
 import TarjetaPlanDestacado from "@/components/TarjetaPlanDestacado";
-import { mesActualSlug } from "@/lib/dates";
-import {
-  getComunidadBySlug,
-  getMunicipiosByComunidad,
-  getPlanesDestacadosCategoria,
-  getPlanesDestacadosDeMunicipio,
-  getPlanesDestacadosSinMunicipio,
-  getPlanesFamiliaMulti,
-  getPlanesFindeMulti,
-  getPlanesGratisMulti,
-  getPlanesHoyMulti,
-  getPlanesMesMulti,
-  getPlanesParejaMulti,
-} from "@/lib/queries";
-import type { PlanConMunicipio } from "@/lib/queries";
-import type { Categoria } from "@/lib/types";
+import { ICONO_CATEGORIA } from "@/lib/filtros";
+import { buscarImagenHero } from "@/lib/heroImage";
+import { getComunidadBySlug, getMunicipiosByComunidad, getPlanesDestacadosDeMunicipio, getPlanesDestacadosSinMunicipio } from "@/lib/queries";
+import { CATEGORIAS_CON_PAGINA } from "@/lib/types";
 
 export const revalidate = 3600;
 
-const COLORES = ["var(--secondary)", "var(--tertiary)", "var(--quaternary)"];
-const CATEGORIAS_HOME: Categoria[] = ["conciertos", "exposiciones", "teatro", "monologos"];
-
-// MVP temporal centrado en la provincia de Sevilla (ver conversación): en
-// vez de un simple selector de municipios, la portada enseña primero las
-// ciudades disponibles y luego tira de agenda real por varios ángulos
-// (hoy/finde/mes, destacados de Sevilla y de la provincia, audiencia,
-// gratis, categoría) mezclando las 9 ciudades — más contenido real desde
-// el primer scroll, sin "Keplaneo Sevilla" en el título.
+// MVP temporal centrado en la provincia de Sevilla (ver conversación): la
+// portada enseña primero las ciudades disponibles, luego atajos a los
+// filtros que necesitan elegir ciudad (En pareja/En familia/Gratis y
+// categorías — no sabemos a qué municipio mandar directamente, así que
+// pasan por /elige-ciudad), y solo dos bloques con planes reales ya
+// resueltos (Sevilla y el resto de la provincia, lo mejor de hoy/esta
+// semana) porque esos sí tienen una respuesta clara sin preguntar ciudad.
 export default async function HomePage() {
   const comunidad = await getComunidadBySlug("andalucia");
   const municipios = comunidad ? await getMunicipiosByComunidad(comunidad.id) : [];
   const municipiosLigero = municipios.map((m) => ({ id: m.id, slug: m.slug, nombre: m.nombre }));
   const sevilla = municipiosLigero.find((m) => m.slug === "sevilla") ?? null;
-  const hayMunicipios = municipiosLigero.length > 0;
 
-  const [
-    planesHoy,
-    planesFinde,
-    planesMes,
-    planesSevilla,
-    planesProvincia,
-    planesPareja,
-    planesFamilia,
-    planesGratis,
-    planesPorCategoria,
-    tHome,
-    tBadges,
-    tCategorias,
-  ] = await Promise.all([
-    hayMunicipios ? getPlanesHoyMulti(municipiosLigero) : Promise.resolve([]),
-    hayMunicipios ? getPlanesFindeMulti(municipiosLigero) : Promise.resolve([]),
-    hayMunicipios ? getPlanesMesMulti(municipiosLigero, mesActualSlug()) : Promise.resolve([]),
+  const [planesSevilla, planesProvincia, tHome, tBadges, tAudiencia, tCategorias] = await Promise.all([
     sevilla ? getPlanesDestacadosDeMunicipio(sevilla) : Promise.resolve([]),
-    sevilla && hayMunicipios ? getPlanesDestacadosSinMunicipio(municipiosLigero, sevilla.id) : Promise.resolve([]),
-    hayMunicipios ? getPlanesParejaMulti(municipiosLigero) : Promise.resolve([]),
-    hayMunicipios ? getPlanesFamiliaMulti(municipiosLigero) : Promise.resolve([]),
-    hayMunicipios ? getPlanesGratisMulti(municipiosLigero) : Promise.resolve([]),
-    hayMunicipios
-      ? Promise.all(CATEGORIAS_HOME.map((c) => getPlanesDestacadosCategoria(municipiosLigero, c)))
-      : Promise.resolve([]),
+    sevilla ? getPlanesDestacadosSinMunicipio(municipiosLigero, sevilla.id) : Promise.resolve([]),
     getTranslations("Home"),
     getTranslations("Badges"),
+    getTranslations("Audiencia"),
     getTranslations("Categorias"),
   ]);
 
-  const comunidadSlug = comunidad?.slug ?? "andalucia";
+  const filtrosAudiencia = [
+    { filtro: "pareja", titulo: tAudiencia("pareja"), Icono: Heart, color: "var(--secondary)" },
+    { filtro: "familia", titulo: tAudiencia("familia"), Icono: Users, color: "var(--quaternary)" },
+    { filtro: "gratis", titulo: tHome("tituloGratis"), Icono: Gift, color: "var(--tertiary)" },
+  ];
 
-  const secciones: { titulo: string; planes: PlanConMunicipio[] }[] = [
-    { titulo: tHome("tituloHoy"), planes: planesHoy },
-    { titulo: tHome("tituloFinde"), planes: planesFinde },
-    { titulo: tHome("tituloMes"), planes: planesMes },
+  const bloquesContenido: { titulo: string; planes: typeof planesSevilla }[] = [
     { titulo: tHome("tituloSevilla"), planes: planesSevilla },
     { titulo: tHome("tituloProvincia"), planes: planesProvincia },
-    { titulo: tHome("tituloPareja"), planes: planesPareja },
-    { titulo: tHome("tituloFamilia"), planes: planesFamilia },
-    { titulo: tHome("tituloGratis"), planes: planesGratis },
-    ...CATEGORIAS_HOME.map((c, i) => ({ titulo: tCategorias(c), planes: planesPorCategoria[i] ?? [] })),
   ];
 
   return (
@@ -101,21 +64,25 @@ export default async function HomePage() {
           <div className="grid gap-14">
             <section>
               <h2 className="text-2xl font-extrabold mb-5">{tHome("tituloCiudades")}</h2>
-              <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {municipios.map((m, i) => (
-                  <li key={m.id}>
-                    <TarjetaCiudad
-                      nombre={m.nombre}
-                      slug={m.slug}
-                      href={`/${comunidadSlug}/${m.slug}`}
-                      color={COLORES[i % COLORES.length]}
-                    />
+              <ListaCiudadesHome
+                municipios={municipios.map((m) => ({ ...m, imagen: buscarImagenHero(m.slug) }))}
+                textoVerMas={tHome("verMasCiudades")}
+                textoVerMenos={tHome("verMenosCiudades")}
+              />
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-extrabold mb-5">{tHome("tituloFiltros")}</h2>
+              <ul className="grid sm:grid-cols-3 gap-5">
+                {filtrosAudiencia.map((f) => (
+                  <li key={f.filtro}>
+                    <TarjetaEnlaceFiltro href={`/elige-ciudad/${f.filtro}`} titulo={f.titulo} Icono={f.Icono} color={f.color} />
                   </li>
                 ))}
               </ul>
             </section>
 
-            {secciones.map((seccion) => (
+            {bloquesContenido.map((seccion) => (
               <section key={seccion.titulo}>
                 <h2 className="text-2xl font-extrabold mb-5">{seccion.titulo}</h2>
                 {seccion.planes.length === 0 ? (
@@ -124,17 +91,29 @@ export default async function HomePage() {
                   <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {seccion.planes.map((plan) => (
                       <li key={plan.id}>
-                        <TarjetaPlanDestacado
-                          plan={plan}
-                          comunidadSlug={comunidadSlug}
-                          etiquetaEventoPuntual={tBadges("eventoPuntual")}
-                        />
+                        <TarjetaPlanDestacado plan={plan} etiquetaEventoPuntual={tBadges("eventoPuntual")} />
                       </li>
                     ))}
                   </ul>
                 )}
               </section>
             ))}
+
+            <section>
+              <h2 className="text-2xl font-extrabold mb-5">{tHome("tituloCategorias")}</h2>
+              <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {CATEGORIAS_CON_PAGINA.map((c) => (
+                  <li key={c}>
+                    <TarjetaEnlaceFiltro
+                      href={`/elige-ciudad/${c}`}
+                      titulo={tCategorias(c)}
+                      Icono={ICONO_CATEGORIA[c]!}
+                      color="var(--accent)"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
         )}
       </div>

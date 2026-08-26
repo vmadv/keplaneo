@@ -9,14 +9,12 @@ import type { PlanConMunicipio } from "@/lib/queries";
 // a esa ciudad.
 export default function TarjetaPlanDestacado({
   plan,
-  comunidadSlug,
   etiquetaEventoPuntual,
 }: {
   plan: PlanConMunicipio;
-  comunidadSlug: string;
   etiquetaEventoPuntual: string;
 }) {
-  const base = `/${comunidadSlug}/${plan.municipio_slug}`;
+  const base = `/${plan.municipio_slug}`;
   const href = plan.evento_slug ? `${base}/eventos/${plan.evento_slug}` : base;
 
   return (

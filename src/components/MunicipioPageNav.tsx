@@ -29,12 +29,10 @@ function pathFor(vigencia: Vigencia, audiencia?: Audiencia) {
 // enlaza a las otras variantes del mismo municipio, para que Google las lea
 // como un mismo tema bien cubierto en vez de páginas duplicadas sueltas.
 export default async function MunicipioPageNav({
-  comunidadSlug,
   municipioSlug,
   municipioNombre,
   current,
 }: {
-  comunidadSlug: string;
   municipioSlug: string;
   municipioNombre: string;
   // Sin "current" (ej. en la ficha de un evento, que no es ninguna de las
@@ -42,7 +40,7 @@ export default async function MunicipioPageNav({
   current?: { vigencia: Vigencia; audiencia?: Audiencia };
 }) {
   const t = await getTranslations("MunicipioPageNav");
-  const base = `/${comunidadSlug}/${municipioSlug}`;
+  const base = `/${municipioSlug}`;
   const otros = current
     ? COMBOS.filter((c) => !(c.vigencia === current.vigencia && c.audiencia === current.audiencia))
     : COMBOS;

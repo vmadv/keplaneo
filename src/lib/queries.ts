@@ -36,17 +36,19 @@ export interface MunicipioConComunidad extends Municipio {
   comunidad: Comunidad;
 }
 
-export async function getMunicipio(
-  comunidadSlug: string,
-  municipioSlug: string
-): Promise<MunicipioConComunidad | null> {
+// Sin "comunidad" en la URL (ver conversación), pero se sigue devolviendo
+// `.comunidad` para mostrarla en la miga de pan — informativa, no parte de
+// la ruta. Solo hay una comunidad hoy, pero el slug de municipio no tiene
+// unicidad global garantizada por esquema (solo `unique(comunidad_id,
+// slug)`), así que esto asume una única comunidad mientras no se añada esa
+// restricción.
+export async function getMunicipio(municipioSlug: string): Promise<MunicipioConComunidad | null> {
   const { data } = await supabase
     .from("municipios")
     .select(
       "id, comunidad_id, slug, nombre, provincia, poblacion, prioridad, lat, lon, comunidades!inner(id, slug, nombre)"
     )
     .eq("slug", municipioSlug)
-    .eq("comunidades.slug", comunidadSlug)
     .maybeSingle();
 
   if (!data) return null;
@@ -237,94 +239,20 @@ export function getPlanesMesMulti(
   return getPlanesPorVigenciaMulti(municipios, mesSlug, false, porMunicipio);
 }
 
-// Bloques "En pareja" / "En familia" de la portada: planes de hoy para esa
-// audiencia (o "generico", que sirve para cualquiera), mezclando ciudades.
-async function getPlanesAudienciaMulti(
-  municipios: { id: string; slug: string; nombre: string }[],
-  audiencia: "pareja" | "familia",
-  porMunicipio: number
-): Promise<PlanConMunicipio[]> {
-  const resultados = await Promise.all(
-    municipios.map(async (m) => {
-      const { data } = await supabase
-        .from("planes")
-        .select(
-          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria)"
-        )
-        .eq("municipio_id", m.id)
-        .eq("fecha_generacion", hoyISO())
-        .or(`audiencia.cs.{${audiencia}},audiencia.cs.{generico}`)
-        .order("tipo")
-        .order("momento")
-        .limit(porMunicipio);
-      return (data ?? []).map((fila) => filaAPlanConMunicipio(fila as never, m));
-    })
-  );
-  return resultados.flat();
-}
-
-export function getPlanesParejaMulti(municipios: { id: string; slug: string; nombre: string }[], porMunicipio = 4) {
-  return getPlanesAudienciaMulti(municipios, "pareja", porMunicipio);
-}
-
-export function getPlanesFamiliaMulti(municipios: { id: string; slug: string; nombre: string }[], porMunicipio = 4) {
-  return getPlanesAudienciaMulti(municipios, "familia", porMunicipio);
-}
-
-// Bloque "Gratis" de la portada: mismo criterio que getPlanesGratisHoy
-// (precio confirmado explícitamente como gratis, nunca asumido), mezclando
-// ciudades — una consulta por municipio, sobreobteniendo un poco porque el
-// filtro de precio se aplica después, en JS.
-export async function getPlanesGratisMulti(
-  municipios: { id: string; slug: string; nombre: string }[],
-  porMunicipio = 4
-): Promise<PlanConMunicipio[]> {
-  const resultados = await Promise.all(
-    municipios.map(async (m) => {
-      const { data } = await supabase
-        .from("planes")
-        .select(
-          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, precio)"
-        )
-        .eq("municipio_id", m.id)
-        .eq("fecha_generacion", hoyISO())
-        .order("tipo")
-        .order("momento")
-        .limit(porMunicipio * 4);
-
-      const planes: PlanConMunicipio[] = [];
-      for (const fila of data ?? []) {
-        const f = fila as unknown as Plan & {
-          eventos:
-            | { slug: string; fecha_inicio: string | null; fecha_fin: string | null; categoria: Categoria | null; precio: string | null }
-            | { slug: string; fecha_inicio: string | null; fecha_fin: string | null; categoria: Categoria | null; precio: string | null }[]
-            | null;
-        };
-        const ev = Array.isArray(f.eventos) ? f.eventos[0] : f.eventos;
-        if (!esPrecioGratis(ev?.precio ?? null)) continue;
-        planes.push(filaAPlanConMunicipio(f as never, m));
-        if (planes.length >= porMunicipio) break;
-      }
-      return planes;
-    })
-  );
-  return resultados.flat();
-}
-
-// Bloques "Los mejores planes en Sevilla / en la provincia" y los de
-// categoría (Conciertos, Exposiciones...): solo planes "excepcional" (un
-// evento real, no relleno genérico), sin repetir el mismo evento aunque
-// tenga varias filas (una por día que dura) — de ahí el sobreobtener y
-// des-duplicar por evento_id en vez de limitar directo en SQL.
+// Bloques "Los mejores planes en Sevilla / en la provincia": solo planes
+// "excepcional" (un evento real, no relleno genérico) de hoy o este fin de
+// semana — no cualquier "excepcional" del mes, que podía sacar algo que no
+// es ni de esta semana. Sin repetir el mismo evento aunque tenga varias
+// filas (una por día que dura), de ahí sobreobtener y des-duplicar por
+// evento_id en vez de limitar directo en SQL.
 async function getPlanesDestacadosMulti(
   municipios: { id: string; slug: string; nombre: string }[],
-  limite: number,
-  categoria?: Categoria
+  limite: number
 ): Promise<PlanConMunicipio[]> {
   if (municipios.length === 0) return [];
   const municipioPorId = new Map(municipios.map((m) => [m.id, m]));
 
-  let query = supabase
+  const { data } = await supabase
     .from("planes")
     .select(
       "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, fecha_inicio, fecha_fin, categoria)"
@@ -334,14 +262,9 @@ async function getPlanesDestacadosMulti(
       municipios.map((m) => m.id)
     )
     .eq("tipo", "excepcional")
+    .overlaps("vigencia", ["hoy", "finde"])
     .order("fecha_generacion", { ascending: false })
     .limit(limite * 10);
-
-  if (categoria) {
-    query = query.eq("eventos.categoria", categoria);
-  }
-
-  const { data } = await query;
 
   const vistos = new Set<string>();
   const resultado: PlanConMunicipio[] = [];
@@ -374,14 +297,6 @@ export function getPlanesDestacadosSinMunicipio(
     municipios.filter((m) => m.id !== municipioIdExcluido),
     limite
   );
-}
-
-export function getPlanesDestacadosCategoria(
-  municipios: { id: string; slug: string; nombre: string }[],
-  categoria: Categoria,
-  limite = 4
-) {
-  return getPlanesDestacadosMulti(municipios, limite, categoria);
 }
 
 async function getPlanesPorCategoria(

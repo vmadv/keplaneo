@@ -14,7 +14,7 @@ import { getListadosDeLugar, getLugar, getMunicipio } from "@/lib/queries";
 export const revalidate = 86400;
 
 async function cargar(comunidadSlug: string, municipioSlug: string, lugarSlug: string) {
-  const municipio = await getMunicipio(comunidadSlug, municipioSlug);
+  const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return null;
   const lugar = await getLugar(municipio.id, lugarSlug);
   if (!lugar) return null;

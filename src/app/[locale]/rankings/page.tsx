@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import TarjetaCiudad from "@/components/TarjetaCiudad";
+import { buscarImagenHero } from "@/lib/heroImage";
 import { getMunicipiosConRankings } from "@/lib/queries";
 
 export const revalidate = 86400;
@@ -42,9 +43,9 @@ export default async function RankingsHomePage() {
               <li key={m.id}>
                 <TarjetaCiudad
                   nombre={m.nombre}
-                  slug={m.slug}
                   href={`/rankings/${m.comunidad.slug}/${m.slug}`}
                   color={COLORES[i % COLORES.length]}
+                  imagen={buscarImagenHero(m.slug)}
                 />
               </li>
             ))}

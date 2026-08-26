@@ -26,8 +26,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ comunidad: string; municipio: string }>;
 }): Promise<Metadata> {
-  const { comunidad, municipio: municipioSlug } = await params;
-  const municipio = await getMunicipio(comunidad, municipioSlug);
+  const { municipio: municipioSlug } = await params;
+  const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
   const t = await getTranslations("Listados");
   return { title: `${t("seccionTitulo", { municipio: municipio.nombre })} | Planes España` };
@@ -39,7 +39,7 @@ export default async function RankingsIndexPage({
   params: Promise<{ comunidad: string; municipio: string }>;
 }) {
   const { comunidad: comunidadSlug, municipio: municipioSlug } = await params;
-  const municipio = await getMunicipio(comunidadSlug, municipioSlug);
+  const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
   const [listados, tNav, t, tSecciones] = await Promise.all([
@@ -94,7 +94,7 @@ export default async function RankingsIndexPage({
           </div>
         )}
 
-        <MunicipioPageNav comunidadSlug={comunidadSlug} municipioSlug={municipioSlug} municipioNombre={municipio.nombre} />
+        <MunicipioPageNav municipioSlug={municipioSlug} municipioNombre={municipio.nombre} />
       </div>
     </main>
   );

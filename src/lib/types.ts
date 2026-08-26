@@ -102,10 +102,12 @@ export const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
   otros: "Otros planes",
 };
 
+export const CATEGORIAS_CON_PAGINA = ["conciertos", "exposiciones", "teatro", "monologos"] as const;
+
 export function esCategoriaConPagina(
   slug: string
 ): slug is Exclude<Categoria, "otros" | "deporte" | "ferias" | "fiestas" | "cine"> {
-  return slug === "conciertos" || slug === "exposiciones" || slug === "teatro" || slug === "monologos";
+  return (CATEGORIAS_CON_PAGINA as readonly string[]).includes(slug);
 }
 
 // "Listados" (rankings tipo premio) — sección totalmente aparte de

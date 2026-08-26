@@ -20,7 +20,7 @@ import type { PuestoListado } from "@/lib/types";
 export const revalidate = 86400;
 
 async function cargar(comunidadSlug: string, municipioSlug: string, rankingSlug: string) {
-  const municipio = await getMunicipio(comunidadSlug, municipioSlug);
+  const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return null;
   const resultado = await getListado(municipio.id, rankingSlug);
   if (!resultado) return null;
@@ -221,7 +221,7 @@ export default async function RankingPage({
           </section>
         )}
 
-        <MunicipioPageNav comunidadSlug={comunidadSlug} municipioSlug={municipioSlug} municipioNombre={municipio.nombre} />
+        <MunicipioPageNav municipioSlug={municipioSlug} municipioNombre={municipio.nombre} />
       </div>
     </main>
   );

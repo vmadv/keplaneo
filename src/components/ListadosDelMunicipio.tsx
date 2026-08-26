@@ -24,12 +24,10 @@ const ICONO_SECCION: Record<SeccionListado, typeof Trophy> = {
 export default async function ListadosDelMunicipio({
   municipioId,
   municipioNombre,
-  comunidadSlug,
   municipioSlug,
 }: {
   municipioId: string;
   municipioNombre: string;
-  comunidadSlug: string;
   municipioSlug: string;
 }) {
   const [listados, t, tSecciones] = await Promise.all([
@@ -39,7 +37,10 @@ export default async function ListadosDelMunicipio({
   ]);
   if (listados.length === 0) return null;
 
-  const base = `/rankings/${comunidadSlug}/${municipioSlug}`;
+  // Rankings todavía vive en /rankings/andalucia/{municipio}/... (Fase 2
+  // pendiente de mover a la jerarquía completa) — "andalucia" se queda fijo
+  // aquí a propósito mientras tanto.
+  const base = `/rankings/andalucia/${municipioSlug}`;
   const grupos = agruparPorSeccion(listados);
 
   return (

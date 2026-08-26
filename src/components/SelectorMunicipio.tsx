@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, MapPin } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 
 interface MunicipioItem {
@@ -9,21 +9,23 @@ interface MunicipioItem {
   nombre: string;
 }
 
-// Pill "Sevilla ▾" junto al logo (mismo patrón que Time Out u otros sitios
-// multi-ciudad): la navegación se queda centrada en el municipio actual,
-// pero siempre hay una salida rápida para saltar a otro sin volver a portada.
+// Se muestra pegado al logo, alineado por la base de línea. Con ciudad
+// real en contexto, tiene el mismo peso/tamaño que "keplaneo" — se lee
+// como una sola marca ("keplaneo Sevilla"). Sin ciudad (portada,
+// /elige-ciudad...) cae a `placeholder`, más pequeño y apagado, para no
+// competir con el logo cuando no hay nada que afirmar todavía.
 export default function SelectorMunicipio({
-  comunidadSlug,
   actual,
   municipios,
+  placeholder,
 }: {
-  comunidadSlug: string;
-  actual: string;
+  actual: string | null;
   municipios: MunicipioItem[];
+  placeholder: string;
 }) {
   const [abierto, setAbierto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const nombreActual = municipios.find((m) => m.slug === actual)?.nombre ?? actual;
+  const nombreActual = actual ? (municipios.find((m) => m.slug === actual)?.nombre ?? placeholder) : placeholder;
 
   useEffect(() => {
     function alClicarFuera(e: MouseEvent) {
@@ -39,12 +41,17 @@ export default function SelectorMunicipio({
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
-        className="btn-secondary text-sm px-3 py-1.5 flex items-center gap-1"
+        className={`flex items-center gap-0.5 leading-none hover:opacity-70 transition-opacity ${
+          actual ? "font-extrabold text-lg tracking-tight" : "font-bold text-sm"
+        }`}
+        style={{
+          fontFamily: "var(--font-outfit), system-ui, sans-serif",
+          color: actual ? "var(--accent)" : "var(--muted-foreground)",
+        }}
       >
-        <MapPin size={13} strokeWidth={2.5} />
         {nombreActual}
         <ChevronDown
-          size={14}
+          size={actual ? 18 : 14}
           strokeWidth={2.5}
           style={{ transform: abierto ? "rotate(180deg)" : undefined, transition: "transform 0.2s" }}
         />
@@ -58,7 +65,7 @@ export default function SelectorMunicipio({
           {municipios.map((m) => (
             <Link
               key={m.slug}
-              href={`/${comunidadSlug}/${m.slug}`}
+              href={`/${m.slug}`}
               onClick={() => setAbierto(false)}
               className="block px-4 py-2 text-sm font-bold hover:opacity-70"
               style={{ color: m.slug === actual ? "var(--accent)" : "var(--foreground)" }}

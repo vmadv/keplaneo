@@ -11,7 +11,8 @@
     "tematica": "Temática",
     "verTodosLosPlanes": "Ver todos los planes de {municipio} →",
     "queHacer": "Qué hacer",
-    "listados": "Rankings"
+    "listados": "Rankings",
+    "ciudad": "Ciudad"
   },
   "Filtros": {
     "hoy": "Hoy",
@@ -141,18 +142,21 @@
   "Home": {
     "titulo": "Keplaneo",
     "descripcion": "Los mejores planes de la provincia de Sevilla, ciudad a ciudad.",
-    "sinComunidades": "Todavía no hay comunidades cargadas.",
     "sinMunicipios": "Todavía no hay municipios cargados.",
     "tituloCiudades": "Ciudades disponibles",
-    "tituloHoy": "Qué hacer hoy",
-    "tituloFinde": "Qué hacer este fin de semana",
-    "tituloMes": "Qué hacer este mes",
+    "verMasCiudades": "Ver más ciudades",
+    "verMenosCiudades": "Ver menos",
+    "tituloFiltros": "Descubre más planes",
+    "tituloCategorias": "Por categoría",
     "tituloSevilla": "Los mejores planes en Sevilla",
     "tituloProvincia": "Los mejores planes en la provincia",
     "tituloPareja": "En pareja",
     "tituloFamilia": "En familia",
     "tituloGratis": "Gratis",
     "vacioSeccion": "Todavía no hay planes detectados para esto. Vuelve a revisar en unas horas."
+  },
+  "ElegirCiudad": {
+    "subtitulo": "Elige una ciudad para ver estos planes."
   },
   "Newsletter": {
     "titulo": "No te pierdas los planes de {municipio}",

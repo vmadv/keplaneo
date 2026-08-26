@@ -7,19 +7,6 @@ import { hoyISO, proximosMesesSlugs } from "@/lib/dates";
 
 export const maxDuration = 300;
 
-interface MunicipioConComunidadSlug {
-  id: string;
-  slug: string;
-  nombre: string;
-  comunidades: { slug: string } | { slug: string }[] | null;
-}
-
-function comunidadSlugDe(m: MunicipioConComunidadSlug): string | null {
-  const c = m.comunidades;
-  if (!c) return null;
-  return Array.isArray(c) ? (c[0]?.slug ?? null) : c.slug;
-}
-
 // Genera el mes en curso y los dos siguientes (mismo criterio que la
 // navegación "Por mes" — nunca se enlaza un mes que no se ha generado).
 export async function GET(request: NextRequest) {
@@ -39,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   const { data: municipios, error } = await supabaseAdmin
     .from("municipios")
-    .select("id, slug, nombre, comunidades(slug)")
+    .select("id, slug, nombre")
     .order("prioridad");
 
   if (error || !municipios) {
@@ -51,7 +38,7 @@ export async function GET(request: NextRequest) {
 
   const resultados = [];
 
-  for (const municipio of municipios as unknown as MunicipioConComunidadSlug[]) {
+  for (const municipio of municipios) {
     for (const mes of meses) {
       try {
         const { planes, usage } = await generarPlanesDelMes(municipio.nombre, mes);
@@ -103,12 +90,9 @@ export async function GET(request: NextRequest) {
           coste_estimado: estimarCoste(usage),
         });
 
-        const comunidadSlug = comunidadSlugDe(municipio);
-        if (comunidadSlug) {
-          const base = `/${comunidadSlug}/${municipio.slug}`;
-          revalidatePath(`${base}/${mes}`);
-          Array.from(vinculos.values()).forEach((v) => revalidatePath(`${base}/eventos/${v.slug}`));
-        }
+        const base = `/${municipio.slug}`;
+        revalidatePath(`${base}/${mes}`);
+        Array.from(vinculos.values()).forEach((v) => revalidatePath(`${base}/eventos/${v.slug}`));
 
         resultados.push({ municipio: municipio.slug, mes, estado: "ok", planes: planes.length });
       } catch (err) {
