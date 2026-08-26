@@ -33,6 +33,10 @@ export async function generateMetadata({
   return {
     title: t("titulo"),
     description: t("descripcion"),
+    // Todavía en pruebas: fuera de buscadores hasta que decidamos lanzarlo
+    // de verdad. Quitar este bloque (y supabase/robots.ts) para permitir
+    // indexación.
+    robots: { index: false, follow: false },
   };
 }
 
