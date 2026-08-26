@@ -27,7 +27,7 @@ export default async function PlanesPageLayout({
 }) {
   const base = `/${municipioSlug}`;
   const [primarios, secundarios, tNav] = await Promise.all([
-    construirFiltrosTemporales(base, current.vigencia),
+    construirFiltrosTemporales(base, current.vigencia, current.audiencia),
     construirFiltrosSecundarios(base, { tipo: current.vigencia }, current.audiencia),
     getTranslations("Nav"),
   ]);

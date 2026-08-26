@@ -43,7 +43,7 @@ export default async function EstaSemanaAudienciaPage({
   const [todos, primarios, secundarios, tNav, tFiltros, tSemana, tAudiencia, tPlanList] =
     await Promise.all([
       getEventosActivos(municipio.id, audiencia),
-      construirFiltrosTemporales(base, "semana"),
+      construirFiltrosTemporales(base, "semana", audiencia),
       construirFiltrosSecundarios(base, { tipo: "semana" }, audiencia),
       getTranslations("Nav"),
       getTranslations("Filtros"),

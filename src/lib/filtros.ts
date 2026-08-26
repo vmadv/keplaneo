@@ -15,13 +15,23 @@ export interface FiltroTemporalItem {
 // de enlaces sueltos a páginas separadas. Los slugs de mes en la URL se
 // quedan siempre en español (mismo criterio que los topónimos); solo la
 // etiqueta visible se traduce.
-export async function construirFiltrosTemporales(base: string, activo: string): Promise<FiltroTemporalItem[]> {
+//
+// audienciaActiva: si ya hay un filtro de "en pareja/familia" puesto, los
+// tres primeros (hoy/finde/semana) lo mantienen al cambiar entre ellos —
+// solo esos tres tienen página combinada con audiencia; los meses no, así
+// que ahí nunca se añade (no hay `/agosto/pareja`).
+export async function construirFiltrosTemporales(
+  base: string,
+  activo: string,
+  audienciaActiva?: "pareja" | "familia"
+): Promise<FiltroTemporalItem[]> {
   const [t, tMeses] = await Promise.all([getTranslations("Filtros"), getTranslations("Meses")]);
   const meses = proximosMesesSlugs(2);
+  const sufijoAudiencia = audienciaActiva ? `/${audienciaActiva}` : "";
   return [
-    { label: t("hoy"), href: `${base}/hoy`, activo: activo === "hoy" },
-    { label: t("finde"), href: `${base}/fin-de-semana`, activo: activo === "finde" },
-    { label: t("semana"), href: `${base}/esta-semana`, activo: activo === "semana" },
+    { label: t("hoy"), href: `${base}/hoy${sufijoAudiencia}`, activo: activo === "hoy" },
+    { label: t("finde"), href: `${base}/fin-de-semana${sufijoAudiencia}`, activo: activo === "finde" },
+    { label: t("semana"), href: `${base}/esta-semana${sufijoAudiencia}`, activo: activo === "semana" },
     ...meses.map((mes) => {
       const nombre = tMeses(mes);
       return {
