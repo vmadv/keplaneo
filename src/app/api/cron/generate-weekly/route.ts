@@ -3,17 +3,20 @@ import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generarPlanesSemanales, estimarCoste } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
-import { fechasDeLaSemana, formatearFechaISO, formatearFechaLegible } from "@/lib/dates";
+import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
 
 export const maxDuration = 300;
 
-// Corre los lunes: genera de una vez la agenda completa de la semana
-// (lunes a domingo) por municipio, en vez de repetir la búsqueda cada día.
-// Cada evento real se redacta una sola vez aquí — el repaso diario
-// (generate-daily) solo añade lo que salga nuevo el resto de la semana, sin
-// volver a describir esto. Ver src/lib/planesPorDia.ts para el reparto por
-// día y src/lib/gemini.ts::generarPlanesSemanales para el prompt.
+// Programado para los lunes: genera de una vez la agenda completa de la
+// semana (lunes a domingo) por municipio, en vez de repetir la búsqueda
+// cada día. Cada evento real se redacta una sola vez aquí — el repaso
+// diario (generate-daily) solo añade lo que salga nuevo el resto de la
+// semana, sin volver a describir esto. Ver src/lib/planesPorDia.ts para el
+// reparto por día y src/lib/gemini.ts::generarPlanesSemanales para el
+// prompt. Calcula la semana a partir del lunes real (no de "hoy" a secas),
+// así que relanzarlo a mano cualquier día de la semana sigue generando la
+// semana en curso correctamente, no una ventana desplazada.
 
 function pathsDelMunicipio(base: string): string[] {
   return [
@@ -43,7 +46,11 @@ export async function GET(request: NextRequest) {
 
   const hoy = new Date();
   const hoyISOStr = formatearFechaISO(hoy);
-  const diasSemana = fechasDeLaSemana(hoy); // el cron corre en lunes, así que "hoy" ya es el lunes de la semana a generar
+  // No asumir que "hoy" es lunes solo porque el cron esté pensado para
+  // correr ese día — calcular el lunes de verdad hace que sea seguro
+  // relanzarlo a mano cualquier día, o si el horario del cron cambia en
+  // el futuro (ver conversación).
+  const diasSemana = fechasDeLaSemana(lunesDeLaSemanaActual());
   const fechasISOSemana = diasSemana.map(formatearFechaISO);
 
   const { data: municipios, error } = await supabaseAdmin
