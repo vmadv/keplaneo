@@ -108,6 +108,27 @@ a {
     transform: translate(-1px, -1px);
   }
 
+  /* display:contents saca el <details> del flujo como caja propia para que
+     su <summary> se comporte como una pastilla más dentro de la fila de
+     filtros temporales; el panel desplegable se fuerza a su propia línea
+     con flex-basis:100% (ver .filtro-disclosure-panel en el componente). */
+  .filtro-disclosure {
+    display: contents;
+  }
+  .filtro-disclosure > summary {
+    list-style: none;
+    width: fit-content;
+  }
+  .filtro-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+  .filtro-disclosure > summary svg {
+    transition: transform 0.2s ease;
+  }
+  .filtro-disclosure[open] > summary svg {
+    transform: rotate(180deg);
+  }
+
   .card-sticker {
     background: var(--card);
     border: 2px solid var(--foreground);

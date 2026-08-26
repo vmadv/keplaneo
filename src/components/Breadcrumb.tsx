@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 
 export interface BreadcrumbItem {
   label: string;
@@ -24,9 +25,9 @@ export default function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
           <li key={i} className="flex items-center gap-1">
             {i > 0 && <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />}
             {item.href ? (
-              <a href={item.href} className="hover:underline decoration-2 underline-offset-2">
+              <Link href={item.href} className="hover:underline decoration-2 underline-offset-2">
                 {item.label}
-              </a>
+              </Link>
             ) : (
               <span style={{ color: "var(--foreground)" }}>{item.label}</span>
             )}

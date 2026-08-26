@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { generarPlanesDiarios, estimarCoste } from "@/lib/gemini";
+import { generarNovedades, estimarCoste } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
-import { hoyISO } from "@/lib/dates";
+import { hoyISO, fechaDeHoyLegible, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "@/lib/dates";
+import { calcularFilasPorDia } from "@/lib/planesPorDia";
 
 export const maxDuration = 300;
+
+// Corre de martes a domingo: la agenda de la semana ya se generó por
+// completo el lunes (generate-weekly), así que esto solo busca planes
+// NUEVOS que no conociéramos todavía — nunca vuelve a redactar lo que ya
+// existe, que es justo lo que antes causaba duplicados (el mismo evento
+// real con un título ligeramente distinto cada día). Los lunes no hace
+// nada: ese día ya está cubierto por el cron semanal.
 
 interface MunicipioConComunidadSlug {
   id: string;
@@ -20,19 +28,43 @@ function comunidadSlugDe(m: MunicipioConComunidadSlug): string | null {
   return Array.isArray(c) ? (c[0]?.slug ?? null) : c.slug;
 }
 
+function pathsDelMunicipio(base: string): string[] {
+  return [
+    base,
+    `${base}/hoy`,
+    `${base}/hoy/pareja`,
+    `${base}/hoy/familia`,
+    `${base}/fin-de-semana`,
+    `${base}/fin-de-semana/pareja`,
+    `${base}/fin-de-semana/familia`,
+    `${base}/esta-semana`,
+    `${base}/esta-semana/pareja`,
+    `${base}/esta-semana/familia`,
+    `${base}/esta-semana/gratis`,
+    `${base}/gratis`,
+  ];
+}
+
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
   if (!supabaseAdmin) {
-    return NextResponse.json(
-      { error: "Falta SUPABASE_SERVICE_ROLE_KEY" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Falta SUPABASE_SERVICE_ROLE_KEY" }, { status: 500 });
   }
 
   const hoy = hoyISO();
+  const diaSemana = new Date().getDay(); // 0=domingo … 6=sábado
+
+  if (diaSemana === 1) {
+    return NextResponse.json({ fecha: hoy, resultados: [], nota: "Lunes: cubierto por generate-weekly" });
+  }
+
+  const enfoqueFinde = diaSemana === 5; // viernes: prestar atención especial al finde
+  const diasRestantesSemana = fechasDeLaSemana(lunesDeLaSemanaActual()).filter(
+    (d) => formatearFechaISO(d) >= hoy
+  );
 
   const { data: municipios, error } = await supabaseAdmin
     .from("municipios")
@@ -40,47 +72,57 @@ export async function GET(request: NextRequest) {
     .order("prioridad");
 
   if (error || !municipios) {
-    return NextResponse.json(
-      { error: error?.message ?? "Sin municipios" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error?.message ?? "Sin municipios" }, { status: 500 });
   }
 
   const resultados = [];
 
   for (const municipio of municipios as unknown as MunicipioConComunidadSlug[]) {
     try {
-      const { planes, usage } = await generarPlanesDiarios(municipio.nombre);
-
-      // Los planes "excepcional" obtienen (o mantienen) una página propia
-      // con URL estable; el mismo evento no cambia de slug entre días.
-      const vinculos = await upsertEventosDelLote(municipio.id, municipio.nombre, planes, hoy);
-
-      // El lote de hoy sustituye por completo al del día anterior para este
-      // municipio: no se acumulan planes viejos. Esto es solo el listado —
-      // el detalle de los eventos vive en la tabla `eventos`, que no se toca.
-      const { error: errorDelete } = await supabaseAdmin
-        .from("planes")
-        .delete()
+      const { data: conocidos, error: errorConocidos } = await supabaseAdmin
+        .from("eventos")
+        .select("titulo")
         .eq("municipio_id", municipio.id)
-        .eq("fecha_generacion", hoy);
-      if (errorDelete) throw new Error(`planes.delete: ${errorDelete.message}`);
+        .eq("activo", true);
+      if (errorConocidos) throw new Error(`eventos.select conocidos: ${errorConocidos.message}`);
 
-      const { error: errorInsert } = await supabaseAdmin.from("planes").insert(
-        planes.map((p, i) => ({
-          municipio_id: municipio.id,
-          fecha_generacion: hoy,
-          titulo: p.titulo,
-          descripcion: p.descripcion,
-          momento: p.momento,
-          vigencia: p.vigencia,
-          audiencia: p.audiencia,
-          tipo: p.tipo,
-          evento_id: vinculos.get(i)?.id ?? null,
-          fuente: p.fuente ?? null,
-        }))
+      const titulosConocidos = (conocidos ?? []).map((e) => e.titulo);
+
+      const { planes, usage } = await generarNovedades(
+        municipio.nombre,
+        fechaDeHoyLegible(),
+        titulosConocidos,
+        enfoqueFinde
       );
-      if (errorInsert) throw new Error(`planes.insert: ${errorInsert.message}`);
+
+      let filasInsertadas = 0;
+      let vinculosNuevos: string[] = [];
+
+      if (planes.length > 0) {
+        // Repaso parcial: no desactiva nada, solo añade lo nuevo.
+        const vinculos = await upsertEventosDelLote(municipio.id, municipio.nombre, planes, hoy, false);
+        const filas = calcularFilasPorDia(planes, diasRestantesSemana);
+
+        if (filas.length > 0) {
+          const { error: errorInsert } = await supabaseAdmin.from("planes").insert(
+            filas.map((f) => ({
+              municipio_id: municipio.id,
+              fecha_generacion: f.fechaISO,
+              titulo: f.plan.titulo,
+              descripcion: f.plan.descripcion,
+              momento: f.plan.momento,
+              vigencia: f.vigencia,
+              audiencia: f.plan.audiencia,
+              tipo: f.plan.tipo,
+              evento_id: vinculos.get(f.indice)?.id ?? null,
+              fuente: f.plan.fuente ?? null,
+            }))
+          );
+          if (errorInsert) throw new Error(`planes.insert: ${errorInsert.message}`);
+          filasInsertadas = filas.length;
+        }
+        vinculosNuevos = Array.from(vinculos.values()).map((v) => v.slug);
+      }
 
       await supabaseAdmin.from("generation_log").insert({
         municipio_id: municipio.id,
@@ -94,19 +136,12 @@ export async function GET(request: NextRequest) {
       const comunidadSlug = comunidadSlugDe(municipio);
       if (comunidadSlug) {
         const base = `/${comunidadSlug}/${municipio.slug}`;
-        [
-          base,
-          `${base}/hoy`,
-          `${base}/hoy/pareja`,
-          `${base}/hoy/familia`,
-          `${base}/fin-de-semana`,
-          `${base}/fin-de-semana/pareja`,
-          `${base}/fin-de-semana/familia`,
-          ...Array.from(vinculos.values()).map((v) => `${base}/eventos/${v.slug}`),
-        ].forEach((path) => revalidatePath(path));
+        [...pathsDelMunicipio(base), ...vinculosNuevos.map((slug) => `${base}/eventos/${slug}`)].forEach((path) =>
+          revalidatePath(path)
+        );
       }
 
-      resultados.push({ municipio: municipio.slug, estado: "ok", planes: planes.length });
+      resultados.push({ municipio: municipio.slug, estado: "ok", novedades: planes.length, filas: filasInsertadas });
     } catch (err) {
       await supabaseAdmin.from("generation_log").insert({
         municipio_id: municipio.id,

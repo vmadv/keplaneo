@@ -1,14 +1,19 @@
+import { getTranslations } from "next-intl/server";
 import Breadcrumb, { type BreadcrumbItem } from "./Breadcrumb";
+import FiltrosPagina from "./FiltrosPagina";
 import PlanList from "./PlanList";
-import MunicipioPageNav from "./MunicipioPageNav";
+import HeroPortada from "./HeroPortada";
 import type { Plan } from "@/lib/types";
 import type { MunicipioConComunidad } from "@/lib/queries";
+import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
+import { buscarImagenHero } from "@/lib/heroImage";
 
-export default function PlanesPageLayout({
+export default async function PlanesPageLayout({
   municipio,
   comunidadSlug,
   municipioSlug,
   titulo,
+  fecha,
   planes,
   current,
   breadcrumbExtra,
@@ -17,28 +22,37 @@ export default function PlanesPageLayout({
   comunidadSlug: string;
   municipioSlug: string;
   titulo: string;
+  fecha?: string;
   planes: Plan[];
   current: { vigencia: "hoy" | "finde"; audiencia?: "pareja" | "familia" };
   breadcrumbExtra: BreadcrumbItem[];
 }) {
+  const base = `/${comunidadSlug}/${municipioSlug}`;
+  const [primarios, secundarios, tNav] = await Promise.all([
+    construirFiltrosTemporales(base, current.vigencia),
+    construirFiltrosSecundarios(base, { tipo: current.vigencia }, current.audiencia),
+    getTranslations("Nav"),
+  ]);
+  const imagenHero = buscarImagenHero(municipio.slug);
+
   return (
     <main className="flex-1 bg-dots">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Breadcrumb
           items={[
-            { label: "Inicio", href: "/" },
+            { label: tNav("inicio"), href: "/" },
             { label: municipio.comunidad.nombre, href: `/${comunidadSlug}` },
-            { label: municipio.nombre, href: `/${comunidadSlug}/${municipioSlug}` },
+            { label: municipio.nombre, href: base },
             ...breadcrumbExtra,
           ]}
         />
-        <h1 className="text-4xl font-extrabold mt-4 mb-8 text-balance">{titulo}</h1>
-        <PlanList planes={planes} base={`/${comunidadSlug}/${municipioSlug}`} />
-        <MunicipioPageNav
-          comunidadSlug={comunidadSlug}
-          municipioSlug={municipioSlug}
-          municipioNombre={municipio.nombre}
-          current={current}
+        <HeroPortada imagenHero={imagenHero} alt={municipio.nombre} titulo={titulo} fecha={fecha} />
+        <FiltrosPagina primarios={primarios} secundarios={secundarios} />
+        <PlanList
+          planes={planes}
+          base={base}
+          mostrarDiaFinde={current.vigencia === "finde"}
+          contexto={current.vigencia}
         />
       </div>
     </main>

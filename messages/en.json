@@ -1,0 +1,218 @@
+{
+  "Sitio": {
+    "titulo": "Planes España",
+    "descripcion": "What to do today, this weekend, or this month, town by town in Spain."
+  },
+  "Nav": {
+    "inicio": "Home",
+    "masFiltros": "More filters",
+    "audiencia": "Audience",
+    "precio": "Price",
+    "tematica": "Category",
+    "verTodosLosPlanes": "See all plans in {municipio} →",
+    "queHacer": "What to do",
+    "listados": "Rankings"
+  },
+  "Filtros": {
+    "hoy": "Today",
+    "finde": "This weekend",
+    "semana": "This week",
+    "enPareja": "For couples",
+    "enFamilia": "For families",
+    "gratis": "Free",
+    "todos": "All"
+  },
+  "Badges": {
+    "eventoPuntual": "One-time event",
+    "finalizado": "Ended",
+    "deDia": "Daytime",
+    "deNoche": "Evening"
+  },
+  "Audiencia": {
+    "pareja": "For couples",
+    "familia": "For families",
+    "generico": "For everyone"
+  },
+  "Meses": {
+    "enero": "January",
+    "febrero": "February",
+    "marzo": "March",
+    "abril": "April",
+    "mayo": "May",
+    "junio": "June",
+    "julio": "July",
+    "agosto": "August",
+    "septiembre": "September",
+    "octubre": "October",
+    "noviembre": "November",
+    "diciembre": "December"
+  },
+  "PlanList": {
+    "vacioGeneral": "No specific plans for this combination yet. Check back in a few hours, or browse the other options below.",
+    "vacioCategoria": "No plans detected in this category yet. Check back in a few days.",
+    "vacioSemana": "No plans detected for this week yet. Check back in a few days.",
+    "vacioSemanaFiltro": "No plans detected for this week with this filter yet. Check back in a few days.",
+    "vacioSemanaGratis": "No free plans detected for this week yet. Check back in a few days.",
+    "reservar": "Book →"
+  },
+  "ComunidadHome": {
+    "titulo": "What to do in {comunidad}"
+  },
+  "MunicipioHome": {
+    "titulo": "What to do in {municipio}",
+    "hoyFecha": "Today, {fecha}"
+  },
+  "Hoy": {
+    "titulo": "What to do today in {municipio}",
+    "tituloAudiencia": "What to do today in {municipio} {audiencia}"
+  },
+  "Finde": {
+    "titulo": "What to do this weekend in {municipio}",
+    "tituloAudiencia": "What to do this weekend in {municipio} {audiencia}"
+  },
+  "Semana": {
+    "titulo": "What to do this week in {municipio}",
+    "tituloAudiencia": "What to do this week in {municipio} {audiencia}",
+    "tituloGratis": "Free things to do this week in {municipio}"
+  },
+  "Gratis": {
+    "titulo": "Free things to do today in {municipio} ({fecha})",
+    "breadcrumb": "Free today"
+  },
+  "Mes": {
+    "titulo": "What to do in {municipio} in {mes}"
+  },
+  "Categoria": {
+    "titulo": "{categoria} in {municipio}"
+  },
+  "CategoriaCombo": {
+    "hoy": "{categoria} today in {municipio} ({fecha})",
+    "finde": "{categoria} this weekend in {municipio} ({fecha})",
+    "mes": "{categoria} in {municipio} in {mes}"
+  },
+  "NearbyMunicipios": {
+    "titulo": "Plans near {municipio}",
+    "queHacerHoyEn": "What to do today in {municipio}"
+  },
+  "MunicipioPageNav": {
+    "titulo": "More plans in {municipio}",
+    "hoyGeneral": "Today (general)",
+    "hoyPareja": "Today for couples",
+    "hoyFamilia": "Today for families",
+    "findeGeneral": "This weekend (general)",
+    "findePareja": "This weekend for couples",
+    "findeFamilia": "This weekend for families",
+    "estaSemana": "This week",
+    "verTodos": "See all plans in {municipio} →"
+  },
+  "TiempoWidget": {
+    "temperatura": "Temperature",
+    "sensacion": "Feels like",
+    "humedad": "Humidity",
+    "viento": "Wind",
+    "minima": "Low",
+    "maxima": "High",
+    "termica": "",
+    "media": "average",
+    "maximo": "peak"
+  },
+  "Tiempo": {
+    "tituloHoy": "Today's weather{sufijoHora}",
+    "tituloFinde": "Weather for {dia}{sufijoHora}",
+    "sufijoHora": " at {hora}",
+    "diaSabado": "Saturday",
+    "diaDomingo": "Sunday"
+  },
+  "Evento": {
+    "donde": "Where",
+    "horario": "Schedule",
+    "precio": "Price",
+    "fechas": "Dates",
+    "fuente": "Source",
+    "desdeEl": "From {fecha}",
+    "hastaEl": "Until {fecha}",
+    "preguntasFrecuentes": "Frequently asked questions",
+    "verEnGoogleMaps": "See \"{lugar}\" on Google Maps",
+    "otrosPlanesEn": "Other plans in {municipio} {cuando}",
+    "cuandoHoy": "today",
+    "cuandoFinde": "this weekend",
+    "cuandoMes": "in {mes}"
+  },
+  "Home": {
+    "sinComunidades": "No regions loaded yet."
+  },
+  "Newsletter": {
+    "titulo": "Don't miss out on plans in {municipio}",
+    "descripcion": "We'll email you when there's something new. No spam, unsubscribe anytime.",
+    "placeholder": "you@email.com",
+    "boton": "Notify me",
+    "enviando": "Sending...",
+    "exito": "Done! We'll let you know about plans in {municipio}.",
+    "error": "Something went wrong, please try again.",
+    "cerrar": "Close"
+  },
+  "Categorias": {
+    "conciertos": "Concerts",
+    "exposiciones": "Exhibitions",
+    "teatro": "Theater",
+    "monologos": "Stand-up comedy",
+    "deporte": "Sports",
+    "ferias": "Fairs & markets",
+    "fiestas": "Festivals",
+    "cine": "Cinema",
+    "otros": "Other plans"
+  },
+  "CategoriasSingular": {
+    "conciertos": "Concert",
+    "exposiciones": "Exhibition",
+    "teatro": "Theater",
+    "monologos": "Stand-up",
+    "deporte": "Sports",
+    "ferias": "Fair",
+    "fiestas": "Festival",
+    "cine": "Cinema",
+    "otros": "Other"
+  },
+  "Listados": {
+    "tituloGeneral": "Rankings",
+    "subtituloGeneral": "Choose a city to see its rankings: the best restaurants, health, education and much more, picked by real reputation and verified with Google Maps data.",
+    "sinCiudades": "No rankings published yet in any city.",
+    "seccionTitulo": "The best of {municipio}",
+    "sinListados": "No rankings published yet for {municipio}.",
+    "numeroRankings": "{n} rankings",
+    "tituloSeccion": "{seccion} in {municipio}",
+    "verTodos": "See all rankings",
+    "breadcrumb": "Rankings",
+    "puesto": "#{posicion}",
+    "resenas": "{n} reviews",
+    "sinResenasSuficientes": "Not enough reviews yet",
+    "verFicha": "See full profile",
+    "metodologiaTitulo": "How this ranking is calculated",
+    "metodologiaTexto": "We start from a real search for places with specific reputation for this (not just general popularity) and rank them by that reputation. Each one is then verified with objective Google Maps data: only places with a minimum rating of {ratingMinimo} and at least {resenasMinimas} reviews make the list.",
+    "metodologiaTextoSinRating": "We start from a real search for places with genuine reputation and recognition for this, and rank them by that. In this category, the number of Google Maps reviews isn't a reliable quality signal, so we don't apply a minimum rating — Google Maps is only used to confirm each place really exists, plus its address and photos.",
+    "preguntasFrecuentes": "Frequently asked questions",
+    "actualizado": "Updated on {fecha}"
+  },
+  "ListadosSecciones": {
+    "restaurantes": "Restaurants & bars",
+    "alojamiento": "Accommodation",
+    "salud": "Health",
+    "educacion": "Education",
+    "bellezaBienestar": "Beauty & wellness",
+    "ocio": "Nightlife",
+    "servicios": "Services",
+    "otros": "Other"
+  },
+  "Lugar": {
+    "breadcrumb": "Places",
+    "rating": "{rating} · {n} reviews",
+    "direccion": "Address",
+    "telefono": "Phone",
+    "web": "Website",
+    "horario": "Opening hours",
+    "reservar": "Book",
+    "gestionadoPorNegocio": "Managed by the business",
+    "otrosListados": "Also featured in",
+    "puestoEn": "#{posicion} in {titulo}"
+  }
+}

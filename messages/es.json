@@ -1,0 +1,218 @@
+{
+  "Sitio": {
+    "titulo": "Planes España",
+    "descripcion": "Qué hacer hoy, este fin de semana o este mes, municipio a municipio."
+  },
+  "Nav": {
+    "inicio": "Inicio",
+    "masFiltros": "Más filtros",
+    "audiencia": "Audiencia",
+    "precio": "Precio",
+    "tematica": "Temática",
+    "verTodosLosPlanes": "Ver todos los planes de {municipio} →",
+    "queHacer": "Qué hacer",
+    "listados": "Rankings"
+  },
+  "Filtros": {
+    "hoy": "Hoy",
+    "finde": "Este fin de semana",
+    "semana": "Esta semana",
+    "enPareja": "En pareja",
+    "enFamilia": "En familia",
+    "gratis": "Gratis",
+    "todos": "Todos"
+  },
+  "Badges": {
+    "eventoPuntual": "Evento puntual",
+    "finalizado": "Finalizado",
+    "deDia": "De día",
+    "deNoche": "De noche"
+  },
+  "Audiencia": {
+    "pareja": "En pareja",
+    "familia": "En familia",
+    "generico": "Para todos"
+  },
+  "Meses": {
+    "enero": "enero",
+    "febrero": "febrero",
+    "marzo": "marzo",
+    "abril": "abril",
+    "mayo": "mayo",
+    "junio": "junio",
+    "julio": "julio",
+    "agosto": "agosto",
+    "septiembre": "septiembre",
+    "octubre": "octubre",
+    "noviembre": "noviembre",
+    "diciembre": "diciembre"
+  },
+  "PlanList": {
+    "vacioGeneral": "Todavía no hay planes específicos para esta combinación. Vuelve a revisar en unas horas, o consulta las otras variantes más abajo.",
+    "vacioCategoria": "Todavía no hay planes detectados en esta categoría. Vuelve a revisar en unos días.",
+    "vacioSemana": "Todavía no hay planes detectados para esta semana. Vuelve a revisar en unos días.",
+    "vacioSemanaFiltro": "Todavía no hay planes detectados para esta semana con este filtro. Vuelve a revisar en unos días.",
+    "vacioSemanaGratis": "Todavía no hay planes gratis detectados para esta semana. Vuelve a revisar en unos días.",
+    "reservar": "Reservar →"
+  },
+  "ComunidadHome": {
+    "titulo": "Qué hacer en {comunidad}"
+  },
+  "MunicipioHome": {
+    "titulo": "Qué hacer en {municipio}",
+    "hoyFecha": "Hoy, {fecha}"
+  },
+  "Hoy": {
+    "titulo": "Qué hacer hoy en {municipio}",
+    "tituloAudiencia": "Qué hacer hoy en {municipio} {audiencia}"
+  },
+  "Finde": {
+    "titulo": "Qué hacer este fin de semana en {municipio}",
+    "tituloAudiencia": "Qué hacer este fin de semana en {municipio} {audiencia}"
+  },
+  "Semana": {
+    "titulo": "Qué hacer esta semana en {municipio}",
+    "tituloAudiencia": "Qué hacer esta semana en {municipio} {audiencia}",
+    "tituloGratis": "Qué hacer gratis esta semana en {municipio}"
+  },
+  "Gratis": {
+    "titulo": "Qué hacer gratis hoy en {municipio} ({fecha})",
+    "breadcrumb": "Gratis hoy"
+  },
+  "Mes": {
+    "titulo": "Qué hacer en {municipio} en {mes}"
+  },
+  "Categoria": {
+    "titulo": "{categoria} en {municipio}"
+  },
+  "CategoriaCombo": {
+    "hoy": "{categoria} hoy en {municipio} ({fecha})",
+    "finde": "{categoria} este fin de semana en {municipio} ({fecha})",
+    "mes": "{categoria} en {municipio} en {mes}"
+  },
+  "NearbyMunicipios": {
+    "titulo": "Planes cerca de {municipio}",
+    "queHacerHoyEn": "Qué hacer hoy en {municipio}"
+  },
+  "MunicipioPageNav": {
+    "titulo": "Más planes en {municipio}",
+    "hoyGeneral": "Hoy (general)",
+    "hoyPareja": "Hoy en pareja",
+    "hoyFamilia": "Hoy en familia",
+    "findeGeneral": "Este fin de semana (general)",
+    "findePareja": "Este fin de semana en pareja",
+    "findeFamilia": "Este fin de semana en familia",
+    "estaSemana": "Esta semana",
+    "verTodos": "Ver todos los planes de {municipio} →"
+  },
+  "TiempoWidget": {
+    "temperatura": "Temperatura",
+    "sensacion": "Sensación",
+    "humedad": "Humedad",
+    "viento": "Viento",
+    "minima": "Mínima",
+    "maxima": "Máxima",
+    "termica": "térmica",
+    "media": "media",
+    "maximo": "máximo"
+  },
+  "Tiempo": {
+    "tituloHoy": "Qué tiempo hace hoy{sufijoHora}",
+    "tituloFinde": "Qué tiempo hará {dia}{sufijoHora}",
+    "sufijoHora": " a las {hora}",
+    "diaSabado": "el sábado",
+    "diaDomingo": "el domingo"
+  },
+  "Evento": {
+    "donde": "Dónde",
+    "horario": "Horario",
+    "precio": "Precio",
+    "fechas": "Fechas",
+    "fuente": "Fuente",
+    "desdeEl": "Desde el {fecha}",
+    "hastaEl": "Hasta el {fecha}",
+    "preguntasFrecuentes": "Preguntas frecuentes",
+    "verEnGoogleMaps": "Ver \"{lugar}\" en Google Maps",
+    "otrosPlanesEn": "Otros planes en {municipio} {cuando}",
+    "cuandoHoy": "hoy",
+    "cuandoFinde": "este fin de semana",
+    "cuandoMes": "en {mes}"
+  },
+  "Home": {
+    "sinComunidades": "Todavía no hay comunidades cargadas."
+  },
+  "Newsletter": {
+    "titulo": "No te pierdas los planes de {municipio}",
+    "descripcion": "Te avisamos por email cuando haya algo nuevo. Sin spam, date de baja cuando quieras.",
+    "placeholder": "tu@email.com",
+    "boton": "Avisadme",
+    "enviando": "Enviando...",
+    "exito": "¡Listo! Te avisaremos de planes en {municipio}.",
+    "error": "Algo ha fallado, inténtalo de nuevo.",
+    "cerrar": "Cerrar"
+  },
+  "Categorias": {
+    "conciertos": "Conciertos",
+    "exposiciones": "Exposiciones",
+    "teatro": "Teatro",
+    "monologos": "Monólogos",
+    "deporte": "Deporte",
+    "ferias": "Ferias",
+    "fiestas": "Fiestas",
+    "cine": "Cine",
+    "otros": "Otros planes"
+  },
+  "CategoriasSingular": {
+    "conciertos": "Concierto",
+    "exposiciones": "Exposición",
+    "teatro": "Teatro",
+    "monologos": "Monólogo",
+    "deporte": "Deporte",
+    "ferias": "Feria",
+    "fiestas": "Fiesta",
+    "cine": "Cine",
+    "otros": "Otro"
+  },
+  "Listados": {
+    "tituloGeneral": "Rankings",
+    "subtituloGeneral": "Elige una ciudad para ver sus rankings: los mejores restaurantes, salud, educación y mucho más, elegidos por fama real y verificados con datos de Google Maps.",
+    "sinCiudades": "Todavía no hay rankings publicados en ninguna ciudad.",
+    "seccionTitulo": "Los mejores de {municipio}",
+    "sinListados": "Todavía no hay listados publicados para {municipio}.",
+    "numeroRankings": "{n} rankings",
+    "tituloSeccion": "{seccion} en {municipio}",
+    "verTodos": "Ver todos los rankings",
+    "breadcrumb": "Rankings",
+    "puesto": "#{posicion}",
+    "resenas": "{n} reseñas",
+    "sinResenasSuficientes": "Aún sin suficientes reseñas",
+    "verFicha": "Ver ficha completa",
+    "metodologiaTitulo": "Cómo se calcula este ranking",
+    "metodologiaTexto": "Partimos de una búsqueda real de qué sitios tienen fama específica en esto (no solo de ser populares en general) y los ordenamos por ese reconocimiento. Cada uno se verifica después con datos objetivos de Google Maps: solo entran los que tienen nota mínima de {ratingMinimo} y al menos {resenasMinimas} reseñas.",
+    "metodologiaTextoSinRating": "Partimos de una búsqueda real de qué sitios tienen fama y reconocimiento reales en esto, y los ordenamos por ese criterio. En esta categoría el número de reseñas en Google Maps no es un indicador fiable de calidad, así que no aplicamos un mínimo de nota — Google Maps se usa solo para confirmar que cada uno existe de verdad y para su dirección y fotos.",
+    "preguntasFrecuentes": "Preguntas frecuentes",
+    "actualizado": "Actualizado el {fecha}"
+  },
+  "ListadosSecciones": {
+    "restaurantes": "Restaurantes y bares",
+    "alojamiento": "Alojamiento",
+    "salud": "Salud",
+    "educacion": "Educación",
+    "bellezaBienestar": "Belleza y bienestar",
+    "ocio": "Ocio",
+    "servicios": "Servicios",
+    "otros": "Otros"
+  },
+  "Lugar": {
+    "breadcrumb": "Lugares",
+    "rating": "{rating} · {n} reseñas",
+    "direccion": "Dirección",
+    "telefono": "Teléfono",
+    "web": "Página web",
+    "horario": "Horario",
+    "reservar": "Reservar",
+    "gestionadoPorNegocio": "Gestionado por el negocio",
+    "otrosListados": "También aparece en",
+    "puestoEn": "#{posicion} en {titulo}"
+  }
+}

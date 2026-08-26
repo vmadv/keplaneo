@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabase";
 import { slugify } from "./slug";
 import { geocodificar } from "./geocode";
+import { fechaDesdeTextoEspanol } from "./dates";
 import type { PlanGenerado } from "./gemini";
 
 export interface EventoVinculado {
@@ -33,7 +34,14 @@ export async function upsertEventosDelLote(
   municipioId: string,
   municipioNombre: string,
   planes: PlanGenerado[],
-  hoy: string
+  hoy: string,
+  // true (generación semanal, "foto completa"): cualquier evento de este
+  // municipio no detectado hoy se marca inactivo — es correcto porque el
+  // lote representa TODO lo que hay. false (repaso diario, "solo lo
+  // nuevo"): el lote es parcial a propósito, así que desactivar por
+  // ausencia borraría de la vista eventos que siguen vigentes y que
+  // simplemente no tocaba repasar hoy.
+  desactivarNoEncontrados: boolean = true
 ): Promise<Map<number, EventoVinculado>> {
   const vinculos = new Map<number, EventoVinculado>();
   if (!supabaseAdmin) return vinculos;
@@ -53,6 +61,7 @@ export async function upsertEventosDelLote(
       fecha_fin: p.fecha_fin ?? null,
       fuente: p.fuente ?? null,
       preguntas_frecuentes: p.preguntas_frecuentes ?? [],
+      categoria: p.categoria ?? "otros",
     };
 
     const { data: existente, error: errorSelect } = await supabaseAdmin
@@ -107,13 +116,55 @@ export async function upsertEventosDelLote(
     }
   }
 
-  // Cualquier evento de este municipio no detectado hoy ya ha terminado.
-  const { error: errorInactivar } = await supabaseAdmin
-    .from("eventos")
-    .update({ activo: false })
-    .eq("municipio_id", municipioId)
-    .lt("ultima_deteccion", hoy);
-  if (errorInactivar) throw new Error(`eventos.inactivar: ${errorInactivar.message}`);
+  if (desactivarNoEncontrados) {
+    // Margen de gracia en vez de "no visto en este lote = terminado": con
+    // generación semanal, un plan genérico evergreen (un parque, un museo)
+    // puede no salir mencionado en el lote de una semana concreta sin que
+    // eso signifique que ha dejado de existir. Solo si lleva varias semanas
+    // seguidas sin aparecer se asume que ya no es relevante.
+    const DIAS_GRACIA = 21;
+    const fechaLimite = new Date(hoy);
+    fechaLimite.setDate(fechaLimite.getDate() - DIAS_GRACIA);
+    const fechaLimiteISO = fechaLimite.toISOString().slice(0, 10);
+
+    const { error: errorInactivarPorAusencia } = await supabaseAdmin
+      .from("eventos")
+      .update({ activo: false })
+      .eq("municipio_id", municipioId)
+      .lt("ultima_deteccion", fechaLimiteISO);
+    if (errorInactivarPorAusencia) {
+      throw new Error(`eventos.inactivar (ausencia): ${errorInactivarPorAusencia.message}`);
+    }
+
+    // Además, un evento puntual cuya fecha_fin ya haya pasado de verdad se
+    // desactiva de inmediato — aquí no hace falta esperar al margen de
+    // gracia, ya sabemos con certeza que ha terminado.
+    const { data: activosConFecha, error: errorSelectFechas } = await supabaseAdmin
+      .from("eventos")
+      .select("id, fecha_fin")
+      .eq("municipio_id", municipioId)
+      .eq("activo", true)
+      .not("fecha_fin", "is", null);
+    if (errorSelectFechas) throw new Error(`eventos.select (fechas): ${errorSelectFechas.message}`);
+
+    const hoyDate = new Date(hoy);
+    const idsFinalizados = (activosConFecha ?? [])
+      .filter((e) => {
+        const fin = e.fecha_fin ? fechaDesdeTextoEspanol(e.fecha_fin) : null;
+        return fin !== null && fin < hoyDate;
+      })
+      .map((e) => e.id);
+
+    if (idsFinalizados.length > 0) {
+      const { error: errorInactivarFinalizados } = await supabaseAdmin
+        .from("eventos")
+        .update({ activo: false })
+        .in("id", idsFinalizados);
+      if (errorInactivarFinalizados) {
+        throw new Error(`eventos.inactivar (finalizados): ${errorInactivarFinalizados.message}`);
+      }
+    }
+  }
 
   return vinculos;
 }

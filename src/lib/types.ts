@@ -32,6 +32,9 @@ export interface Plan {
   tipo: TipoPlan;
   evento_id: string | null;
   evento_slug?: string | null;
+  evento_fecha_inicio?: string | null;
+  evento_fecha_fin?: string | null;
+  evento_categoria?: Categoria | null;
   enlace_afiliado: string | null;
   fuente: string | null;
 }
@@ -57,11 +60,113 @@ export interface Evento {
   fecha_fin: string | null;
   fuente: string | null;
   preguntas_frecuentes: PreguntaFrecuente[];
+  categoria: Categoria | null;
   lat: number | null;
   lon: number | null;
   primera_deteccion: string;
   ultima_deteccion: string;
   activo: boolean;
+}
+
+// Temáticas por las que se puede navegar además de fecha/audiencia/precio.
+// El valor de la categoría ES el slug de la URL (/sevilla/conciertos) para
+// no necesitar una tabla de conversión aparte — pero eso solo aplica a las
+// cuatro primeras (esCategoriaConPagina), que tienen página propia.
+// Deporte/ferias/fiestas son solo para la etiqueta visual en las tarjetas
+// (badge de "de qué trata"), sin página de categoría propia todavía. El
+// resto de planes (parques, rutas, gastronomía, monumentos genéricos) se
+// quedan en "otros", que no se etiqueta en las tarjetas por no aportar
+// información.
+export const CATEGORIAS = [
+  "conciertos",
+  "exposiciones",
+  "teatro",
+  "monologos",
+  "deporte",
+  "ferias",
+  "fiestas",
+  "cine",
+  "otros",
+] as const;
+export type Categoria = (typeof CATEGORIAS)[number];
+
+export const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
+  conciertos: "Conciertos",
+  exposiciones: "Exposiciones",
+  teatro: "Teatro",
+  monologos: "Monólogos",
+  deporte: "Deporte",
+  ferias: "Ferias",
+  fiestas: "Fiestas",
+  cine: "Cine",
+  otros: "Otros planes",
+};
+
+export function esCategoriaConPagina(
+  slug: string
+): slug is Exclude<Categoria, "otros" | "deporte" | "ferias" | "fiestas" | "cine"> {
+  return slug === "conciertos" || slug === "exposiciones" || slug === "teatro" || slug === "monologos";
+}
+
+// "Listados" (rankings tipo premio) — sección totalmente aparte de
+// eventos/planes. Ver src/lib/places.ts para cómo se rellenan desde
+// Google Places.
+export interface FotoLugar {
+  nombre?: string; // "name" del recurso de Google Places, para pedir la imagen vía /api/fotos
+  url?: string; // foto propia subida por el negocio a Supabase Storage — ver src/lib/places.ts::urlDeFoto
+  ancho: number;
+  alto: number;
+}
+
+export interface HorarioLugar {
+  dia: string;
+  horas: string;
+}
+
+export interface Lugar {
+  id: string;
+  municipio_id: string;
+  google_place_id: string;
+  tipo: string;
+  nombre: string;
+  slug: string;
+  direccion: string | null;
+  lat: number | null;
+  lon: number | null;
+  rating: number | null;
+  num_valoraciones: number | null;
+  nivel_precio: string | null;
+  telefono: string | null;
+  web: string | null;
+  horario: HorarioLugar[];
+  fotos: FotoLugar[];
+  descripcion: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  enlace_reserva: string | null;
+  lema: string | null;
+  gestionado_por_negocio: boolean;
+  ultima_actualizacion: string;
+  activo: boolean;
+}
+
+export interface Listado {
+  id: string;
+  municipio_id: string;
+  tipo_lugar: string;
+  slug: string;
+  titulo: string;
+  descripcion: string | null;
+  preguntas_frecuentes: PreguntaFrecuente[];
+  actualizado_en: string;
+}
+
+// Un puesto del ranking: el lugar + su posición y el motivo (redactado por
+// Gemini) de por qué está en ESTE listado en concreto.
+export interface PuestoListado {
+  lugar: Lugar;
+  posicion: number;
+  motivo: string | null;
 }
 
 export const MESES = [

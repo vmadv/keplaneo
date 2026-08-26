@@ -47,6 +47,9 @@ create table eventos (
   -- array de {pregunta, respuesta}, basadas solo en los demás campos del
   -- mismo plan (nunca datos nuevos) para minimizar el riesgo de invención.
   preguntas_frecuentes jsonb not null default '[]'::jsonb,
+  -- temática (conciertos/exposiciones/teatro/monologos/otros) — permite
+  -- navegar por categoría además de por fecha/audiencia/precio.
+  categoria text not null default 'otros',
   -- geocodificadas una sola vez a partir de "ubicacion" (Nominatim/OSM),
   -- cacheadas aquí para no volver a llamar al geocoder en cada generación.
   lat double precision,
