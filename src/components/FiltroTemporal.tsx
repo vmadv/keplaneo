@@ -17,6 +17,7 @@ export default function FiltroTemporal({
         <Link
           key={item.href}
           href={item.href}
+          scroll={false}
           className={item.activo ? "btn-primary text-sm" : "btn-secondary text-sm"}
         >
           {item.icono && <item.icono size={14} strokeWidth={2.5} />}

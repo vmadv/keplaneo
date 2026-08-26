@@ -5,7 +5,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import SiteHeader from "@/components/SiteHeader";
-import ScrollToTop from "@/components/ScrollToTop";
 import { getComunidadBySlug, getMunicipiosByComunidad } from "@/lib/queries";
 import "../globals.css";
 
@@ -73,7 +72,6 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${outfit.variable} ${jakarta.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>
-          <ScrollToTop />
           <SiteHeader municipios={municipios.map((m) => ({ slug: m.slug, nombre: m.nombre }))} />
           {children}
         </NextIntlClientProvider>
