@@ -47,7 +47,7 @@ export default async function CategoriaOMesPage({
     const [planes, primarios, secundarios, tMes, tMeses] = await Promise.all([
       getPlanesDelMes(municipio.id, mes),
       construirFiltrosTemporales(base, mes),
-      construirFiltrosSecundarios(base, { tipo: "mes", mes }),
+      construirFiltrosSecundarios(base, mes),
       getTranslations("Mes"),
       getTranslations("Meses"),
     ]);
@@ -91,8 +91,10 @@ export default async function CategoriaOMesPage({
     const etiqueta = tCategorias(categoria);
     // "Todos" (esta misma página) va primero y activo; el resto son enlaces
     // a las páginas de hoy/finde/mes ya existentes, mismo patrón que el
-    // resto del sitio.
-    const filtros = [{ label: tFiltros("todos"), href: catBase, activo: true }, ...temporales];
+    // resto del sitio. Se descarta el primer elemento de `temporales`
+    // ("Siempre", que aquí sería la misma URL que "Todos") para no
+    // duplicar la pastilla.
+    const filtros = [{ label: tFiltros("todos"), href: catBase, activo: true }, ...temporales.slice(1)];
 
     return (
       <main className="flex-1 bg-dots">

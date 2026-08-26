@@ -1,17 +1,13 @@
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
-import Breadcrumb from "@/components/Breadcrumb";
-import PlanList from "@/components/PlanList";
-import MunicipioPageNav from "@/components/MunicipioPageNav";
-import { getMunicipio, getPlanesGratisHoy } from "@/lib/queries";
-import { fechaDeHoyLegible } from "@/lib/dates";
+import { getTranslations } from "next-intl/server";
+import EventosPageLayout from "@/components/EventosPageLayout";
+import { getMunicipio, getEventosGratisActivos } from "@/lib/queries";
 
 export const revalidate = 86400;
 
-// Página de ejemplo: una dimensión de filtro nueva (precio) además de
-// audiencia y vigencia. Si funciona bien, se puede formalizar como parte
-// fija de la taxonomía (enlazarla desde el hub de municipio, replicarla en
-// fin de semana/mes...); de momento es solo para valorarla.
+// Franja atemporal + precio "gratis" — antes esta URL era "gratis de hoy"
+// (ver conversación); ese caso concreto se mudó a /hoy/gratis y esta pasa
+// a ser la versión general, sin restringir por fecha.
 export default async function GratisPage({
   params,
 }: {
@@ -21,33 +17,23 @@ export default async function GratisPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tNav, tGratis, locale] = await Promise.all([
-    getPlanesGratisHoy(municipio.id),
-    getTranslations("Nav"),
+  const [eventos, tFiltros, tGratis, tPlanList] = await Promise.all([
+    getEventosGratisActivos(municipio.id),
+    getTranslations("Filtros"),
     getTranslations("Gratis"),
-    getLocale(),
+    getTranslations("PlanList"),
   ]);
-  const base = `/${municipioSlug}`;
 
   return (
-    <main className="flex-1 bg-dots">
-      <div className="max-w-3xl mx-auto px-6 py-16">
-        <Breadcrumb
-          items={[
-            { label: tNav("inicio"), href: "/" },
-            { label: municipio.comunidad.nombre },
-            { label: municipio.nombre, href: base },
-            { label: tGratis("breadcrumb") },
-          ]}
-        />
-        <h1 className="text-4xl font-extrabold mt-4 mb-8 text-balance">
-          {tGratis("titulo", { municipio: municipio.nombre, fecha: fechaDeHoyLegible(locale) })}
-        </h1>
-
-        <PlanList planes={planes} base={base} contexto="hoy" />
-
-        <MunicipioPageNav municipioSlug={municipioSlug} municipioNombre={municipio.nombre} />
-      </div>
-    </main>
+    <EventosPageLayout
+      municipio={municipio}
+      municipioSlug={municipioSlug}
+      titulo={tGratis("tituloSiempre", { municipio: municipio.nombre })}
+      eventos={eventos}
+      current={{ vigencia: "siempre", extra: "gratis" }}
+      contexto="siempre"
+      mensajeVacio={tPlanList("vacioSiempreGratis")}
+      breadcrumbExtra={[{ label: tFiltros("gratis") }]}
+    />
   );
 }

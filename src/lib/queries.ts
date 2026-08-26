@@ -492,25 +492,28 @@ function esPrecioGratis(precio: string | null): boolean {
   return precio !== null && /gratis|gratuit|libre|sin coste/i.test(precio);
 }
 
-// "Gratis" para /esta-semana/gratis — mismo criterio de esPrecioGratis que
-// getPlanesGratisHoy, pero sobre `eventos` (ficha estable) en vez de
-// `planes` del día, porque "esta semana" no tiene su propio lote diario.
+// "Gratis" para /esta-semana/gratis y /gratis (atemporal) — mismo criterio
+// de esPrecioGratis que getPlanesGratisPorVigencia, pero sobre `eventos`
+// (ficha estable) en vez de `planes` del día, porque estas dos no tienen
+// su propio lote diario.
 export async function getEventosGratisActivos(municipioId: string): Promise<Evento[]> {
   const eventos = await getEventosDelMunicipio(municipioId);
   return eventos.filter((e) => esPrecioGratis(e.precio));
 }
 
-// Ejemplo de una nueva dimensión de filtro (por precio) además de audiencia
-// y vigencia. Consulta aparte de getPlanesPorVigencia porque necesita leer
-// "precio", que vive en `eventos`, no en `planes`.
-export async function getPlanesGratisHoy(municipioId: string): Promise<Plan[]> {
+// Una dimensión de filtro más (por precio) además de audiencia y vigencia,
+// para hoy y finde (que salen del lote diario de `planes`, con su propio
+// texto generado — "esta semana" usa getEventosGratisActivos en su lugar,
+// sobre `eventos`). Consulta aparte de getPlanesPorVigencia porque
+// necesita leer "precio", que vive en `eventos`, no en `planes`.
+export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: "hoy" | "finde"): Promise<Plan[]> {
   const { data } = await supabase
     .from("planes")
     .select(
       "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, precio)"
     )
     .eq("municipio_id", municipioId)
-    .contains("vigencia", ["hoy"])
+    .contains("vigencia", [vigencia])
     .eq("fecha_generacion", hoyISO())
     .order("tipo")
     .order("momento");

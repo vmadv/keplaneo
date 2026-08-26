@@ -1,29 +1,38 @@
 import { getTranslations } from "next-intl/server";
 import Breadcrumb, { type BreadcrumbItem } from "./Breadcrumb";
 import FiltrosPagina from "./FiltrosPagina";
-import PlanList from "./PlanList";
+import ListaEventos from "./ListaEventos";
 import HeroPortada from "./HeroPortada";
-import type { Plan } from "@/lib/types";
+import type { Evento } from "@/lib/types";
 import type { MunicipioConComunidad } from "@/lib/queries";
 import { construirFiltrosTemporales, construirFiltrosSecundarios, type Extra } from "@/lib/filtros";
 import { buscarImagenHero } from "@/lib/heroImage";
 
-export default async function PlanesPageLayout({
+// Igual que PlanesPageLayout, pero para páginas que leen de `eventos`
+// directamente en vez del lote diario de `planes` — "esta semana" y las
+// franjas atemporales ("siempre": el hub, gratis, en pareja, con niños).
+export default async function EventosPageLayout({
   municipio,
   municipioSlug,
   titulo,
   fecha,
-  planes,
+  eventos,
   current,
   breadcrumbExtra,
+  contexto,
+  obtenerEtiqueta,
+  mensajeVacio,
 }: {
   municipio: MunicipioConComunidad;
   municipioSlug: string;
   titulo: string;
   fecha?: string;
-  planes: Plan[];
-  current: { vigencia: "hoy" | "finde"; extra?: Extra };
+  eventos: Evento[];
+  current: { vigencia: "siempre" | "semana"; extra?: Extra };
   breadcrumbExtra: BreadcrumbItem[];
+  contexto?: string;
+  obtenerEtiqueta?: (evento: Evento) => string | null;
+  mensajeVacio?: string;
 }) {
   const base = `/${municipioSlug}`;
   const [primarios, secundarios, tNav] = await Promise.all([
@@ -46,11 +55,12 @@ export default async function PlanesPageLayout({
         />
         <HeroPortada imagenHero={imagenHero} alt={municipio.nombre} titulo={titulo} fecha={fecha} />
         <FiltrosPagina primarios={primarios} secundarios={secundarios} />
-        <PlanList
-          planes={planes}
+        <ListaEventos
+          eventos={eventos}
           base={base}
-          mostrarDiaFinde={current.vigencia === "finde"}
-          contexto={current.vigencia}
+          contexto={contexto}
+          obtenerEtiqueta={obtenerEtiqueta}
+          mensajeVacio={mensajeVacio}
         />
       </div>
     </main>

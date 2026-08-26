@@ -53,7 +53,7 @@ export default async function HoyAudienciaPage({
       titulo={tHoy("tituloAudiencia", { municipio: municipio.nombre, audiencia: etiquetaAudiencia })}
       fecha={fechaDeHoyLegible(locale)}
       planes={planes}
-      current={{ vigencia: "hoy", audiencia }}
+      current={{ vigencia: "hoy", extra: audiencia }}
       breadcrumbExtra={[
         { label: tFiltros("hoy"), href: `/${municipioSlug}/hoy` },
         { label: tAudiencia(audiencia) },

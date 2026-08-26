@@ -17,6 +17,7 @@
   "Filtros": {
     "cuando": "Cuándo",
     "filtraMas": "Filtra más",
+    "siempre": "Siempre",
     "hoy": "Hoy",
     "finde": "Este fin de semana",
     "semana": "Esta semana",
@@ -34,7 +35,10 @@
   "Audiencia": {
     "pareja": "En pareja",
     "familia": "En familia",
-    "generico": "Para todos"
+    "generico": "Para todos",
+    "conNinos": "Con niños",
+    "tituloSiemprePareja": "Qué hacer en {municipio} en pareja",
+    "tituloSiempreConNinos": "Qué hacer en {municipio} con niños"
   },
   "Meses": {
     "enero": "enero",
@@ -56,14 +60,15 @@
     "vacioSemana": "Todavía no hay planes detectados para esta semana. Vuelve a revisar en unos días.",
     "vacioSemanaFiltro": "Todavía no hay planes detectados para esta semana con este filtro. Vuelve a revisar en unos días.",
     "vacioSemanaGratis": "Todavía no hay planes gratis detectados para esta semana. Vuelve a revisar en unos días.",
+    "vacioSiempre": "Todavía no hay planes activos ahora mismo. Vuelve a revisar en unos días.",
+    "vacioSiempreGratis": "Todavía no hay planes gratis activos ahora mismo. Vuelve a revisar en unos días.",
     "reservar": "Reservar →"
   },
   "ComunidadHome": {
     "titulo": "Qué hacer en {comunidad}"
   },
   "MunicipioHome": {
-    "titulo": "Qué hacer en {municipio}",
-    "hoyFecha": "Hoy, {fecha}"
+    "titulo": "Qué hacer en {municipio}"
   },
   "Hoy": {
     "titulo": "Qué hacer hoy en {municipio}",
@@ -79,8 +84,9 @@
     "tituloGratis": "Qué hacer gratis esta semana en {municipio}"
   },
   "Gratis": {
-    "titulo": "Qué hacer gratis hoy en {municipio} ({fecha})",
-    "breadcrumb": "Gratis hoy"
+    "titulo": "Qué hacer gratis hoy en {municipio}",
+    "tituloFinde": "Qué hacer gratis este fin de semana en {municipio}",
+    "tituloSiempre": "Qué hacer gratis en {municipio}"
   },
   "Mes": {
     "titulo": "Qué hacer en {municipio} en {mes}"

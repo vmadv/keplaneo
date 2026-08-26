@@ -1,13 +1,8 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import Breadcrumb from "@/components/Breadcrumb";
-import FiltrosPagina from "@/components/FiltrosPagina";
-import ListaEventos from "@/components/ListaEventos";
-import HeroPortada from "@/components/HeroPortada";
+import EventosPageLayout from "@/components/EventosPageLayout";
 import { getMunicipio, getEventosActivos } from "@/lib/queries";
-import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
 import { rangoSemanaLegible } from "@/lib/dates";
-import { buscarImagenHero } from "@/lib/heroImage";
 import { ordenarPorDiaDeSemana } from "@/lib/semana";
 
 export const revalidate = 86400;
@@ -40,49 +35,31 @@ export default async function EstaSemanaAudienciaPage({
   if (!municipio) notFound();
 
   const base = `/${municipioSlug}`;
-  const [todos, primarios, secundarios, tNav, tFiltros, tSemana, tAudiencia, tPlanList] =
-    await Promise.all([
-      getEventosActivos(municipio.id, audiencia),
-      construirFiltrosTemporales(base, "semana", audiencia),
-      construirFiltrosSecundarios(base, { tipo: "semana" }, audiencia),
-      getTranslations("Nav"),
-      getTranslations("Filtros"),
-      getTranslations("Semana"),
-      getTranslations("Audiencia"),
-      getTranslations("PlanList"),
-    ]);
+  const [todos, tFiltros, tSemana, tAudiencia, tPlanList] = await Promise.all([
+    getEventosActivos(municipio.id, audiencia),
+    getTranslations("Filtros"),
+    getTranslations("Semana"),
+    getTranslations("Audiencia"),
+    getTranslations("PlanList"),
+  ]);
   const { eventos, etiquetas } = ordenarPorDiaDeSemana(todos, locale);
   const etiquetaAudiencia = minuscula(tAudiencia(audiencia));
 
   return (
-    <main className="flex-1 bg-dots">
-      <div className="max-w-3xl mx-auto px-6 py-16">
-        <Breadcrumb
-          items={[
-            { label: tNav("inicio"), href: "/" },
-            { label: municipio.comunidad.nombre },
-            { label: municipio.nombre, href: base },
-            { label: tFiltros("semana"), href: `${base}/esta-semana` },
-            { label: tAudiencia(audiencia) },
-          ]}
-        />
-        <HeroPortada
-          imagenHero={buscarImagenHero(municipio.slug)}
-          alt={municipio.nombre}
-          titulo={tSemana("tituloAudiencia", { municipio: municipio.nombre, audiencia: etiquetaAudiencia })}
-          fecha={rangoSemanaLegible(locale)}
-        />
-
-        <FiltrosPagina primarios={primarios} secundarios={secundarios} />
-
-        <ListaEventos
-          eventos={eventos}
-          base={base}
-          contexto="semana"
-          obtenerEtiqueta={(evento) => etiquetas.get(evento.id) ?? null}
-          mensajeVacio={tPlanList("vacioSemanaFiltro")}
-        />
-      </div>
-    </main>
+    <EventosPageLayout
+      municipio={municipio}
+      municipioSlug={municipioSlug}
+      titulo={tSemana("tituloAudiencia", { municipio: municipio.nombre, audiencia: etiquetaAudiencia })}
+      fecha={rangoSemanaLegible(locale)}
+      eventos={eventos}
+      current={{ vigencia: "semana", extra: audiencia }}
+      contexto="semana"
+      obtenerEtiqueta={(evento) => etiquetas.get(evento.id) ?? null}
+      mensajeVacio={tPlanList("vacioSemanaFiltro")}
+      breadcrumbExtra={[
+        { label: tFiltros("semana"), href: `${base}/esta-semana` },
+        { label: tAudiencia(audiencia) },
+      ]}
+    />
   );
 }

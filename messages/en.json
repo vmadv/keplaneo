@@ -17,6 +17,7 @@
   "Filtros": {
     "cuando": "When",
     "filtraMas": "Filter more",
+    "siempre": "Anytime",
     "hoy": "Today",
     "finde": "This weekend",
     "semana": "This week",
@@ -34,7 +35,10 @@
   "Audiencia": {
     "pareja": "For couples",
     "familia": "For families",
-    "generico": "For everyone"
+    "generico": "For everyone",
+    "conNinos": "With kids",
+    "tituloSiemprePareja": "What to do in {municipio} for couples",
+    "tituloSiempreConNinos": "What to do in {municipio} with kids"
   },
   "Meses": {
     "enero": "January",
@@ -56,14 +60,15 @@
     "vacioSemana": "No plans detected for this week yet. Check back in a few days.",
     "vacioSemanaFiltro": "No plans detected for this week with this filter yet. Check back in a few days.",
     "vacioSemanaGratis": "No free plans detected for this week yet. Check back in a few days.",
+    "vacioSiempre": "No active plans right now. Check back in a few days.",
+    "vacioSiempreGratis": "No active free plans right now. Check back in a few days.",
     "reservar": "Book →"
   },
   "ComunidadHome": {
     "titulo": "What to do in {comunidad}"
   },
   "MunicipioHome": {
-    "titulo": "What to do in {municipio}",
-    "hoyFecha": "Today, {fecha}"
+    "titulo": "What to do in {municipio}"
   },
   "Hoy": {
     "titulo": "What to do today in {municipio}",
@@ -79,8 +84,9 @@
     "tituloGratis": "Free things to do this week in {municipio}"
   },
   "Gratis": {
-    "titulo": "Free things to do today in {municipio} ({fecha})",
-    "breadcrumb": "Free today"
+    "titulo": "Free things to do today in {municipio}",
+    "tituloFinde": "Free things to do this weekend in {municipio}",
+    "tituloSiempre": "Free things to do in {municipio}"
   },
   "Mes": {
     "titulo": "What to do in {municipio} in {mes}"

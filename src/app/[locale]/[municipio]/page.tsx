@@ -1,23 +1,24 @@
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import FiltrosPagina from "@/components/FiltrosPagina";
-import PlanList from "@/components/PlanList";
+import ListaEventos from "@/components/ListaEventos";
 import NearbyMunicipios from "@/components/NearbyMunicipios";
 import ListadosDelMunicipio from "@/components/ListadosDelMunicipio";
 import Mapa from "@/components/Mapa";
 import HeroPortada from "@/components/HeroPortada";
-import { getMunicipio, getPlanesHoy } from "@/lib/queries";
+import { getMunicipio, getEventosActivos } from "@/lib/queries";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
-import { fechaDeHoyLegible } from "@/lib/dates";
 import { buscarImagenHero } from "@/lib/heroImage";
 
 export const revalidate = 86400;
 
-// El hub del municipio ahora muestra directamente los planes de hoy (con
-// las mismas dos filas de filtros que el resto del sitio) en vez de ser
-// solo un menú de enlaces — sigue teniendo más contenido propio que /hoy
-// (foto de portada, municipios cercanos) para no quedar como una copia.
+// El hub del municipio es la franja atemporal ("siempre") de Cuándo: todo
+// lo que está activo ahora mismo, sin restringir por fecha — es literalmente
+// "Qué hacer en Sevilla" (ver conversación). Sigue teniendo más contenido
+// propio que el resto de páginas de vigencia (foto de portada, mapa,
+// rankings, municipios cercanos) para no quedar como una copia de "Esta
+// semana".
 export default async function MunicipioPage({
   params,
 }: {
@@ -30,13 +31,13 @@ export default async function MunicipioPage({
   const base = `/${municipioSlug}`;
   const imagenHero = buscarImagenHero(municipio.slug);
 
-  const [planes, primarios, secundarios, tNav, tHome, locale] = await Promise.all([
-    getPlanesHoy(municipio.id),
-    construirFiltrosTemporales(base, "hoy"),
-    construirFiltrosSecundarios(base, { tipo: "hoy" }),
+  const [eventos, primarios, secundarios, tNav, tHome, tPlanList] = await Promise.all([
+    getEventosActivos(municipio.id),
+    construirFiltrosTemporales(base, "siempre"),
+    construirFiltrosSecundarios(base, "siempre"),
     getTranslations("Nav"),
     getTranslations("MunicipioHome"),
-    getLocale(),
+    getTranslations("PlanList"),
   ]);
 
   return (
@@ -49,16 +50,11 @@ export default async function MunicipioPage({
             { label: municipio.nombre },
           ]}
         />
-        <HeroPortada
-          imagenHero={imagenHero}
-          alt={municipio.nombre}
-          titulo={tHome("titulo", { municipio: municipio.nombre })}
-          fecha={tHome("hoyFecha", { fecha: fechaDeHoyLegible(locale) })}
-        />
+        <HeroPortada imagenHero={imagenHero} alt={municipio.nombre} titulo={tHome("titulo", { municipio: municipio.nombre })} />
 
         <FiltrosPagina primarios={primarios} secundarios={secundarios} />
 
-        <PlanList planes={planes} base={base} contexto="hoy" />
+        <ListaEventos eventos={eventos} base={base} contexto="siempre" mensajeVacio={tPlanList("vacioSiempre")} />
 
         {!imagenHero && municipio.lat !== null && municipio.lon !== null && (
           <div className="card-sticker p-2 my-8">

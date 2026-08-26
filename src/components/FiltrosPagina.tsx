@@ -11,7 +11,7 @@ function Etiqueta({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Hoy/Finde/Semana y En pareja/En familia/Gratis son dos ejes
+// Siempre/Hoy/Finde/Semana y En pareja/En familia/Gratis son dos ejes
 // independientes que se pueden combinar (ej. "Hoy" + "En pareja" a la
 // vez), no una única lista de opciones excluyentes entre sí — iban todos
 // en una sola fila con el mismo estilo de pastilla y eso no se notaba
@@ -19,9 +19,9 @@ function Etiqueta({ children }: { children: React.ReactNode }) {
 // cada una para que se lea como "elige cuándo, y además a quién/precio".
 // Los meses y la temática son los que más abultan, así que esos viven
 // detrás de "Más filtros", al final de la segunda fila.
-// construirFiltrosTemporales siempre devuelve [Hoy, Finde, Esta semana,
-// ...meses] en ese orden, así que los meses son el resto del array desde
-// la posición 3.
+// construirFiltrosTemporales siempre devuelve [Siempre, Hoy, Finde, Esta
+// semana, ...meses] en ese orden, así que los meses son el resto del array
+// desde la posición 4.
 // Si el mes activo está escondido (ej. viendo /agosto), el panel se abre
 // solo para no perder de vista qué está seleccionado.
 export default async function FiltrosPagina({
@@ -32,8 +32,8 @@ export default async function FiltrosPagina({
   secundarios?: FiltrosSecundariosAgrupados;
 }) {
   const [t, tFiltros] = await Promise.all([getTranslations("Nav"), getTranslations("Filtros")]);
-  const siempreVisibles = primarios.slice(0, 3);
-  const meses = primarios.slice(3);
+  const siempreVisibles = primarios.slice(0, 4);
+  const meses = primarios.slice(4);
   const rapidos = secundarios ? [...secundarios.audiencia, ...secundarios.precio] : [];
   const tematica = secundarios?.tematica ?? [];
   const ocultos = [...meses, ...tematica];
