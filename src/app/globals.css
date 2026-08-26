@@ -161,6 +161,17 @@ a {
     border-radius: 9999px;
     border: 2px solid var(--foreground);
   }
+
+  /* Empuja la mirada de "Cuándo" hacia "Filtra más" — un par de rebotes
+     cortos hacia abajo en vez de un bucle infinito, para invitar a
+     combinar los dos filtros sin resultar cargante. */
+  @keyframes rebote-invitacion {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+  }
+  .icono-invitacion {
+    animation: rebote-invitacion 0.9s ease-in-out 2;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -174,5 +185,8 @@ a {
   .btn-secondary:hover,
   .card-sticker:hover {
     transform: none !important;
+  }
+  .icono-invitacion {
+    animation: none !important;
   }
 }

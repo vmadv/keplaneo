@@ -3,15 +3,22 @@ import { getTranslations } from "next-intl/server";
 import FiltroTemporal from "./FiltroTemporal";
 import type { FiltroTemporalItem, FiltrosSecundariosAgrupados } from "@/lib/filtros";
 
-function Etiqueta({ children }: { children: React.ReactNode }) {
+function Etiqueta({ children, invita = false }: { children: React.ReactNode; invita?: boolean }) {
   return (
-    <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--muted-foreground)" }}>
+    <p
+      className="text-xs font-bold uppercase tracking-wide mb-2 flex items-center gap-1"
+      style={{ color: "var(--muted-foreground)" }}
+    >
       {children}
+      {/* Un par de rebotes cortos al cargar la página, para invitar a
+          combinarlo con lo que se acaba de elegir en Cuándo — ver
+          conversación ("que me invite a clicar sobre filtra más"). */}
+      {invita && <ChevronDown size={13} strokeWidth={3} className="icono-invitacion" aria-hidden />}
     </p>
   );
 }
 
-// Siempre/Hoy/Finde/Semana y En pareja/En familia/Gratis son dos ejes
+// Hoy/Finde/Semana/Siempre y En pareja/En familia/Gratis son dos ejes
 // independientes que se pueden combinar (ej. "Hoy" + "En pareja" a la
 // vez), no una única lista de opciones excluyentes entre sí — iban todos
 // en una sola fila con el mismo estilo de pastilla y eso no se notaba
@@ -19,8 +26,8 @@ function Etiqueta({ children }: { children: React.ReactNode }) {
 // cada una para que se lea como "elige cuándo, y además a quién/precio".
 // Los meses y la temática son los que más abultan, así que esos viven
 // detrás de "Más filtros", al final de la segunda fila.
-// construirFiltrosTemporales siempre devuelve [Siempre, Hoy, Finde, Esta
-// semana, ...meses] en ese orden, así que los meses son el resto del array
+// construirFiltrosTemporales siempre devuelve [Hoy, Finde, Esta semana,
+// Siempre, ...meses] en ese orden, así que los meses son el resto del array
 // desde la posición 4.
 // Si el mes activo está escondido (ej. viendo /agosto), el panel se abre
 // solo para no perder de vista qué está seleccionado.
@@ -68,7 +75,7 @@ export default async function FiltrosPagina({
         <FiltroTemporal items={siempreVisibles} className="mb-0" />
       </div>
       <div>
-        <Etiqueta>{tFiltros("filtraMas")}</Etiqueta>
+        <Etiqueta invita>{tFiltros("filtraMas")}</Etiqueta>
         <FiltroTemporal items={rapidos} className="mb-0" extra={masFiltros} />
       </div>
     </div>

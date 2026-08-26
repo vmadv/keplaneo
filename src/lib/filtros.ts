@@ -40,8 +40,8 @@ export function hrefFiltro(base: string, vigencia: Vigencia, extra?: Extra): str
   return `${base}${segVigencia}/${slugExtra}`;
 }
 
-// Barra de filtros tipo "entradas.com": Siempre / Hoy / Este fin de semana
-// / Esta semana / los próximos meses generados, todos como pestañas de la
+// Barra de filtros tipo "entradas.com": Hoy / Este fin de semana / Esta
+// semana / Siempre / los próximos meses generados, todos como pestañas de la
 // misma página en vez de enlaces sueltos a páginas separadas. Los slugs de
 // mes en la URL se quedan siempre en español (mismo criterio que los
 // topónimos); solo la etiqueta visible se traduce.
@@ -69,14 +69,14 @@ export async function construirFiltrosTemporales(
   };
 
   return [
+    itemCuando("hoy", t("hoy")),
+    itemCuando("finde", t("finde")),
+    itemCuando("semana", t("semana")),
     {
       label: t("siempre"),
       href: hrefFiltro(base, "siempre", extraActual),
       activo: vigenciaActual === "siempre",
     },
-    itemCuando("hoy", t("hoy")),
-    itemCuando("finde", t("finde")),
-    itemCuando("semana", t("semana")),
     ...meses.map((mes) => {
       const nombre = tMeses(mes);
       return {

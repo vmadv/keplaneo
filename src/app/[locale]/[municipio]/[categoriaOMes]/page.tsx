@@ -91,10 +91,13 @@ export default async function CategoriaOMesPage({
     const etiqueta = tCategorias(categoria);
     // "Todos" (esta misma página) va primero y activo; el resto son enlaces
     // a las páginas de hoy/finde/mes ya existentes, mismo patrón que el
-    // resto del sitio. Se descarta el primer elemento de `temporales`
-    // ("Siempre", que aquí sería la misma URL que "Todos") para no
+    // resto del sitio. Se descarta de `temporales` el que apunte a la
+    // misma URL que "Todos" ("Siempre", que aquí sería redundante) para no
     // duplicar la pastilla.
-    const filtros = [{ label: tFiltros("todos"), href: catBase, activo: true }, ...temporales.slice(1)];
+    const filtros = [
+      { label: tFiltros("todos"), href: catBase, activo: true },
+      ...temporales.filter((item) => item.href !== catBase),
+    ];
 
     return (
       <main className="flex-1 bg-dots">
