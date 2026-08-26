@@ -11,6 +11,15 @@ create table if not exists provincias (
   unique (comunidad_id, slug)
 );
 
+alter table provincias enable row level security;
+
+do $$
+begin
+  if not exists (select 1 from pg_policies where tablename = 'provincias' and policyname = 'lectura publica provincias') then
+    create policy "lectura publica provincias" on provincias for select using (true);
+  end if;
+end $$;
+
 alter table municipios add column if not exists provincia_id uuid references provincias(id);
 
 insert into provincias (comunidad_id, slug, nombre)
