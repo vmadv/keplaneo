@@ -139,21 +139,11 @@ Busca activamente en TODAS estas categorías de eventos con fecha concreta (no t
 De estos bloques, "conciertos" (dentro de Música), "exposiciones" (dentro de Arte y cultura) y "teatro"/"monólogos" (dentro de Escena y proyecciones) alimentan cada uno su propia página del sitio, igual que lo infantil/familiar — búscalos con el mismo empeño real, no como relleno de la categoría genérica que les toque.
 `.trim();
 
-const INSTRUCCIONES_FORMATO = `
-Orden de prioridad, en este orden estricto:
-1. Primero, todos los eventos puntuales y temporales que encuentres (agenda concreta con fecha). Estos van "tipo": "excepcional".
-
-${TIPOS_EVENTO_PUNTUAL}
-
-2. Solo si no encuentras suficientes eventos puntuales verificables para llegar a 10 planes, completa el resto con planes genéricos de calidad, disponibles siempre (parques, rutas, gastronomía, monumentos, actividades al aire libre...). Estos van "tipo": "generico". Evita los 3-4 sitios más obvios y manidos de la ciudad (los que cualquier buscador pondría primero, tipo "paseo por el barrio histórico" o "visita a la catedral") salvo que aportes un ángulo genuinamente distinto — prioriza en su lugar mercados de abastos reales, miradores poco conocidos, rutas de naturaleza cercana, talleres artesanales visitables, rutas en bici, actividades acuáticas si hay río, museos menores, etc.
-
-Los planes "generico" deben ir siempre al final del array, después de todos los "excepcional". No inventes eventos puntuales que no existan solo por rellenar — ante la duda, usa un plan genérico real en su lugar.
-
-Dentro de cada uno de esos dos bloques (excepcional / generico), ordena de MAYOR a MENOR popularidad o interés esperado — el evento más multitudinario o relevante primero, el más de nicho al final. Además:
-- Procura variedad real de temática entre los eventos puntuales: si encuentras 8 conciertos y ningún otro tipo, busca más en las demás categorías antes de rendirte — no llenes el listado a base de repetir el mismo tipo de plan.
-- Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Si tiene un ángulo claro de pareja (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas) márcalo SOLO "pareja"; si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya llevas "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para cuando el plan de verdad no tenga ningún ángulo hacia una audiencia concreta. Esta etiqueta se usa para filtrar planes por audiencia en el sitio; si casi todo lleva "generico" además de su etiqueta específica, el filtro deja de servir de nada.
-- Busca activamente planes con ángulo de pareja, con el mismo empeño que lo infantil/familiar: catas nocturnas, conciertos o sesiones íntimas, experiencias con encanto (azoteas, miradores al atardecer, cenas con vistas, spas/relax), actividades pensadas para dos. También alimenta un filtro real del sitio ("qué hacer en pareja") — no lo dejes para lo que sobre de las demás categorías.
-
+// Bloque de esquema JSON compartido por la búsqueda mixta (generarPlanesSemanales/
+// generarNovedades/generarPlanesDelMes) y las búsquedas dedicadas por variable
+// (generarPlanesEnfocados) — la lista de campos y sus reglas es la misma en
+// los dos casos, solo cambia lo que se les pide buscar antes de esto.
+const CAMPOS_JSON = `
 Cada elemento debe tener EXACTAMENTE estos campos:
 - "titulo": string, corto y concreto
 - "descripcion": string con 2-3 PÁRRAFOS separados por "\n\n" (doble salto de línea real dentro del string). Todos los planes tienen página propia, así que esto es el contenido principal, no una ficha de listado — no te cortes en longitud. Reparte el contenido así:
@@ -176,6 +166,27 @@ Además, SOLO para los planes con "tipo": "excepcional" (van a tener página pro
 - "fuente": SIEMPRE prioriza la fuente PRIMARIA/oficial (el ayuntamiento, la diputación, el recinto, el museo, la sala, el organizador real del evento) por encima de webs intermediarias (agendas culturales, blogs de "qué hacer en...", portales de noticias locales que solo republican la información). Si conoces la URL exacta de esa página oficial, ponla aquí (ej. "https://..."); si no tienes una URL fiable pero sí sabes qué institución es la organizadora real, pon su nombre (ej. "Ayuntamiento de Sevilla", "Diputación de Sevilla") en vez del nombre del portal donde lo hayas visto. Usa un agregador/intermediario como último recurso, solo si de verdad no puedes identificar quién organiza el evento.
 
 Devuelve EXCLUSIVAMENTE el array JSON, sin texto adicional ni bloques de markdown.
+`.trim();
+
+// Instrucciones para la búsqueda MIXTA (varias temáticas y "generico" de
+// relleno a la vez) — la usan generarPlanesSemanales/generarNovedades/
+// generarPlanesDelMes. Las búsquedas dedicadas por variable
+// (generarPlanesEnfocados) usan CAMPOS_JSON directamente, sin este bloque.
+const INSTRUCCIONES_FORMATO = `
+Orden de prioridad, en este orden estricto:
+1. Primero, todos los eventos puntuales y temporales que encuentres (agenda concreta con fecha). Estos van "tipo": "excepcional".
+
+${TIPOS_EVENTO_PUNTUAL}
+
+2. Solo si no encuentras suficientes eventos puntuales verificables para llegar a 10 planes, completa el resto con planes genéricos de calidad, disponibles siempre (parques, rutas, gastronomía, monumentos, actividades al aire libre...). Estos van "tipo": "generico". Evita los 3-4 sitios más obvios y manidos de la ciudad (los que cualquier buscador pondría primero, tipo "paseo por el barrio histórico" o "visita a la catedral") salvo que aportes un ángulo genuinamente distinto — prioriza en su lugar mercados de abastos reales, miradores poco conocidos, rutas de naturaleza cercana, talleres artesanales visitables, rutas en bici, actividades acuáticas si hay río, museos menores, etc.
+
+Los planes "generico" deben ir siempre al final del array, después de todos los "excepcional". No inventes eventos puntuales que no existan solo por rellenar — ante la duda, usa un plan genérico real en su lugar.
+
+Dentro de cada uno de esos dos bloques (excepcional / generico), ordena de MAYOR a MENOR popularidad o interés esperado — el evento más multitudinario o relevante primero, el más de nicho al final. Además:
+- Procura variedad real de temática entre los eventos puntuales: si encuentras 8 conciertos y ningún otro tipo, busca más en las demás categorías antes de rendirte — no llenes el listado a base de repetir el mismo tipo de plan.
+- Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Si tiene un ángulo claro de pareja (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas) márcalo SOLO "pareja"; si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya llevas "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para cuando el plan de verdad no tenga ningún ángulo hacia una audiencia concreta. Esta etiqueta se usa para filtrar planes por audiencia en el sitio; si casi todo lleva "generico" además de su etiqueta específica, el filtro deja de servir de nada.
+
+${CAMPOS_JSON}
 `.trim();
 
 // Gemini no tiene un esquema forzado (pedimos JSON libre en el prompt), así
@@ -203,6 +214,37 @@ function normalizarPlanes(planes: unknown): PlanGenerado[] {
   return (planes as PlanGenerado[]).map(normalizarPlan);
 }
 
+function esperar(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Reintenta tanto si la llamada HTTP falla (ej. 503 "alta demanda" — más
+// probable ahora que se lanzan varias llamadas a la vez por municipio, ver
+// conversación) como si el JSON que devuelve no es válido. Antes cada
+// función reintentaba solo lo segundo, con la llamada a llamarGemini fuera
+// del try/catch.
+async function llamarGeminiConReintentos(
+  prompt: string,
+  nombreFn: string,
+  intentos = 4
+): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
+  let ultimoError: unknown;
+  for (let intento = 1; intento <= intentos; intento++) {
+    try {
+      const { texto, usage } = await llamarGemini(prompt);
+      return { planes: normalizarPlanes(extraerJSON(texto)), usage };
+    } catch (err) {
+      ultimoError = err;
+      // Espera creciente + aleatoria: con varias llamadas a la vez por
+      // municipio (búsqueda mixta + enfocadas), si todas reintentan al
+      // mismo ritmo vuelven a chocar juntas contra el mismo límite de
+      // demanda — el jitter las desincroniza.
+      if (intento < intentos) await esperar(2000 * intento + Math.round(Math.random() * 2000));
+    }
+  }
+  throw ultimoError instanceof Error ? ultimoError : new Error(`${nombreFn}: no debería llegar aquí`);
+}
+
 // Generación semanal (cron de los lunes): pide de una vez la agenda de toda
 // la semana en vez de repetir la búsqueda cada día — cada evento real se
 // redacta una sola vez, con su fecha real, y de ahí se derivan hoy/finde/
@@ -223,19 +265,90 @@ Para cada plan con "tipo": "excepcional", es OBLIGATORIO indicar "fecha_inicio" 
 ${INSTRUCCIONES_FORMATO}
 `.trim();
 
-  // Con listados largos (20-35 planes) Gemini falla a veces al devolver
-  // JSON estrictamente válido — reintentar resuelve la inmensa mayoría de
-  // los casos sin tener que renunciar a la semana completa.
-  const INTENTOS = 3;
-  for (let intento = 1; intento <= INTENTOS; intento++) {
-    const { texto, usage } = await llamarGemini(prompt);
-    try {
-      return { planes: normalizarPlanes(extraerJSON(texto)), usage };
-    } catch (err) {
-      if (intento === INTENTOS) throw err;
+  return llamarGeminiConReintentos(prompt, "generarPlanesSemanales");
+}
+
+// Una variable filtrable del sitio con página/filtro propio — audiencia
+// (pareja, familia) o categoría con página dedicada (conciertos,
+// exposiciones, teatro, monólogos).
+export type Foco =
+  | { tipo: "audiencia"; valor: "pareja" | "familia" }
+  | { tipo: "categoria"; valor: "conciertos" | "exposiciones" | "teatro" | "monologos" };
+
+export const FOCOS_SEMANALES: Foco[] = [
+  { tipo: "audiencia", valor: "pareja" },
+  { tipo: "audiencia", valor: "familia" },
+  { tipo: "categoria", valor: "conciertos" },
+  { tipo: "categoria", valor: "exposiciones" },
+  { tipo: "categoria", valor: "teatro" },
+  { tipo: "categoria", valor: "monologos" },
+];
+
+const DESCRIPCION_FOCO: Record<string, string> = {
+  pareja:
+    "planes pensados especialmente para ir en pareja: catas nocturnas, conciertos o sesiones íntimas, cenas o experiencias con encanto (azoteas, miradores al atardecer, vistas), actividades pensadas para dos",
+  familia:
+    "planes pensados especialmente para ir con niños: espectáculos infantiles, parques temáticos o de atracciones, talleres familiares, exposiciones o museos con actividades para niños, cine de verano con película familiar",
+  conciertos: "conciertos de cualquier género (pop, rock, flamenco, clásica, jazz, indie...) con fecha concreta",
+  exposiciones: "exposiciones temporales (arte, fotografía, ciencia, historia) con fecha concreta",
+  teatro:
+    "obras de teatro, danza/ballet u ópera/zarzuela con fecha concreta — NO monólogos ni comedia, esa es otra categoría aparte",
+  monologos: "monólogos y comedia en directo con fecha concreta",
+};
+
+function etiquetaCampoFoco(foco: Foco): string {
+  return foco.tipo === "audiencia"
+    ? `El campo "audiencia" debe incluir "${foco.valor}".`
+    : `El campo "categoria" debe ser exactamente "${foco.valor}".`;
+}
+
+// Búsqueda dedicada a UNA sola variable (audiencia o categoría con página
+// propia) en vez de competir por hueco dentro de la búsqueda mixta de 20-35
+// planes de 8 temáticas a la vez — ver conversación: preguntarle a Gemini
+// directamente "qué hacer con niños este finde" encontraba bastante más que
+// lo que salía de esa búsqueda mixta. Sin límite de cantidad fijo: mejor 2
+// reales que 8 con relleno, pero tampoco recortar a 5 si hay 8 reales.
+export async function generarPlanesEnfocados(
+  municipioNombre: string,
+  fechaLunesLegible: string,
+  fechaDomingoLegible: string,
+  foco: Foco
+): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
+  const prompt = `
+Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España) para la semana del ${fechaLunesLegible} al ${fechaDomingoLegible}.
+
+Busca específicamente ${DESCRIPCION_FOCO[foco.valor]}. Devuelve TODOS los planes reales y verificables que encuentres para esto en concreto dentro de esa semana — no te limites a una cifra fija: si hay 2 buenos, devuelve 2; si hay 8, devuelve los 8. Mejor pocos reales y bien verificados que muchos con relleno o inventados, y no fuerces algo que no encaje de verdad solo por rellenar.
+
+Todos los planes que devuelvas aquí llevan "tipo": "excepcional" (son eventos con fecha concreta, no genéricos) y ${etiquetaCampoFoco(foco)} Es OBLIGATORIO indicar "fecha_inicio" (y "fecha_fin" si dura más de un día) con una fecha real dentro de esta semana o que se solape con ella — si no encuentras una fecha real y verificable, no incluyas el plan. Si de verdad no encuentras ninguno real para esto esta semana, devuelve un array vacío — no inventes ni fuerces nada.
+
+${CAMPOS_JSON}
+`.trim();
+
+  return llamarGeminiConReintentos(prompt, "generarPlanesEnfocados");
+}
+
+// Combina los resultados de la búsqueda mixta + las dedicadas por variable:
+// el mismo evento real puede salir de más de una búsqueda (ej. la mixta y
+// la dedicada a "pareja" encuentran el mismo concierto) — se fusiona por
+// título en vez de duplicar la tarjeta, uniendo las audiencias que traiga
+// cada aparición (sin repetir "generico" si ya hay alguna específica).
+export function fusionarPlanesDuplicados(planes: PlanGenerado[]): PlanGenerado[] {
+  const porTitulo = new Map<string, PlanGenerado>();
+  for (const plan of planes) {
+    const clave = plan.titulo.trim().toLowerCase();
+    const existente = porTitulo.get(clave);
+    if (!existente) {
+      porTitulo.set(clave, plan);
+      continue;
     }
+    const audienciaUnida = Array.from(new Set([...existente.audiencia, ...plan.audiencia]));
+    const especificas = audienciaUnida.filter((a) => a !== "generico");
+    porTitulo.set(clave, {
+      ...existente,
+      audiencia: (especificas.length > 0 ? especificas : audienciaUnida) as Audiencia[],
+    });
   }
-  throw new Error("generarPlanesSemanales: no debería llegar aquí");
+  return Array.from(porTitulo.values());
 }
 
 // Repaso diario (cron de martes a domingo): la semana ya se generó el

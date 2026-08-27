@@ -476,9 +476,10 @@ export function getEventosPorCategoria(municipioId: string, categoria: string): 
 }
 
 // Para "esta semana": todos los eventos activos del municipio, de cualquier
-// temática — se filtran y ordenan por día (lunes-viernes) en la propia
-// página a partir de fecha_inicio/fecha_fin, no aquí (son texto libre, no
-// se pueden filtrar en la consulta SQL).
+// temática — se filtran y ordenan por día (ventana rodante de 7 días desde
+// hoy, ver diasRelevantesEstaSemana) en la propia página a partir de
+// fecha_inicio/fecha_fin, no aquí (son texto libre, no se pueden filtrar en
+// la consulta SQL).
 export function getEventosActivos(municipioId: string, audiencia?: "pareja" | "familia"): Promise<Evento[]> {
   return getEventosDelMunicipio(municipioId, undefined, audiencia);
 }

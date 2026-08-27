@@ -43,9 +43,9 @@ export function fechaDeHoyLegible(locale: string = "es"): string {
 }
 
 // El lunes de la semana natural en curso (a diferencia de
-// diasRelevantesEstaSemana, que en fin de semana salta a la semana que
-// viene) — lo usa el repaso diario para saber qué días quedan por delante
-// hasta el domingo de ESTA semana real.
+// diasRelevantesEstaSemana, que es una ventana rodante de 7 días desde hoy,
+// no la semana natural) — lo usa el repaso diario para saber qué días
+// quedan por delante hasta el domingo de ESTA semana natural.
 export function lunesDeLaSemanaActual(): Date {
   const hoy = new Date();
   const diaSemana = hoy.getDay(); // 0=domingo … 6=sábado
@@ -90,26 +90,14 @@ export function rangoFinDeSemanaLegible(locale: string = "es"): string {
   return formatearRangoFechas(sabado, domingo, locale);
 }
 
-// Días laborables relevantes de "esta semana", siempre mirando hacia
-// adelante: entre semana, de hoy a viernes (listar el lunes ya pasado un
-// jueves no sirve de nada); en sábado o domingo, la semana laboral que
-// viene completa (la de lunes-viernes ya terminó).
+// Ventana real de "esta semana": los 7 días desde hoy (inclusive) hasta
+// dentro de una semana — no la semana natural (lunes-domingo, que en
+// jueves ya habría dejado atrás lunes-miércoles) ni solo días laborables.
+// Ver conversación: "esta semana" debe contemplar de hoy a dentro de 7
+// días desde el día en que se consulta, sea cual sea.
 export function diasRelevantesEstaSemana(): Date[] {
   const hoy = new Date();
-  const diaSemana = hoy.getDay(); // 0=domingo … 6=sábado
-
-  if (diaSemana === 0 || diaSemana === 6) {
-    const lunes = new Date(hoy);
-    lunes.setDate(hoy.getDate() + (diaSemana === 0 ? 1 : 2));
-    return Array.from({ length: 5 }, (_, i) => {
-      const dia = new Date(lunes);
-      dia.setDate(lunes.getDate() + i);
-      return dia;
-    });
-  }
-
-  const diasHastaViernes = 5 - diaSemana;
-  return Array.from({ length: diasHastaViernes + 1 }, (_, i) => {
+  return Array.from({ length: 7 }, (_, i) => {
     const dia = new Date(hoy);
     dia.setDate(hoy.getDate() + i);
     return dia;
