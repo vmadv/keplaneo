@@ -16,7 +16,7 @@ import { buscarImagenHero } from "@/lib/heroImage";
 export const revalidate = 86400;
 
 export function generateStaticParams() {
-  return proximosMesesSlugs(2).map((mes) => ({ categoriaOMes: mes }));
+  return proximosMesesSlugs(12).map((mes) => ({ categoriaOMes: mes }));
 }
 
 function capitalizar(texto: string): string {

@@ -60,10 +60,16 @@ export default async function FiltrosPagina({
     </details>
   );
 
+  // Siempre con la etiqueta "CUÁNDO" encima, haya o no una segunda sección
+  // — antes, en páginas sin "Filtra más" (los meses, sin cruce de
+  // audiencia/gratis todavía), caía a una fila suelta sin etiquetar y con
+  // "Más filtros" mezclado dentro, dando la sensación de una página con
+  // otro estilo (ver conversación).
   if (rapidos.length === 0) {
     return (
-      <div className="mb-2">
-        <FiltroTemporal items={siempreVisibles} className="mb-6" extra={masFiltros} />
+      <div className="mb-6">
+        <Etiqueta>{tFiltros("cuando")}</Etiqueta>
+        <FiltroTemporal items={siempreVisibles} className="mb-0" extra={masFiltros} />
       </div>
     );
   }

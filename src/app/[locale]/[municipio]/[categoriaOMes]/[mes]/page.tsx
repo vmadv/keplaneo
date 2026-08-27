@@ -15,7 +15,7 @@ export function generateStaticParams() {
   // combina esta lista con cada valor posible de [categoriaOMes] — de las
   // combinaciones resultantes, solo las que además pasan esCategoriaConPagina
   // (dentro del propio render) llegan a construirse igual.
-  return proximosMesesSlugs(2).map((mes) => ({ mes }));
+  return proximosMesesSlugs(12).map((mes) => ({ mes }));
 }
 
 function capitalizar(texto: string): string {

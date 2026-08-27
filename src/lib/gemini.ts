@@ -320,6 +320,11 @@ Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España
 Busca específicamente ${DESCRIPCION_FOCO[foco.valor]}. Devuelve TODOS los planes reales y verificables que encuentres para esto en concreto dentro de esa semana — no te limites a una cifra fija: si hay 2 buenos, devuelve 2; si hay 8, devuelve los 8. Mejor pocos reales y bien verificados que muchos con relleno o inventados, y no fuerces algo que no encaje de verdad solo por rellenar.
 
 Todos los planes que devuelvas aquí llevan "tipo": "excepcional" (son eventos con fecha concreta, no genéricos) y ${etiquetaCampoFoco(foco)} Es OBLIGATORIO indicar "fecha_inicio" (y "fecha_fin" si dura más de un día) con una fecha real dentro de esta semana o que se solape con ella — si no encuentras una fecha real y verificable, no incluyas el plan. Si de verdad no encuentras ninguno real para esto esta semana, devuelve un array vacío — no inventes ni fuerces nada.
+${
+  foco.tipo === "categoria"
+    ? `\nAunque el foco de esta búsqueda sea la categoría, no dejes de evaluar bien el campo "audiencia" de cada plan (ver más abajo) — no le pongas "generico" por inercia solo porque estás concentrado en encontrar ${DESCRIPCION_FOCO[foco.valor]}. Si alguno de estos planes es claramente mejor en pareja o con niños, márcalo así: también alimenta esos otros filtros del sitio.`
+    : ""
+}
 
 ${CAMPOS_JSON}
 `.trim();
@@ -332,23 +337,50 @@ ${CAMPOS_JSON}
 // la dedicada a "pareja" encuentran el mismo concierto) — se fusiona por
 // título en vez de duplicar la tarjeta, uniendo las audiencias que traiga
 // cada aparición (sin repetir "generico" si ya hay alguna específica).
+function normalizarTitulo(titulo: string): string {
+  return titulo
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .replace(/[^a-z0-9\s]/g, " ") // quita comillas, dos puntos, etc.
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Dos títulos distintos pueden ser el mismo evento real (ej. "Exposición
+// 'Dinosaurios de la Patagonia' en CaixaForum" vs "Dinosaurios de la
+// Patagonia en CaixaForum Sevilla", encontrados por dos búsquedas
+// distintas) — se compara por contención y por solape de palabras en vez
+// de exigir una igualdad exacta, que dejaba pasar justo estos casos.
+function mismoEvento(a: string, b: string): boolean {
+  const na = normalizarTitulo(a);
+  const nb = normalizarTitulo(b);
+  if (na === nb) return true;
+  if (na.length > 8 && nb.length > 8 && (na.includes(nb) || nb.includes(na))) return true;
+
+  const palabrasA = new Set(na.split(" ").filter((w) => w.length > 2));
+  const palabrasB = new Set(nb.split(" ").filter((w) => w.length > 2));
+  const menor = Math.min(palabrasA.size, palabrasB.size);
+  if (menor === 0) return false;
+  const interseccion = [...palabrasA].filter((w) => palabrasB.has(w)).length;
+  return interseccion / menor >= 0.7;
+}
+
 export function fusionarPlanesDuplicados(planes: PlanGenerado[]): PlanGenerado[] {
-  const porTitulo = new Map<string, PlanGenerado>();
+  const resultado: PlanGenerado[] = [];
   for (const plan of planes) {
-    const clave = plan.titulo.trim().toLowerCase();
-    const existente = porTitulo.get(clave);
+    const existente = resultado.find((p) => mismoEvento(p.titulo, plan.titulo));
     if (!existente) {
-      porTitulo.set(clave, plan);
+      resultado.push({ ...plan });
       continue;
     }
     const audienciaUnida = Array.from(new Set([...existente.audiencia, ...plan.audiencia]));
     const especificas = audienciaUnida.filter((a) => a !== "generico");
-    porTitulo.set(clave, {
-      ...existente,
-      audiencia: (especificas.length > 0 ? especificas : audienciaUnida) as Audiencia[],
-    });
+    existente.audiencia = (especificas.length > 0 ? especificas : audienciaUnida) as Audiencia[];
+    // Se queda con el título más largo (normalmente el más descriptivo).
+    if (plan.titulo.length > existente.titulo.length) existente.titulo = plan.titulo;
   }
-  return Array.from(porTitulo.values());
+  return resultado;
 }
 
 // Repaso diario (cron de martes a domingo): la semana ya se generó el
@@ -403,27 +435,18 @@ Genera entre 10 y 20 planes para ese mes completo (no solo para un día concreto
 ${INSTRUCCIONES_FORMATO}
 `.trim();
 
-  const INTENTOS = 3;
-  for (let intento = 1; intento <= INTENTOS; intento++) {
-    const { texto, usage } = await llamarGemini(prompt);
-    try {
-      const planes = normalizarPlanes(extraerJSON(texto));
-      // La consulta de la página de mes busca el slug exacto ("agosto") dentro
-      // de "vigencia" — Gemini casi siempre escribe una frase humana en su
-      // lugar ("agosto de 2026"), así que se añade aquí el tag exacto sin
-      // depender de que lo respete el prompt.
-      return {
-        planes: planes.map((p) => ({
-          ...p,
-          vigencia: p.vigencia.includes(mesSlug) ? p.vigencia : [...p.vigencia, mesSlug],
-        })),
-        usage,
-      };
-    } catch (err) {
-      if (intento === INTENTOS) throw err;
-    }
-  }
-  throw new Error("generarPlanesDelMes: no debería llegar aquí");
+  const { planes, usage } = await llamarGeminiConReintentos(prompt, "generarPlanesDelMes");
+  // La consulta de la página de mes busca el slug exacto ("agosto") dentro
+  // de "vigencia" — Gemini casi siempre escribe una frase humana en su
+  // lugar ("agosto de 2026"), así que se añade aquí el tag exacto sin
+  // depender de que lo respete el prompt.
+  return {
+    planes: planes.map((p) => ({
+      ...p,
+      vigencia: p.vigencia.includes(mesSlug) ? p.vigencia : [...p.vigencia, mesSlug],
+    })),
+    usage,
+  };
 }
 
 // Google Places puntúa "buen sitio en general", no "famoso concretamente
