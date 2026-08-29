@@ -537,12 +537,20 @@ function esPrecioGratis(precio: string | null): boolean {
   // Catedral o el Alcázar pueden generarse como plan "genérico" (son
   // recurrentes, no un evento puntual) y aun así cobrar entrada. Afirmar
   // que algo es gratis sin pruebas es peor que dejarlo fuera de la lista.
-  //
-  // Que la palabra "gratis" aparezca en el texto no basta: "6 € (gratis
-  // menores de 16 años y clientes CaixaBank)" la contiene, pero para la
-  // mayoría de visitantes el plan cuesta 6€ — si además hay una cifra de
-  // dinero de por medio, es una excepción parcial, no gratis de verdad.
   if (precio === null) return false;
+
+  // Si el texto EMPIEZA por "gratis"/"gratuito" (ver gemini.ts, campo
+  // "precio"), es que hay una franja realmente abierta a cualquiera (un
+  // día/hora concreto, con o sin reserva) aunque el resto del texto
+  // mencione el precio normal del resto de días — eso sí cuenta como
+  // gratis, ver conversación (ej. "Gratis los lunes 16-19h; el resto 13€").
+  if (/^\s*(gratis|gratuit|entrada libre|sin coste)/i.test(precio)) return true;
+
+  // Si en cambio "gratis" aparece de pasada en mitad del texto, es una
+  // excepción parcial para un colectivo concreto, no gratis de verdad para
+  // el visitante habitual: "6 € (gratis menores de 16 años y clientes
+  // CaixaBank)" la contiene, pero para la mayoría el plan cuesta 6€ — si
+  // además hay una cifra de dinero de por medio, no cuenta.
   const mencionaGratis = /gratis|gratuit|libre|sin coste/i.test(precio);
   const tieneCifraDeDinero = /\d+\s*(€|euros?)/i.test(precio);
   return mencionaGratis && !tieneCifraDeDinero;
