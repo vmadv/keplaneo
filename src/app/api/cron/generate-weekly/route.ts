@@ -4,11 +4,13 @@ import { supabaseAdmin } from "@/lib/supabase";
 import {
   generarPlanesSemanales,
   generarPlanesEnfocados,
+  generarPlanesGenericos,
   FOCOS_SEMANALES,
   fusionarPlanesDuplicados,
   estimarCoste,
 } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
+import { getTitulosGenericosActivos } from "@/lib/queries";
 import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
 
@@ -28,10 +30,16 @@ export const maxDuration = 300;
 // variable con página propia (FOCOS_SEMANALES: pareja/familia/conciertos/
 // exposiciones/teatro/monólogos) — antes generarPlanesEnfocados existía
 // pero no la llamaba ningún cron real, así que esas páginas solo recibían
-// lo que la búsqueda mixta encontrara de paso (ver conversación). Las 7
-// llamadas de un mismo municipio van en paralelo (el reintento con jitter
-// de llamarGeminiConReintentos ya cuenta con esto); los municipios se
-// procesan en lotes para no acercarse al límite de 300s de la función.
+// lo que la búsqueda mixta encontrara de paso (ver conversación). También
+// se lanza generarPlanesGenericos, que amplía el catálogo de "siempre"
+// (monumentos, museos, mercados...) con sitios nuevos que no estén ya
+// activos para este municipio — sin esto, los genéricos solo salían como
+// relleno de la búsqueda mixta cuando faltaban puntuales, así que en
+// ciudades con agenda activa el catálogo de "todo el año" apenas crecía
+// (ver conversación). Las 8 llamadas de un mismo municipio van en paralelo
+// (el reintento con jitter de llamarGeminiConReintentos ya cuenta con
+// esto); los municipios se procesan en lotes para no acercarse al límite
+// de 300s de la función.
 
 async function enLotes<T, R>(items: T[], tamano: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const resultados: R[] = [];
@@ -104,14 +112,16 @@ export async function GET(request: NextRequest) {
 
   const resultados = await enLotes(municipios, 3, async (municipio) => {
     try {
-      const [mixta, ...enfocadas] = await Promise.all([
+      const conocidos = await getTitulosGenericosActivos(municipio.id);
+      const [mixta, generico, ...enfocadas] = await Promise.all([
         generarPlanesSemanales(municipio.nombre, fechaLunesLegible, fechaDomingoLegible),
+        generarPlanesGenericos(municipio.nombre, conocidos),
         ...FOCOS_SEMANALES.map((foco) =>
           generarPlanesEnfocados(municipio.nombre, fechaLunesLegible, fechaDomingoLegible, foco)
         ),
       ]);
-      const planesCrudos = [mixta, ...enfocadas].flatMap((r) => r.planes);
-      const usage = sumarUso([mixta, ...enfocadas].map((r) => r.usage));
+      const planesCrudos = [mixta, generico, ...enfocadas].flatMap((r) => r.planes);
+      const usage = sumarUso([mixta, generico, ...enfocadas].map((r) => r.usage));
 
       // El mismo evento real puede salir tanto en la búsqueda mixta como en
       // una enfocada (con otra redacción) — se fusiona aquí, antes de que

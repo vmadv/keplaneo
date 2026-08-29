@@ -565,6 +565,19 @@ export async function getEventosGratisActivos(municipioId: string): Promise<Even
   return eventos.filter((e) => esPrecioGratis(e.precio));
 }
 
+// Títulos de los "generico" activos de un municipio, para pasárselos a
+// generarPlanesGenericos (ver gemini.ts) y que la búsqueda dedicada amplíe
+// el catálogo con sitios nuevos en vez de redescubrir siempre los mismos.
+export async function getTitulosGenericosActivos(municipioId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("eventos")
+    .select("titulo")
+    .eq("municipio_id", municipioId)
+    .eq("activo", true)
+    .is("fecha_inicio", null);
+  return (data ?? []).map((e) => e.titulo);
+}
+
 // Una dimensión de filtro más (por precio) además de audiencia y vigencia,
 // para hoy y finde (que salen del lote diario de `planes`, con su propio
 // texto generado — "esta semana" usa getEventosGratisActivos en su lugar,

@@ -349,6 +349,40 @@ ${CAMPOS_JSON}
   return llamarGeminiConReintentos(prompt, "generarPlanesEnfocados");
 }
 
+// Búsqueda dedicada a planes "generico" (evergreen, sin fecha) — sin esto,
+// los genéricos solo salían como relleno de generarPlanesSemanales cuando
+// no había suficientes puntuales para llegar a su cupo, así que en
+// ciudades con agenda real activa (como Sevilla) apenas se generaban, y
+// además tendían a redescubrir siempre los mismos 4-5 sitios más obvios en
+// vez de ampliar el catálogo — ver conversación (por eso "todo el año"
+// mostraba tan pocos planes gratis reales aunque la ciudad tenga muchos
+// más). Recibe los títulos de los genéricos que ya tenemos en este
+// municipio para que cada tanda amplíe el catálogo con sitios NUEVOS en
+// vez de volver a redactar los mismos de siempre.
+export async function generarPlanesGenericos(
+  municipioNombre: string,
+  conocidos: string[]
+): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
+  const listaConocidos =
+    conocidos.length > 0
+      ? `\nYa tenemos estos planes genéricos para ${municipioNombre} — NO los repitas, y no generes otro plan sobre el mismo lugar real con un título distinto:\n${conocidos.map((t) => `- ${t}`).join("\n")}\n\nBusca EXCLUSIVAMENTE lugares NUEVOS que no estén ya en esa lista.\n`
+      : "";
+
+  const prompt = `
+Eres un editor local que conoce a fondo ${municipioNombre} (España) todo el año, no solo la agenda de esta semana.
+
+Busca planes "generico" (disponibles siempre, sin fecha concreta) reales y verificables, con variedad real de TIPO de lugar — como referencia orientativa (no una lista cerrada ni obligatoria), piensa en monumentos, palacios, conventos, museos, iglesias, mercados, parques/jardines, rincones únicos poco conocidos, ferias/fiestas tradicionales y calles o barrios con carácter propio.
+${listaConocidos}
+Genera entre 8 y 15 planes si de verdad existen sitios genuinamente distintos — mejor devolver menos (o un array vacío) que rellenar con variaciones del mismo lugar o con actividades-tipo genéricas sin anclaje real (una ruta en bici sin destino, un "paseo por el barrio histórico" sin más).
+
+Todos los planes que devuelvas aquí llevan "tipo": "generico".
+
+${CAMPOS_JSON}
+`.trim();
+
+  return llamarGeminiConReintentos(prompt, "generarPlanesGenericos");
+}
+
 // Combina los resultados de la búsqueda mixta + las dedicadas por variable:
 // el mismo evento real puede salir de más de una búsqueda (ej. la mixta y
 // la dedicada a "pareja" encuentran el mismo concierto) — se fusiona por
