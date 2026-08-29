@@ -19,6 +19,40 @@ function construirConsultaGeocoding(ubicacion: string, municipioNombre: string):
   return `${nombreDelLugar}, ${municipioNombre}, España`;
 }
 
+// mismoEvento compara títulos, y un plan "generico" (evergreen, sin fecha)
+// se redacta de cero en cada tanda de generación — el mismo mercado o
+// parque real puede salir con un título tan distinto cada vez que el
+// solapamiento de palabras no llega al umbral, y se crea una ficha
+// duplicada (ver conversación: 4+ fichas para "Mercado de Triana" con
+// títulos como "Ruta gastronómica..." / "Jornada de inmersión cultural...").
+// Como refuerzo, dos genéricos cuya UBICACIÓN es el mismo lugar real se
+// tratan como el mismo evento sin más — la ubicación es un dato mucho más
+// estable que el título creativo. Reutiliza el mismo algoritmo de
+// mismoEvento (normaliza + solapamiento de palabras), pero solo sobre el
+// PRIMER tramo de la ubicación (antes de la primera coma, igual que
+// construirConsultaGeocoding) — comparar la dirección completa fundía por
+// error un museo con el parque donde está dentro (ej. "La Casa de la
+// Ciencia de Sevilla, Parque de María Luisa" acababa emparejado con
+// "Parque de María Luisa" a secas, por compartir el nombre del parque en
+// la dirección). Con solo el primer tramo, "Setas de Sevilla" y "Metropol
+// Parasol (Las Setas de Sevilla)" sí se reconocen como el mismo sitio, sin
+// fundir dos lugares distintos que comparten una palabra suelta (ej.
+// "Centro Cerámica Triana" vs "Mercado de Triana"). Nunca se aplica a
+// "excepcional": dos eventos puntuales en el mismo recinto en fechas
+// distintas siguen siendo eventos distintos.
+function primerTramoUbicacion(ubicacion: string): string {
+  return ubicacion.split(",")[0].trim();
+}
+
+function mismoLugarGenerico(
+  a: { esGenerico: boolean; ubicacion: string | null | undefined },
+  b: { esGenerico: boolean; ubicacion: string | null | undefined }
+): boolean {
+  if (!a.esGenerico || !b.esGenerico) return false;
+  if (!a.ubicacion || !b.ubicacion) return false;
+  return mismoEvento(primerTramoUbicacion(a.ubicacion), primerTramoUbicacion(b.ubicacion));
+}
+
 // Da identidad estable a TODOS los planes de un lote recién generado (no
 // solo los puntuales — un plan genérico como "Parque Municipal" es igual de
 // clicable y, de hecho, al repetirse cada día acaba siendo una página
@@ -55,7 +89,7 @@ export async function upsertEventosDelLote(
 
   const { data: existentes, error: errorSelectExistentes } = await supabaseAdmin
     .from("eventos")
-    .select("id, slug, titulo, lat, lon")
+    .select("id, slug, titulo, lat, lon, ubicacion, fecha_inicio")
     .eq("municipio_id", municipioId);
   if (errorSelectExistentes) {
     throw new Error(`eventos.select (existentes): ${errorSelectExistentes.message}`);
@@ -75,7 +109,14 @@ export async function upsertEventosDelLote(
   // al segundo sin nada contra qué emparejar y creando un duplicado nuevo.
   const grupos: number[][] = [];
   for (let i = 0; i < planes.length; i++) {
-    const grupo = grupos.find((g) => mismoEvento(planes[g[0]].titulo, planes[i].titulo));
+    const grupo = grupos.find(
+      (g) =>
+        mismoEvento(planes[g[0]].titulo, planes[i].titulo) ||
+        mismoLugarGenerico(
+          { esGenerico: planes[g[0]].tipo === "generico", ubicacion: planes[g[0]].ubicacion },
+          { esGenerico: planes[i].tipo === "generico", ubicacion: planes[i].ubicacion }
+        )
+    );
     if (grupo) grupo.push(i);
     else grupos.push([i]);
   }
@@ -107,7 +148,11 @@ export async function upsertEventosDelLote(
       relevancia: p.relevancia ?? null,
     };
 
-    const idxExistente = disponibles.findIndex((e) => mismoEvento(e.titulo, p.titulo));
+    const idxExistente = disponibles.findIndex(
+      (e) =>
+        mismoEvento(e.titulo, p.titulo) ||
+        mismoLugarGenerico({ esGenerico: e.fecha_inicio === null, ubicacion: e.ubicacion }, { esGenerico: p.tipo === "generico", ubicacion: p.ubicacion })
+    );
     const existente = idxExistente >= 0 ? disponibles[idxExistente] : null;
 
     let vinculo: EventoVinculado;
