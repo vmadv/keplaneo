@@ -278,12 +278,18 @@ export interface PlanConMunicipio extends Plan {
   municipio_nombre: string;
 }
 
+interface EventosDelDestacadoJoin {
+  slug: string;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  categoria: Categoria | null;
+  cartel_url: string | null;
+  foto_lugar_nombre: string | null;
+}
+
 function filaAPlanConMunicipio(
   fila: Plan & {
-    eventos:
-      | { slug: string; fecha_inicio: string | null; fecha_fin: string | null; categoria: Categoria | null }
-      | { slug: string; fecha_inicio: string | null; fecha_fin: string | null; categoria: Categoria | null }[]
-      | null;
+    eventos: EventosDelDestacadoJoin | EventosDelDestacadoJoin[] | null;
   },
   municipio: { slug: string; nombre: string }
 ): PlanConMunicipio {
@@ -295,6 +301,8 @@ function filaAPlanConMunicipio(
     evento_fecha_inicio: ev?.fecha_inicio ?? null,
     evento_fecha_fin: ev?.fecha_fin ?? null,
     evento_categoria: ev?.categoria ?? null,
+    evento_cartel_url: ev?.cartel_url ?? null,
+    evento_foto_lugar_nombre: ev?.foto_lugar_nombre ?? null,
     municipio_slug: municipio.slug,
     municipio_nombre: municipio.nombre,
   };
@@ -316,7 +324,7 @@ async function getPlanesPorVigenciaMulti(
       let query = supabase
         .from("planes")
         .select(
-          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria)"
+          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, cartel_url, foto_lugar_nombre)"
         )
         .eq("municipio_id", m.id)
         .contains("vigencia", [vigencia]);
@@ -366,7 +374,7 @@ async function getPlanesDestacadosMulti(
   let query = supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, fecha_inicio, fecha_fin, categoria, precio, relevancia)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, fecha_inicio, fecha_fin, categoria, precio, relevancia, cartel_url, foto_lugar_nombre)"
     )
     .in(
       "municipio_id",

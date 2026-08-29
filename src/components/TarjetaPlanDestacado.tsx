@@ -1,43 +1,66 @@
 import { Sparkles } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import TextoConNegritas from "./TextoConNegritas";
+import { urlFotoProxy } from "@/lib/places";
 import type { PlanConMunicipio } from "@/lib/queries";
 
 // Tarjeta de la portada MVP (ver conversación): igual que las de PlanList,
-// pero con la etiqueta del municipio siempre visible — de un vistazo se ve
-// de qué ciudad es cada plan, y esa etiqueta hace también de enlace directo
-// a esa ciudad.
+// pero con la etiqueta del municipio opcional — en la portada (varias
+// ciudades mezcladas) hace falta para saber de un vistazo de dónde es cada
+// plan; en el hub de un único municipio (ya lo dice el título de la
+// sección) es redundante repetirla en cada tarjeta, así que se omite ahí.
 export default function TarjetaPlanDestacado({
   plan,
   etiquetaEventoPuntual,
+  mostrarMunicipio = true,
 }: {
   plan: PlanConMunicipio;
   etiquetaEventoPuntual: string;
+  mostrarMunicipio?: boolean;
 }) {
   const base = `/${plan.municipio_slug}`;
   const href = plan.evento_slug ? `${base}/eventos/${plan.evento_slug}` : base;
+  // Cartel real primero (poco frecuente); si no, foto del lugar vía Google
+  // Places — mismo criterio que PlanList.tsx/ListaEventos.tsx.
+  const foto = plan.evento_cartel_url ?? plan.evento_foto_lugar_nombre ?? undefined;
+  const esCartel = Boolean(plan.evento_cartel_url);
 
   return (
     <Link href={href} className="card-sticker relative block p-4 pt-6">
-      <span
-        className="absolute -top-3 left-4 px-2.5 py-1 rounded-md text-xs font-extrabold uppercase tracking-wide"
-        style={{ background: "#000", color: "#fff", border: "2px solid var(--foreground)" }}
-      >
-        {plan.municipio_nombre}
-      </span>
-      {plan.tipo === "excepcional" && (
+      {mostrarMunicipio && (
         <span
-          className="badge-pill mb-2 inline-flex"
-          style={{ background: "var(--secondary)", color: "var(--secondary-foreground)", borderColor: "var(--secondary)" }}
+          className="absolute -top-3 left-4 px-2.5 py-1 rounded-md text-xs font-extrabold uppercase tracking-wide"
+          style={{ background: "#000", color: "#fff", border: "2px solid var(--foreground)" }}
         >
-          <Sparkles size={11} strokeWidth={2.5} className="mr-1" />
-          {etiquetaEventoPuntual}
+          {plan.municipio_nombre}
         </span>
       )}
-      <h3 className="font-extrabold text-base text-balance">{plan.titulo}</h3>
-      <p className="text-sm mt-1 line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
-        <TextoConNegritas texto={plan.descripcion.split("\n\n")[0]} />
-      </p>
+      <div className="flex items-start gap-3">
+        {foto && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={esCartel ? foto : urlFotoProxy(foto, 128)}
+            alt=""
+            className="w-16 h-16 rounded-lg object-cover shrink-0"
+            style={{ border: "2px solid var(--foreground)" }}
+          />
+        )}
+        <div className="min-w-0">
+          {plan.tipo === "excepcional" && (
+            <span
+              className="badge-pill mb-2 inline-flex"
+              style={{ background: "var(--secondary)", color: "var(--secondary-foreground)", borderColor: "var(--secondary)" }}
+            >
+              <Sparkles size={11} strokeWidth={2.5} className="mr-1" />
+              {etiquetaEventoPuntual}
+            </span>
+          )}
+          <h3 className="font-extrabold text-base text-balance">{plan.titulo}</h3>
+          <p className="text-sm mt-1 line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
+            <TextoConNegritas texto={plan.descripcion.split("\n\n")[0]} />
+          </p>
+        </div>
+      </div>
     </Link>
   );
 }

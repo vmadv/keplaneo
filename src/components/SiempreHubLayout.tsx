@@ -125,7 +125,7 @@ export default async function SiempreHubLayout({
             <ul className="grid sm:grid-cols-2 gap-5">
               {destacados.map((plan) => (
                 <li key={plan.id}>
-                  <TarjetaPlanDestacado plan={plan} etiquetaEventoPuntual={tBadges("eventoPuntual")} />
+                  <TarjetaPlanDestacado plan={plan} etiquetaEventoPuntual={tBadges("eventoPuntual")} mostrarMunicipio={false} />
                 </li>
               ))}
             </ul>
