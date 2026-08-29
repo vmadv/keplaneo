@@ -187,7 +187,7 @@ async function getPlanesPorVigencia(
     // Estricto: solo lo etiquetado específicamente para esa audiencia, sin
     // colar automáticamente lo "generico" — ver conversación. Con casi
     // todo el contenido llevando "generico" de propina, meterlo aquí
-    // dejaba /pareja y /familia mostrando prácticamente la misma lista.
+    // dejaba /pareja y /con-ninos mostrando prácticamente la misma lista.
     query = query.contains("audiencia", [audiencia]);
   }
 
@@ -221,7 +221,7 @@ export async function getEvento(
   const { data } = await supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, lat, lon, primera_deteccion, ultima_deteccion, activo"
     )
     .eq("municipio_id", municipioId)
     .eq("slug", slug)
@@ -340,15 +340,16 @@ export function getPlanesMesMulti(
 // evento_id en vez de limitar directo en SQL.
 async function getPlanesDestacadosMulti(
   municipios: { id: string; slug: string; nombre: string }[],
-  limite: number
+  limite: number,
+  filtro?: { audiencia?: "pareja" | "familia"; soloGratis?: boolean }
 ): Promise<PlanConMunicipio[]> {
   if (municipios.length === 0) return [];
   const municipioPorId = new Map(municipios.map((m) => [m.id, m]));
 
-  const { data } = await supabase
+  let query = supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, fecha_inicio, fecha_fin, categoria)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, fecha_inicio, fecha_fin, categoria, precio, relevancia)"
     )
     .in(
       "municipio_id",
@@ -356,17 +357,31 @@ async function getPlanesDestacadosMulti(
     )
     .eq("tipo", "excepcional")
     .overlaps("vigencia", ["hoy", "finde"])
+    // "Mejores" de verdad: por relevancia (ver conversación), no por cuándo
+    // se generó — con la fecha de generación solo como desempate cuando la
+    // relevancia coincide (o cuando ninguno de los dos la tiene aún).
+    .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" })
     .order("fecha_generacion", { ascending: false })
     .limit(limite * 10);
+
+  if (filtro?.audiencia) {
+    query = query.contains("audiencia", [filtro.audiencia]);
+  }
+
+  const { data } = await query;
 
   const vistos = new Set<string>();
   const resultado: PlanConMunicipio[] = [];
   for (const fila of data ?? []) {
-    const f = fila as unknown as Plan;
+    const f = fila as unknown as Plan & { eventos?: { precio: string | null } | { precio: string | null }[] };
     const clave = f.evento_id ?? f.id;
     if (vistos.has(clave)) continue;
     const m = municipioPorId.get(f.municipio_id);
     if (!m) continue;
+    if (filtro?.soloGratis) {
+      const ev = Array.isArray(f.eventos) ? f.eventos[0] : f.eventos;
+      if (!esPrecioGratis(ev?.precio ?? null)) continue;
+    }
     vistos.add(clave);
     resultado.push(filaAPlanConMunicipio(fila as never, m));
     if (resultado.length >= limite) break;
@@ -376,9 +391,10 @@ async function getPlanesDestacadosMulti(
 
 export function getPlanesDestacadosDeMunicipio(
   municipio: { id: string; slug: string; nombre: string },
-  limite = 4
+  limite = 4,
+  filtro?: { audiencia?: "pareja" | "familia"; soloGratis?: boolean }
 ) {
-  return getPlanesDestacadosMulti([municipio], limite);
+  return getPlanesDestacadosMulti([municipio], limite, filtro);
 }
 
 export function getPlanesDestacadosSinMunicipio(
@@ -454,7 +470,7 @@ async function getEventosDelMunicipio(
   let query = supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, lat, lon, primera_deteccion, ultima_deteccion, activo"
     )
     .eq("municipio_id", municipioId)
     .eq("activo", true);
@@ -490,7 +506,15 @@ function esPrecioGratis(precio: string | null): boolean {
   // Catedral o el Alcázar pueden generarse como plan "genérico" (son
   // recurrentes, no un evento puntual) y aun así cobrar entrada. Afirmar
   // que algo es gratis sin pruebas es peor que dejarlo fuera de la lista.
-  return precio !== null && /gratis|gratuit|libre|sin coste/i.test(precio);
+  //
+  // Que la palabra "gratis" aparezca en el texto no basta: "6 € (gratis
+  // menores de 16 años y clientes CaixaBank)" la contiene, pero para la
+  // mayoría de visitantes el plan cuesta 6€ — si además hay una cifra de
+  // dinero de por medio, es una excepción parcial, no gratis de verdad.
+  if (precio === null) return false;
+  const mencionaGratis = /gratis|gratuit|libre|sin coste/i.test(precio);
+  const tieneCifraDeDinero = /\d+\s*(€|euros?)/i.test(precio);
+  return mencionaGratis && !tieneCifraDeDinero;
 }
 
 // "Gratis" para /esta-semana/gratis y /gratis (atemporal) — mismo criterio

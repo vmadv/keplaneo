@@ -2,7 +2,7 @@ import { supabaseAdmin } from "./supabase";
 import { slugify } from "./slug";
 import { geocodificar } from "./geocode";
 import { fechaDesdeTextoEspanol } from "./dates";
-import type { PlanGenerado } from "./gemini";
+import { mismoEvento, type PlanGenerado } from "./gemini";
 
 export interface EventoVinculado {
   id: string;
@@ -22,11 +22,18 @@ function construirConsultaGeocoding(ubicacion: string, municipioNombre: string):
 // Da identidad estable a TODOS los planes de un lote recién generado (no
 // solo los puntuales — un plan genérico como "Parque Municipal" es igual de
 // clicable y, de hecho, al repetirse cada día acaba siendo una página
-// evergreen con más autoridad acumulada que una puntual): si ya existe un
-// evento con el mismo slug en este municipio, lo actualiza (misma URL,
-// datos frescos); si no, lo crea. Los que no se detectan hoy pasan a
-// "activo = false" — no se borran, para no romper enlaces ni URLs ya
-// indexadas.
+// evergreen con más autoridad acumulada que una puntual): si el evento ya
+// existe en este municipio (de CUALQUIER ejecución anterior, no solo de
+// este lote), lo actualiza en vez de crear una fila nueva. Los que no se
+// detectan hoy pasan a "activo = false" — no se borran, para no romper
+// enlaces ni URLs ya indexadas.
+//
+// "¿Ya existe?" se decide por título parecido (mismoEvento), no por slug
+// exacto — el mismo evento real puede llegar con un título ligeramente
+// distinto según qué búsqueda lo haya encontrado (diaria, semanal, mensual,
+// o una de las dedicadas por variable), y compararlo letra a letra dejaba
+// pasar justo esos casos, produciendo una URL duplicada por cada redacción
+// distinta del mismo evento (ver conversación).
 //
 // Devuelve, por índice dentro del array `planes` original, el evento
 // vinculado (id + slug) para cada plan.
@@ -46,14 +53,49 @@ export async function upsertEventosDelLote(
   const vinculos = new Map<number, EventoVinculado>();
   if (!supabaseAdmin) return vinculos;
 
-  for (let i = 0; i < planes.length; i++) {
-    const p = planes[i];
+  const { data: existentes, error: errorSelectExistentes } = await supabaseAdmin
+    .from("eventos")
+    .select("id, slug, titulo, lat, lon")
+    .eq("municipio_id", municipioId);
+  if (errorSelectExistentes) {
+    throw new Error(`eventos.select (existentes): ${errorSelectExistentes.message}`);
+  }
 
-    const slug = slugify(p.titulo);
+  // Copia mutable: una vez que un evento ya guardado se empareja con un
+  // grupo de este lote, se retira de la lista para que otro grupo no pueda
+  // "robárselo" también.
+  const disponibles = [...(existentes ?? [])];
+  const slugsOcupados = new Set((existentes ?? []).map((e) => e.slug));
+
+  // Agrupa ANTES de tocar la BD: dos planes de este mismo lote pueden ser
+  // el mismo evento real (típico cuando la búsqueda mixta y una dedicada
+  // encuentran el mismo concierto por separado) sin que fusionarPlanesDuplicados
+  // los haya unido ya más arriba. Sin este paso, el primero de los dos se
+  // empareja con la fila existente y la "consume" de `disponibles`, dejando
+  // al segundo sin nada contra qué emparejar y creando un duplicado nuevo.
+  const grupos: number[][] = [];
+  for (let i = 0; i < planes.length; i++) {
+    const grupo = grupos.find((g) => mismoEvento(planes[g[0]].titulo, planes[i].titulo));
+    if (grupo) grupo.push(i);
+    else grupos.push([i]);
+  }
+
+  for (const grupo of grupos) {
+    // El título más largo del grupo suele ser el más descriptivo (mismo
+    // criterio que fusionarPlanesDuplicados), y las audiencias se unen sin
+    // repetir "generico" si ya hay alguna específica.
+    const indiceRepresentante = grupo.reduce(
+      (mejor, i) => (planes[i].titulo.length > planes[mejor].titulo.length ? i : mejor),
+      grupo[0]
+    );
+    const p = planes[indiceRepresentante];
+    const audienciaUnida = Array.from(new Set(grupo.flatMap((i) => planes[i].audiencia)));
+    const especificas = audienciaUnida.filter((a) => a !== "generico");
+
     const datos = {
       descripcion: p.descripcion,
       momento: p.momento,
-      audiencia: p.audiencia,
+      audiencia: especificas.length > 0 ? especificas : audienciaUnida,
       ubicacion: p.ubicacion ?? null,
       horario: p.horario ?? null,
       precio: p.precio ?? null,
@@ -62,17 +104,17 @@ export async function upsertEventosDelLote(
       fuente: p.fuente ?? null,
       preguntas_frecuentes: p.preguntas_frecuentes ?? [],
       categoria: p.categoria ?? "otros",
+      relevancia: p.relevancia ?? null,
     };
 
-    const { data: existente, error: errorSelect } = await supabaseAdmin
-      .from("eventos")
-      .select("id, lat, lon")
-      .eq("municipio_id", municipioId)
-      .eq("slug", slug)
-      .maybeSingle();
-    if (errorSelect) throw new Error(`eventos.select (${slug}): ${errorSelect.message}`);
+    const idxExistente = disponibles.findIndex((e) => mismoEvento(e.titulo, p.titulo));
+    const existente = idxExistente >= 0 ? disponibles[idxExistente] : null;
+
+    let vinculo: EventoVinculado;
 
     if (existente) {
+      disponibles.splice(idxExistente, 1);
+
       // Solo geocodifica si todavía no tiene coordenadas — Nominatim es
       // gratis pero pide un uso comedido, así que nunca se repite.
       const coords =
@@ -89,9 +131,21 @@ export async function upsertEventosDelLote(
           activo: true,
         })
         .eq("id", existente.id);
-      if (errorUpdate) throw new Error(`eventos.update (${slug}): ${errorUpdate.message}`);
-      vinculos.set(i, { id: existente.id, slug });
+      if (errorUpdate) throw new Error(`eventos.update (${existente.slug}): ${errorUpdate.message}`);
+      vinculo = { id: existente.id, slug: existente.slug };
     } else {
+      // Sin coincidencia por título — es un evento nuevo de verdad. El slug
+      // se deriva del título, pero dos títulos bien distintos podrían
+      // normalizar al mismo slug (choca con la restricción unique de la
+      // tabla); en ese caso raro se numera para no pisar al que ya existe.
+      let slug = slugify(p.titulo);
+      if (slugsOcupados.has(slug)) {
+        let n = 2;
+        while (slugsOcupados.has(`${slug}-${n}`)) n++;
+        slug = `${slug}-${n}`;
+      }
+      slugsOcupados.add(slug);
+
       const coords = datos.ubicacion
         ? await geocodificar(construirConsultaGeocoding(datos.ubicacion, municipioNombre))
         : null;
@@ -112,8 +166,11 @@ export async function upsertEventosDelLote(
         .select("id")
         .single();
       if (errorInsert) throw new Error(`eventos.insert (${slug}): ${errorInsert.message}`);
-      if (creado) vinculos.set(i, { id: creado.id, slug });
+      if (!creado) continue;
+      vinculo = { id: creado.id, slug };
     }
+
+    for (const i of grupo) vinculos.set(i, vinculo);
   }
 
   if (desactivarNoEncontrados) {

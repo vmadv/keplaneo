@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { generarPlanesSemanales, estimarCoste } from "@/lib/gemini";
+import { generarPlanesSemanales, fusionarPlanesDuplicados, estimarCoste } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
@@ -23,13 +23,13 @@ function pathsDelMunicipio(base: string): string[] {
     base,
     `${base}/hoy`,
     `${base}/hoy/pareja`,
-    `${base}/hoy/familia`,
+    `${base}/hoy/con-ninos`,
     `${base}/fin-de-semana`,
     `${base}/fin-de-semana/pareja`,
-    `${base}/fin-de-semana/familia`,
+    `${base}/fin-de-semana/con-ninos`,
     `${base}/esta-semana`,
     `${base}/esta-semana/pareja`,
-    `${base}/esta-semana/familia`,
+    `${base}/esta-semana/con-ninos`,
     `${base}/esta-semana/gratis`,
     `${base}/gratis`,
   ];
@@ -66,11 +66,16 @@ export async function GET(request: NextRequest) {
 
   for (const municipio of municipios) {
     try {
-      const { planes, usage } = await generarPlanesSemanales(
+      const { planes: planesCrudos, usage } = await generarPlanesSemanales(
         municipio.nombre,
         formatearFechaLegible(diasSemana[0]),
         formatearFechaLegible(diasSemana[6])
       );
+      // Gemini puede describir el mismo evento real dos veces en una misma
+      // respuesta — se fusiona aquí, antes de que la fila repetida llegue
+      // a `planes.insert` (el vínculo con `eventos` ya lo agrupa, pero eso
+      // no evita la fila de más en `planes`).
+      const planes = fusionarPlanesDuplicados(planesCrudos);
 
       // "Foto completa" de la semana: cualquier evento de este municipio no
       // detectado aquí se marca inactivo (desactivarNoEncontrados=true).

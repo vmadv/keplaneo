@@ -22,7 +22,7 @@
     "finde": "Este fin de semana",
     "semana": "Esta semana",
     "enPareja": "En pareja",
-    "enFamilia": "En familia",
+    "enFamilia": "Con niños",
     "gratis": "Gratis",
     "todos": "Todos"
   },
@@ -34,7 +34,7 @@
   },
   "Audiencia": {
     "pareja": "En pareja",
-    "familia": "En familia",
+    "familia": "Con niños",
     "generico": "Para todos",
     "conNinos": "Con niños",
     "tituloSiemprePareja": "Qué hacer en {municipio} en pareja",
@@ -70,8 +70,17 @@
   "MunicipioHome": {
     "titulo": "Qué hacer en {municipio}",
     "hoyFecha": "Hoy, {fecha}",
-    "tituloDestacados": "Lo más destacado en {municipio}",
-    "tituloTodo": "Todo lo que puedes hacer en {municipio}"
+    "tituloDestacados": "Lo más destacado en {municipio} esta semana",
+    "tituloTodo": "Todo lo que puedes hacer en {municipio} todo el año",
+    "verMasEstaSemana": "Ver más planes{calificador} en {municipio} esta semana",
+    "verMasPlanes": "Ver más",
+    "verMenosPlanes": "Ver menos",
+    "tituloDestacadosPareja": "Lo más destacado en {municipio} esta semana en pareja",
+    "tituloDestacadosFamilia": "Lo más destacado en {municipio} esta semana con niños",
+    "tituloDestacadosGratis": "Lo más destacado gratis en {municipio} esta semana",
+    "tituloTodoPareja": "Todo lo que puedes hacer en pareja en {municipio} todo el año",
+    "tituloTodoFamilia": "Todo lo que puedes hacer con niños en {municipio} todo el año",
+    "tituloTodoGratis": "Todo lo que puedes hacer gratis en {municipio} todo el año"
   },
   "Hoy": {
     "titulo": "Qué hacer hoy en {municipio}",
@@ -92,15 +101,20 @@
     "tituloSiempre": "Qué hacer gratis en {municipio}"
   },
   "Mes": {
-    "titulo": "Qué hacer en {municipio} en {mes}"
+    "titulo": "Qué hacer en {municipio} en {mes}",
+    "metaDescripcion": "Consulta los planes en {municipio} para {mes}: conciertos, exposiciones, teatro y mucho más, actualizados automáticamente."
   },
   "Categoria": {
-    "titulo": "{categoria} en {municipio}"
+    "titulo": "{categoria} en {municipio}",
+    "metaDescripcion": "Descubre los mejores {categoria} en {municipio}: planes reales, actualizados automáticamente cada día."
   },
   "CategoriaCombo": {
     "hoy": "{categoria} hoy en {municipio} ({fecha})",
     "finde": "{categoria} este fin de semana en {municipio} ({fecha})",
-    "mes": "{categoria} en {municipio} en {mes}"
+    "mes": "{categoria} en {municipio} en {mes}",
+    "metaDescripcion": "Descubre los mejores planes de {categoria} en {municipio} durante {mes}: actualizados automáticamente cada día.",
+    "metaDescripcionTemporal": "Descubre los mejores planes de {categoria} en {municipio}{temporal}: actualizados automáticamente cada día.",
+    "semana": "{categoria} esta semana en {municipio}"
   },
   "NearbyMunicipios": {
     "titulo": "Planes cerca de {municipio}",
@@ -110,10 +124,10 @@
     "titulo": "Más planes en {municipio}",
     "hoyGeneral": "Hoy (general)",
     "hoyPareja": "Hoy en pareja",
-    "hoyFamilia": "Hoy en familia",
+    "hoyFamilia": "Hoy con niños",
     "findeGeneral": "Este fin de semana (general)",
     "findePareja": "Este fin de semana en pareja",
-    "findeFamilia": "Este fin de semana en familia",
+    "findeFamilia": "Este fin de semana con niños",
     "estaSemana": "Esta semana",
     "verTodos": "Ver todos los planes de {municipio} →"
   },
@@ -162,7 +176,7 @@
     "tituloSevilla": "Los mejores planes en Sevilla",
     "tituloProvincia": "Los mejores planes en la provincia",
     "tituloPareja": "En pareja",
-    "tituloFamilia": "En familia",
+    "tituloFamilia": "Con niños",
     "tituloGratis": "Gratis",
     "vacioSeccion": "Todavía no hay planes detectados para esto. Vuelve a revisar en unas horas."
   },
@@ -247,5 +261,45 @@
     "gestionadoPorNegocio": "Gestionado por el negocio",
     "otrosListados": "También aparece en",
     "puestoEn": "#{posicion} en {titulo}"
+  },
+  "ResumenSeleccion": {
+    "intro": "{total, plural, =0 {Ahora mismo no hay planes} one {Hemos encontrado un plan} other {Hemos encontrado # planes}}{calificador} en {municipio}{temporal}{desglose}.",
+    "conDesglose": ", entre ellos {lista}",
+    "criterio": "Esta selección reúne los planes{calificador} en {municipio}{temporal} que siguen activos ahora mismo, revisados de forma automática a partir de fuentes reales.",
+    "actualizado": "Última actualización: {fecha}.",
+    "calificadorGratis": " gratuitos",
+    "calificadorPareja": " en pareja",
+    "calificadorFamilia": " con niños",
+    "metaDescripcion": "Consulta los planes{calificador} en {municipio}{temporal}: actividades y eventos reales, actualizados automáticamente cada día.",
+    "sufijoTituloPlanes": " | Planes y eventos",
+    "calificadorElegirPareja": " en pareja",
+    "calificadorElegirFamilia": " con niños",
+    "calificadorElegirGratis": " gratis",
+    "aperturaHoy": "Hoy hay donde elegir{calificadorElegir} en {municipio}",
+    "aperturaFinde": "Este fin de semana hay donde elegir{calificadorElegir} en {municipio}",
+    "aperturaSemana": "Esta semana hay donde elegir{calificadorElegir} en {municipio}",
+    "aperturaSiempre": "En {municipio} no faltan planes{calificador}",
+    "introConDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {un plan en total} other {# planes en total}}, con {frases}.",
+    "introSinDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {un plan en total} other {# planes en total}}.",
+    "tituloLista": "Planes{calificador} en {municipio}{temporal}",
+    "flavorConciertos": "para alargar la noche hasta tarde",
+    "flavorTeatro": "para una noche distinta",
+    "flavorMonologos": "para reírte un rato",
+    "flavorExposicionesPuntual": "que solo están estos días",
+    "flavorExposicionesEvergreen": "que dan para una tarde entera",
+    "flavorCinePuntual": "solo por unos días",
+    "flavorCineEvergreen": "para refrescarte del calor",
+    "etiquetaTeatroFrase": "funciones de teatro",
+    "etiquetaCineFrase": "sesiones de cine",
+    "faq1Pregunta": "¿Cuántos planes hay{calificador} en {municipio}{temporal}?",
+    "faq1RespuestaVacia": "Ahora mismo no hay planes activos{calificador} en {municipio}{temporal}.",
+    "faq1RespuestaMixta": "Ahora mismo hay {total} planes en total: {puntual} son eventos puntuales de estos días{desglose}, y {generico} son planes de siempre en la ciudad.",
+    "faq1RespuestaSoloPuntual": "Ahora mismo hay {total} planes, todos ellos eventos puntuales de estos días{desglose}.",
+    "faq1RespuestaSoloGenerico": "Ahora mismo hay {total} planes, todos ellos disponibles de forma habitual en la ciudad, sin eventos puntuales detectados{temporal}.",
+    "faq1Desglose": ", como {lista}",
+    "faq2Pregunta": "¿Cada cuánto se actualiza esta lista de planes?",
+    "preguntasFrecuentes": "Preguntas frecuentes",
+    "sufijoTituloRomantico": " | Planes románticos",
+    "metaDescripcionPareja": "Consulta los planes en pareja y planes románticos en {municipio}{temporal}: actividades y eventos reales, actualizados automáticamente cada día."
   }
 }

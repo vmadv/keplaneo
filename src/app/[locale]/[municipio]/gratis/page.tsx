@@ -1,9 +1,27 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import EventosPageLayout from "@/components/EventosPageLayout";
-import { getMunicipio, getEventosGratisActivos } from "@/lib/queries";
+import SiempreHubLayout from "@/components/SiempreHubLayout";
+import { getMunicipio } from "@/lib/queries";
+import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 
 export const revalidate = 86400;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ municipio: string }>;
+}): Promise<Metadata> {
+  const { municipio: municipioSlug } = await params;
+  const municipio = await getMunicipio(municipioSlug);
+  if (!municipio) return {};
+  const [tGratis, description] = await Promise.all([
+    getTranslations("Gratis"),
+    construirMetaDescripcion(municipio.nombre, "siempre", "gratis"),
+  ]);
+  const title = await construirTituloConSufijo(tGratis("tituloSiempre", { municipio: municipio.nombre }));
+  return { title, description };
+}
 
 // Franja atemporal + precio "gratis" — antes esta URL era "gratis de hoy"
 // (ver conversación); ese caso concreto se mudó a /hoy/gratis y esta pasa
@@ -17,22 +35,15 @@ export default async function GratisPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [eventos, tFiltros, tGratis, tPlanList] = await Promise.all([
-    getEventosGratisActivos(municipio.id),
-    getTranslations("Filtros"),
-    getTranslations("Gratis"),
-    getTranslations("PlanList"),
-  ]);
+  const tGratis = await getTranslations("Gratis");
+  const tFiltros = await getTranslations("Filtros");
 
   return (
-    <EventosPageLayout
+    <SiempreHubLayout
       municipio={municipio}
       municipioSlug={municipioSlug}
       titulo={tGratis("tituloSiempre", { municipio: municipio.nombre })}
-      eventos={eventos}
-      current={{ vigencia: "siempre", extra: "gratis" }}
-      contexto="siempre"
-      mensajeVacio={tPlanList("vacioSiempreGratis")}
+      extra="gratis"
       breadcrumbExtra={[{ label: tFiltros("gratis") }]}
     />
   );

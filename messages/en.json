@@ -22,7 +22,7 @@
     "finde": "This weekend",
     "semana": "This week",
     "enPareja": "For couples",
-    "enFamilia": "For families",
+    "enFamilia": "With kids",
     "gratis": "Free",
     "todos": "All"
   },
@@ -34,7 +34,7 @@
   },
   "Audiencia": {
     "pareja": "For couples",
-    "familia": "For families",
+    "familia": "With kids",
     "generico": "For everyone",
     "conNinos": "With kids",
     "tituloSiemprePareja": "What to do in {municipio} for couples",
@@ -70,8 +70,17 @@
   "MunicipioHome": {
     "titulo": "What to do in {municipio}",
     "hoyFecha": "Today, {fecha}",
-    "tituloDestacados": "Highlights in {municipio}",
-    "tituloTodo": "Everything you can do in {municipio}"
+    "tituloDestacados": "The best of {municipio} this week",
+    "tituloTodo": "Everything you can do in {municipio} all year round",
+    "verMasEstaSemana": "See more plans{calificador} in {municipio} this week",
+    "verMasPlanes": "See more",
+    "verMenosPlanes": "See less",
+    "tituloDestacadosPareja": "The best of {municipio} this week for couples",
+    "tituloDestacadosFamilia": "The best of {municipio} this week with kids",
+    "tituloDestacadosGratis": "The best free plans in {municipio} this week",
+    "tituloTodoPareja": "Everything to do as a couple in {municipio} all year round",
+    "tituloTodoFamilia": "Everything to do with kids in {municipio} all year round",
+    "tituloTodoGratis": "Everything free to do in {municipio} all year round"
   },
   "Hoy": {
     "titulo": "What to do today in {municipio}",
@@ -92,15 +101,20 @@
     "tituloSiempre": "Free things to do in {municipio}"
   },
   "Mes": {
-    "titulo": "What to do in {municipio} in {mes}"
+    "titulo": "What to do in {municipio} in {mes}",
+    "metaDescripcion": "Check out the plans in {municipio} for {mes}: concerts, exhibitions, theater, and more, automatically updated."
   },
   "Categoria": {
-    "titulo": "{categoria} in {municipio}"
+    "titulo": "{categoria} in {municipio}",
+    "metaDescripcion": "Discover the best {categoria} in {municipio}: real plans, automatically updated every day."
   },
   "CategoriaCombo": {
     "hoy": "{categoria} today in {municipio} ({fecha})",
     "finde": "{categoria} this weekend in {municipio} ({fecha})",
-    "mes": "{categoria} in {municipio} in {mes}"
+    "mes": "{categoria} in {municipio} in {mes}",
+    "metaDescripcion": "Discover the best {categoria} plans in {municipio} during {mes}: automatically updated every day.",
+    "metaDescripcionTemporal": "Discover the best {categoria} plans in {municipio}{temporal}: automatically updated every day.",
+    "semana": "{categoria} this week in {municipio}"
   },
   "NearbyMunicipios": {
     "titulo": "Plans near {municipio}",
@@ -110,10 +124,10 @@
     "titulo": "More plans in {municipio}",
     "hoyGeneral": "Today (general)",
     "hoyPareja": "Today for couples",
-    "hoyFamilia": "Today for families",
+    "hoyFamilia": "Today with kids",
     "findeGeneral": "This weekend (general)",
     "findePareja": "This weekend for couples",
-    "findeFamilia": "This weekend for families",
+    "findeFamilia": "This weekend with kids",
     "estaSemana": "This week",
     "verTodos": "See all plans in {municipio} →"
   },
@@ -162,7 +176,7 @@
     "tituloSevilla": "The best plans in Seville",
     "tituloProvincia": "The best plans in the province",
     "tituloPareja": "As a couple",
-    "tituloFamilia": "With family",
+    "tituloFamilia": "With kids",
     "tituloGratis": "Free",
     "vacioSeccion": "No plans detected for this yet. Check back in a few hours."
   },
@@ -247,5 +261,45 @@
     "gestionadoPorNegocio": "Managed by the business",
     "otrosListados": "Also featured in",
     "puestoEn": "#{posicion} in {titulo}"
+  },
+  "ResumenSeleccion": {
+    "intro": "{total, plural, =0 {There are no plans} one {We found one plan} other {We found # plans}}{calificador} in {municipio}{temporal}{desglose}.",
+    "conDesglose": ", including {lista}",
+    "criterio": "This selection gathers the plans{calificador} in {municipio}{temporal} that are currently active, automatically reviewed from real sources.",
+    "actualizado": "Last updated: {fecha}.",
+    "calificadorGratis": " that are free",
+    "calificadorPareja": " for couples",
+    "calificadorFamilia": " with kids",
+    "metaDescripcion": "Check out the plans{calificador} in {municipio}{temporal}: real activities and events, automatically updated every day.",
+    "sufijoTituloPlanes": " | Plans & events",
+    "calificadorElegirPareja": " for couples",
+    "calificadorElegirFamilia": " with kids",
+    "calificadorElegirGratis": " for free",
+    "aperturaHoy": "There is plenty to choose{calificadorElegir} in {municipio} today",
+    "aperturaFinde": "There is plenty to choose{calificadorElegir} in {municipio} this weekend",
+    "aperturaSemana": "There is plenty to choose{calificadorElegir} in {municipio} this week",
+    "aperturaSiempre": "{municipio} never runs out of plans{calificador}",
+    "introConDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {one plan in total} other {# plans in total}}, including {frases}.",
+    "introSinDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {one plan in total} other {# plans in total}}.",
+    "tituloLista": "Plans{calificador} in {municipio}{temporal}",
+    "flavorConciertos": "to stretch the night out",
+    "flavorTeatro": "for a different kind of night",
+    "flavorMonologos": "for a good laugh",
+    "flavorExposicionesPuntual": "on only for a few more days",
+    "flavorExposicionesEvergreen": "worth a whole afternoon",
+    "flavorCinePuntual": "that will not be back next week",
+    "flavorCineEvergreen": "to cool off with a movie",
+    "etiquetaTeatroFrase": "theater shows",
+    "etiquetaCineFrase": "film screenings",
+    "faq1Pregunta": "How many plans are there{calificador} in {municipio}{temporal}?",
+    "faq1RespuestaVacia": "There are no active plans{calificador} in {municipio}{temporal} right now.",
+    "faq1RespuestaMixta": "Right now there are {total} plans in total: {puntual} are one-time events happening these days{desglose}, and {generico} are plans available in the city year-round.",
+    "faq1RespuestaSoloPuntual": "Right now there are {total} plans, all of them one-time events happening these days{desglose}.",
+    "faq1RespuestaSoloGenerico": "Right now there are {total} plans, all of them available year-round in the city, with no one-time events detected{temporal}.",
+    "faq1Desglose": ", such as {lista}",
+    "faq2Pregunta": "How often is this list of plans updated?",
+    "preguntasFrecuentes": "Frequently asked questions",
+    "sufijoTituloRomantico": " | Romantic plans",
+    "metaDescripcionPareja": "Check out romantic plans and things to do as a couple in {municipio}{temporal}: real activities and events, automatically updated every day."
   }
 }

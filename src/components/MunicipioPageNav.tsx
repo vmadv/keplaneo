@@ -1,8 +1,9 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
+import { hrefFiltro, type Extra } from "@/lib/filtros";
 
 type Vigencia = "hoy" | "finde" | "semana";
-type Audiencia = "pareja" | "familia";
+type Audiencia = Extract<Extra, "pareja" | "familia">;
 
 interface Combo {
   vigencia: Vigencia;
@@ -19,11 +20,6 @@ const COMBOS: Combo[] = [
   { vigencia: "finde", audiencia: "familia", clave: "findeFamilia" },
   { vigencia: "semana", clave: "estaSemana" },
 ];
-
-function pathFor(vigencia: Vigencia, audiencia?: Audiencia) {
-  const base = vigencia === "hoy" ? "hoy" : vigencia === "finde" ? "fin-de-semana" : "esta-semana";
-  return audiencia ? `${base}/${audiencia}` : base;
-}
 
 // Implementa la regla de enlazado interno del blueprint: cada página diaria
 // enlaza a las otras variantes del mismo municipio, para que Google las lea
@@ -50,7 +46,7 @@ export default async function MunicipioPageNav({
       <h2 className="text-lg font-extrabold mb-3">{t("titulo", { municipio: municipioNombre })}</h2>
       <div className="flex flex-wrap gap-2">
         {otros.map((c) => (
-          <Link key={c.clave} href={`${base}/${pathFor(c.vigencia, c.audiencia)}`} className="btn-secondary text-sm px-4 py-2">
+          <Link key={c.clave} href={hrefFiltro(base, c.vigencia, c.audiencia)} className="btn-secondary text-sm px-4 py-2">
             {t(c.clave)}
           </Link>
         ))}

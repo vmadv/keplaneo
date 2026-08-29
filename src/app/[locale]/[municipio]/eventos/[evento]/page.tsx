@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Sun, Moon, MapPin, Clock, Tag, CalendarRange, Link2 } from "lucide-react";
+import { Sun, Moon, MapPin, Clock, Tag, CalendarRange, Link2, ArrowRight } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import TextoConNegritas from "@/components/TextoConNegritas";
 import MapaEvento from "@/components/MapaEvento";
@@ -25,6 +25,7 @@ import {
 } from "@/lib/dates";
 import type { SolicitudTiempo } from "@/lib/weather";
 import type { Audiencia, Evento, Plan } from "@/lib/types";
+import { construirEventoJsonLd, construirFaqJsonLd } from "@/lib/structuredData";
 
 // Los eventos pueden pasar de activo a finalizado entre generaciones
 // diarias; se revalida más a menudo que las páginas de listado.
@@ -159,9 +160,17 @@ export default async function EventoPage({
   const tiempo = datosTiempoParaEvento(contexto, evento, tTiempo);
 
   const esNoche = evento.momento === "noche";
+  const jsonLdEvento = construirEventoJsonLd(evento, municipio, municipioSlug);
+  const jsonLdFaq = construirFaqJsonLd(evento.preguntas_frecuentes);
 
   return (
     <main className="flex-1 bg-dots">
+      {jsonLdEvento && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdEvento) }} />
+      )}
+      {jsonLdFaq && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }} />
+      )}
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Breadcrumb
           items={[
@@ -337,7 +346,12 @@ export default async function EventoPage({
               {otrosPlanes.slice(0, 6).map((p) => (
                 <li key={p.id}>
                   {p.evento_slug ? (
-                    <Link href={`${base}/eventos/${p.evento_slug}?desde=${contexto}`} className="hover:underline font-medium">
+                    <Link
+                      href={`${base}/eventos/${p.evento_slug}?desde=${contexto}`}
+                      className="hover:underline font-medium inline-flex items-start gap-1"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      <ArrowRight size={12} strokeWidth={2.5} className="shrink-0 mt-1" />
                       {p.titulo}
                     </Link>
                   ) : (

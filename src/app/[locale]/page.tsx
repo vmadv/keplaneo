@@ -12,7 +12,7 @@ export const revalidate = 3600;
 
 // MVP temporal centrado en la provincia de Sevilla (ver conversación): la
 // portada enseña primero las ciudades disponibles, luego atajos a los
-// filtros que necesitan elegir ciudad (En pareja/En familia/Gratis y
+// filtros que necesitan elegir ciudad (En pareja/Con niños/Gratis y
 // categorías — no sabemos a qué municipio mandar directamente, así que
 // pasan por /elige-ciudad), y solo dos bloques con planes reales ya
 // resueltos (Sevilla y el resto de la provincia, lo mejor de hoy/esta
@@ -34,7 +34,7 @@ export default async function HomePage() {
 
   const filtrosAudiencia = [
     { filtro: "pareja", titulo: tAudiencia("pareja"), Icono: Heart, color: "var(--secondary)" },
-    { filtro: "familia", titulo: tAudiencia("familia"), Icono: Users, color: "var(--quaternary)" },
+    { filtro: "con-ninos", titulo: tAudiencia("familia"), Icono: Users, color: "var(--quaternary)" },
     { filtro: "gratis", titulo: tHome("tituloGratis"), Icono: Gift, color: "var(--tertiary)" },
   ];
 

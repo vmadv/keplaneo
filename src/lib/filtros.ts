@@ -25,13 +25,27 @@ const SEGMENTO_VIGENCIA: Record<Exclude<Vigencia, "siempre">, string> = {
   semana: "esta-semana",
 };
 
-// El slug de "en pareja"/"con niños" cambia según si hay vigencia o no:
-// con vigencia son "pareja"/"familia" (/hoy/pareja, ya existían); sin
-// vigencia (siempre) se usan los que la gente busca de verdad tal cual
-// (/en-pareja, /con-ninos) en vez de reutilizar el mismo slug interno.
-// "gratis" es igual en los dos casos.
-const SLUG_EXTRA_TEMPORAL: Record<Extra, string> = { pareja: "pareja", familia: "familia", gratis: "gratis" };
+// El slug de "en pareja" cambia según si hay vigencia o no (/hoy/pareja vs
+// /en-pareja); el de "con niños" es el mismo en los dos casos, tal cual se
+// busca de verdad. El valor interno sigue siendo "familia" (así está
+// guardado en la base de datos y en el campo `audiencia` de Gemini) — solo
+// cambia lo que se ve en la URL, ver audienciaDesdeUrl más abajo. "gratis"
+// es igual en los dos casos.
+const SLUG_EXTRA_TEMPORAL: Record<Extra, string> = { pareja: "pareja", familia: "con-ninos", gratis: "gratis" };
 const SLUG_EXTRA_ATEMPORAL: Record<Extra, string> = { pareja: "en-pareja", familia: "con-ninos", gratis: "gratis" };
+
+// Slugs de URL para la ruta dinámica [audiencia] (hoy/finde/esta-semana) —
+// distintos del valor interno "familia" que ya usan queries.ts y la BD.
+export const AUDIENCIAS_URL = ["pareja", "con-ninos"] as const;
+export type AudienciaUrl = (typeof AUDIENCIAS_URL)[number];
+
+export function esAudienciaUrlValida(valor: string): valor is AudienciaUrl {
+  return (AUDIENCIAS_URL as readonly string[]).includes(valor);
+}
+
+export function audienciaDesdeUrl(slug: AudienciaUrl): Extract<Extra, "pareja" | "familia"> {
+  return slug === "con-ninos" ? "familia" : "pareja";
+}
 
 export function hrefFiltro(base: string, vigencia: Vigencia, extra?: Extra): string {
   // "siempre" sin extra es el hub a secas (`base`) — es la URL corta y
@@ -50,7 +64,7 @@ export function hrefFiltro(base: string, vigencia: Vigencia, extra?: Extra): str
 // mes en la URL se quedan siempre en español (mismo criterio que los
 // topónimos); solo la etiqueta visible se traduce.
 //
-// extraActual: si ya hay un filtro de "en pareja/familia/gratis" puesto,
+// extraActual: si ya hay un filtro de "en pareja/con niños/gratis" puesto,
 // las cuatro franjas lo mantienen al cambiar entre ellas (cambiando de
 // slug si hace falta, ver SLUG_EXTRA_ATEMPORAL). Los meses no cruzan con
 // extra — no existe página `/agosto/pareja`.
@@ -123,7 +137,13 @@ const VIGENCIAS_CONOCIDAS: readonly string[] = ["siempre", "hoy", "finde", "sema
 export async function construirFiltrosSecundarios(
   base: string,
   vigenciaActual: string,
-  extraActual?: Extra
+  extraActual?: Extra,
+  // Cuando ya se está dentro de una página de categoría (ej.
+  // /sevilla/conciertos/hoy), marca esa pastilla como activa — así "Más
+  // filtros" se abre solo (ver hayActivoOculto en FiltrosPagina) y se ve
+  // resaltado en qué categoría se está, en vez de tener que buscarla a
+  // ciegas dentro del desplegable.
+  categoriaActual?: string
 ): Promise<FiltrosSecundariosAgrupados> {
   const [t, tCat] = await Promise.all([getTranslations("Filtros"), getTranslations("Categorias")]);
   const audiencia: FiltroTemporalItem[] = [];
@@ -140,15 +160,34 @@ export async function construirFiltrosSecundarios(
     precio.push(itemExtra("gratis", t("gratis")));
   }
 
-  // Temática (categorías) solo para hoy/finde/mes — sin página propia en
-  // esta-semana ni en las franjas atemporales todavía.
-  if (vigenciaActual === "hoy" || vigenciaActual === "finde" || esMesSlugValido(vigenciaActual)) {
-    const sufijo = vigenciaActual === "hoy" ? "hoy" : vigenciaActual === "finde" ? "fin-de-semana" : vigenciaActual;
+  // Temática (categorías) para hoy/finde/semana/mes (combinación propia,
+  // /conciertos/hoy) y para "siempre" (el hub de la categoría a secas,
+  // /conciertos — ya existía, solo faltaba enlazarlo desde aquí).
+  if (
+    vigenciaActual === "hoy" ||
+    vigenciaActual === "finde" ||
+    vigenciaActual === "semana" ||
+    vigenciaActual === "siempre" ||
+    esMesSlugValido(vigenciaActual)
+  ) {
+    const sufijo =
+      vigenciaActual === "hoy"
+        ? "hoy"
+        : vigenciaActual === "finde"
+          ? "fin-de-semana"
+          : vigenciaActual === "semana"
+            ? "esta-semana"
+            : vigenciaActual === "siempre"
+              ? null
+              : vigenciaActual;
     for (const cat of CATEGORIAS.filter(esCategoriaConPagina)) {
+      const activo = cat === categoriaActual;
+      const destinoActivo = sufijo ? `${base}/${sufijo}` : base;
+      const destinoCategoria = sufijo ? `${base}/${cat}/${sufijo}` : `${base}/${cat}`;
       tematica.push({
         label: tCat(cat),
-        href: `${base}/${cat}/${sufijo}`,
-        activo: false,
+        href: activo ? destinoActivo : destinoCategoria,
+        activo,
         icono: ICONO_CATEGORIA[cat],
       });
     }

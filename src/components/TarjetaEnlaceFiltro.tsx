@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 
 // Tarjeta simple para bloques de la portada que no muestran planes en sí
-// (En pareja/En familia/Gratis, Conciertos/Exposiciones/Teatro/Monólogos):
+// (En pareja/Con niños/Gratis, Conciertos/Exposiciones/Teatro/Monólogos):
 // solo un enlace a "elige tu ciudad" para ese filtro — ver conversación,
 // evita tener que decidir a qué municipio mandar directamente desde la
 // portada. `imagen` es opcional para cuando lleguen las fotos reales.

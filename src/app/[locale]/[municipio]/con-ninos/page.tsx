@@ -1,13 +1,31 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import EventosPageLayout from "@/components/EventosPageLayout";
-import { getMunicipio, getEventosActivos } from "@/lib/queries";
+import SiempreHubLayout from "@/components/SiempreHubLayout";
+import { getMunicipio } from "@/lib/queries";
+import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 
 export const revalidate = 86400;
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ municipio: string }>;
+}): Promise<Metadata> {
+  const { municipio: municipioSlug } = await params;
+  const municipio = await getMunicipio(municipioSlug);
+  if (!municipio) return {};
+  const [tAudiencia, description] = await Promise.all([
+    getTranslations("Audiencia"),
+    construirMetaDescripcion(municipio.nombre, "siempre", "familia"),
+  ]);
+  const title = await construirTituloConSufijo(tAudiencia("tituloSiempreConNinos", { municipio: municipio.nombre }));
+  return { title, description };
+}
+
 // Franja atemporal + audiencia "familia" — mismo dato que ya usan
-// hoy/familia etc., pero con el rótulo/slug "con niños" que es como se
-// busca de verdad (ver conversación), en vez de reutilizar /familia.
+// hoy/con-ninos etc., pero con el rótulo "con niños" que es como se
+// busca de verdad (ver conversación), en vez de duplicar esa misma ruta.
 export default async function ConNinosPage({
   params,
 }: {
@@ -17,21 +35,14 @@ export default async function ConNinosPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [eventos, tAudiencia, tPlanList] = await Promise.all([
-    getEventosActivos(municipio.id, "familia"),
-    getTranslations("Audiencia"),
-    getTranslations("PlanList"),
-  ]);
+  const tAudiencia = await getTranslations("Audiencia");
 
   return (
-    <EventosPageLayout
+    <SiempreHubLayout
       municipio={municipio}
       municipioSlug={municipioSlug}
       titulo={tAudiencia("tituloSiempreConNinos", { municipio: municipio.nombre })}
-      eventos={eventos}
-      current={{ vigencia: "siempre", extra: "familia" }}
-      contexto="siempre"
-      mensajeVacio={tPlanList("vacioSiempre")}
+      extra="familia"
       breadcrumbExtra={[{ label: tAudiencia("conNinos") }]}
     />
   );

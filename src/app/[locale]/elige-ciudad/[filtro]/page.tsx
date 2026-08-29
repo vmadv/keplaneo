@@ -11,20 +11,22 @@ export const revalidate = 86400;
 const COLORES = ["var(--secondary)", "var(--tertiary)", "var(--quaternary)"];
 
 // A qué URL de cada municipio lleva cada filtro — ver conversación: los
-// bloques "En pareja/En familia/Gratis" y de categoría de la portada no
+// bloques "En pareja/Con niños/Gratis" y de categoría de la portada no
 // saben a qué ciudad ir, así que primero pasan por aquí a elegirla.
+// "con-ninos" es el slug de URL (igual que en /esta-semana/con-ninos); el
+// valor interno para traducciones/BD sigue siendo "familia".
 function construirHref(filtro: string, municipioSlug: string): string | null {
   const base = `/${municipioSlug}`;
-  if (filtro === "pareja" || filtro === "familia") return `${base}/esta-semana/${filtro}`;
+  if (filtro === "pareja" || filtro === "con-ninos") return `${base}/esta-semana/${filtro}`;
   if (filtro === "gratis") return `${base}/gratis`;
   if (esCategoriaConPagina(filtro)) return `${base}/${filtro}`;
   return null;
 }
 
 async function tituloDelFiltro(filtro: string): Promise<string | null> {
-  if (filtro === "pareja" || filtro === "familia") {
+  if (filtro === "pareja" || filtro === "con-ninos") {
     const t = await getTranslations("Audiencia");
-    return t(filtro);
+    return t(filtro === "con-ninos" ? "familia" : filtro);
   }
   if (filtro === "gratis") {
     const t = await getTranslations("Home");

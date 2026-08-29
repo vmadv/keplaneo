@@ -1,9 +1,27 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import EventosPageLayout from "@/components/EventosPageLayout";
-import { getMunicipio, getEventosActivos } from "@/lib/queries";
+import SiempreHubLayout from "@/components/SiempreHubLayout";
+import { getMunicipio } from "@/lib/queries";
+import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 
 export const revalidate = 86400;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ municipio: string }>;
+}): Promise<Metadata> {
+  const { municipio: municipioSlug } = await params;
+  const municipio = await getMunicipio(municipioSlug);
+  if (!municipio) return {};
+  const [tAudiencia, description] = await Promise.all([
+    getTranslations("Audiencia"),
+    construirMetaDescripcion(municipio.nombre, "siempre", "pareja"),
+  ]);
+  const title = await construirTituloConSufijo(tAudiencia("tituloSiemprePareja", { municipio: municipio.nombre }), "pareja");
+  return { title, description };
+}
 
 // Franja atemporal + audiencia "pareja" — ver conversación: slug propio
 // (/en-pareja, no /pareja) porque así es como se busca de verdad, distinto
@@ -17,21 +35,14 @@ export default async function EnParejaPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [eventos, tAudiencia, tPlanList] = await Promise.all([
-    getEventosActivos(municipio.id, "pareja"),
-    getTranslations("Audiencia"),
-    getTranslations("PlanList"),
-  ]);
+  const tAudiencia = await getTranslations("Audiencia");
 
   return (
-    <EventosPageLayout
+    <SiempreHubLayout
       municipio={municipio}
       municipioSlug={municipioSlug}
       titulo={tAudiencia("tituloSiemprePareja", { municipio: municipio.nombre })}
-      eventos={eventos}
-      current={{ vigencia: "siempre", extra: "pareja" }}
-      contexto="siempre"
-      mensajeVacio={tPlanList("vacioSiempre")}
+      extra="pareja"
       breadcrumbExtra={[{ label: tAudiencia("pareja") }]}
     />
   );

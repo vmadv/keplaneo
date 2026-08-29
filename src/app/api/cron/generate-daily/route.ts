@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { generarNovedades, estimarCoste } from "@/lib/gemini";
+import { generarNovedades, fusionarPlanesDuplicados, estimarCoste } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { hoyISO, fechaDeHoyLegible, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
@@ -20,13 +20,13 @@ function pathsDelMunicipio(base: string): string[] {
     base,
     `${base}/hoy`,
     `${base}/hoy/pareja`,
-    `${base}/hoy/familia`,
+    `${base}/hoy/con-ninos`,
     `${base}/fin-de-semana`,
     `${base}/fin-de-semana/pareja`,
-    `${base}/fin-de-semana/familia`,
+    `${base}/fin-de-semana/con-ninos`,
     `${base}/esta-semana`,
     `${base}/esta-semana/pareja`,
-    `${base}/esta-semana/familia`,
+    `${base}/esta-semana/con-ninos`,
     `${base}/esta-semana/gratis`,
     `${base}/gratis`,
   ];
@@ -75,12 +75,18 @@ export async function GET(request: NextRequest) {
 
       const titulosConocidos = (conocidos ?? []).map((e) => e.titulo);
 
-      const { planes, usage } = await generarNovedades(
+      const { planes: planesCrudos, usage } = await generarNovedades(
         municipio.nombre,
         fechaDeHoyLegible(),
         titulosConocidos,
         enfoqueFinde
       );
+      // Gemini puede describir el mismo evento real dos veces en una misma
+      // respuesta (dos redacciones distintas) sin que eso choque con
+      // ninguno de los `titulosConocidos` — se fusiona aquí, antes de que
+      // ese duplicado llegue a `planes.insert`, no solo al vincular con
+      // `eventos` (que ya lo agrupa, pero no evita la fila repetida).
+      const planes = fusionarPlanesDuplicados(planesCrudos);
 
       let filasInsertadas = 0;
       let vinculosNuevos: string[] = [];

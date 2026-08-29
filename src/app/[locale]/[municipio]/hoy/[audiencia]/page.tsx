@@ -1,20 +1,16 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesHoy } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
+import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { AUDIENCIAS_URL, esAudienciaUrlValida, audienciaDesdeUrl } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
-const AUDIENCIAS = ["pareja", "familia"] as const;
-type AudienciaValida = (typeof AUDIENCIAS)[number];
-
-function esAudienciaValida(valor: string): valor is AudienciaValida {
-  return (AUDIENCIAS as readonly string[]).includes(valor);
-}
-
 export function generateStaticParams() {
-  return AUDIENCIAS.map((audiencia) => ({ audiencia }));
+  return AUDIENCIAS_URL.map((audiencia) => ({ audiencia }));
 }
 
 // En minúscula porque va incrustada a media frase ("Qué hacer hoy en
@@ -22,6 +18,28 @@ export function generateStaticParams() {
 // evento, que sí empieza en mayúscula.
 function minuscula(texto: string): string {
   return texto.charAt(0).toLowerCase() + texto.slice(1);
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ municipio: string; audiencia: string }>;
+}): Promise<Metadata> {
+  const { municipio: municipioSlug, audiencia } = await params;
+  if (!esAudienciaUrlValida(audiencia)) return {};
+  const extra = audienciaDesdeUrl(audiencia);
+  const municipio = await getMunicipio(municipioSlug);
+  if (!municipio) return {};
+  const [tHoy, tAudiencia, description] = await Promise.all([
+    getTranslations("Hoy"),
+    getTranslations("Audiencia"),
+    construirMetaDescripcion(municipio.nombre, "hoy", extra),
+  ]);
+  const title = await construirTituloConSufijo(
+    tHoy("tituloAudiencia", { municipio: municipio.nombre, audiencia: minuscula(tAudiencia(extra)) }),
+    extra
+  );
+  return { title, description };
 }
 
 export default async function HoyAudienciaPage({
@@ -33,18 +51,19 @@ export default async function HoyAudienciaPage({
   // Ver [locale]/layout.tsx: necesario para que esta ruta con
   // generateStaticParams pueda pintarse estática.
   setRequestLocale(locale);
-  if (!esAudienciaValida(audiencia)) notFound();
+  if (!esAudienciaUrlValida(audiencia)) notFound();
+  const extra = audienciaDesdeUrl(audiencia);
 
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
   const [planes, tHoy, tAudiencia, tFiltros] = await Promise.all([
-    getPlanesHoy(municipio.id, audiencia),
+    getPlanesHoy(municipio.id, extra),
     getTranslations("Hoy"),
     getTranslations("Audiencia"),
     getTranslations("Filtros"),
   ]);
-  const etiquetaAudiencia = minuscula(tAudiencia(audiencia));
+  const etiquetaAudiencia = minuscula(tAudiencia(extra));
 
   return (
     <PlanesPageLayout
@@ -53,10 +72,10 @@ export default async function HoyAudienciaPage({
       titulo={tHoy("tituloAudiencia", { municipio: municipio.nombre, audiencia: etiquetaAudiencia })}
       fecha={fechaDeHoyLegible(locale)}
       planes={planes}
-      current={{ vigencia: "hoy", extra: audiencia }}
+      current={{ vigencia: "hoy", extra }}
       breadcrumbExtra={[
         { label: tFiltros("hoy"), href: `/${municipioSlug}/hoy` },
-        { label: tAudiencia(audiencia) },
+        { label: tAudiencia(extra) },
       ]}
     />
   );

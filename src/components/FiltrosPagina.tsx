@@ -18,7 +18,7 @@ function Etiqueta({ children, invita = false }: { children: React.ReactNode; inv
   );
 }
 
-// Hoy/Finde/Semana/Siempre y En pareja/En familia/Gratis son dos ejes
+// Hoy/Finde/Semana/Siempre y En pareja/Con niños/Gratis son dos ejes
 // independientes que se pueden combinar (ej. "Hoy" + "En pareja" a la
 // vez), no una única lista de opciones excluyentes entre sí — iban todos
 // en una sola fila con el mismo estilo de pastilla y eso no se notaba

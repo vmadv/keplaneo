@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -12,6 +13,7 @@ import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/f
 import { getMunicipio, getPlanesDelMes, getEventosPorCategoria } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
 import { buscarImagenHero } from "@/lib/heroImage";
+import { construirTituloConSufijo } from "@/lib/resumenSeleccion";
 
 export const revalidate = 86400;
 
@@ -21,6 +23,39 @@ export function generateStaticParams() {
 
 function capitalizar(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ municipio: string; categoriaOMes: string }>;
+}): Promise<Metadata> {
+  const { municipio: municipioSlug, categoriaOMes } = await params;
+  const municipio = await getMunicipio(municipioSlug);
+  if (!municipio) return {};
+
+  if (esMesSlugValido(categoriaOMes)) {
+    const mes = categoriaOMes;
+    const [tMes, tMeses] = await Promise.all([getTranslations("Mes"), getTranslations("Meses")]);
+    const title = await construirTituloConSufijo(
+      tMes("titulo", { municipio: municipio.nombre, mes: capitalizar(tMeses(mes)) })
+    );
+    const description = tMes("metaDescripcion", { municipio: municipio.nombre, mes: tMeses(mes) });
+    return { title, description };
+  }
+
+  if (esCategoriaConPagina(categoriaOMes)) {
+    const [tCategoria, tCategorias] = await Promise.all([
+      getTranslations("Categoria"),
+      getTranslations("Categorias"),
+    ]);
+    const etiqueta = tCategorias(categoriaOMes);
+    const title = await construirTituloConSufijo(tCategoria("titulo", { categoria: etiqueta, municipio: municipio.nombre }));
+    const description = tCategoria("metaDescripcion", { categoria: etiqueta.toLowerCase(), municipio: municipio.nombre });
+    return { title, description };
+  }
+
+  return {};
 }
 
 // Esta misma ruta resuelve dos cosas distintas según lo que traiga la URL:

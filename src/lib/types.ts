@@ -74,6 +74,10 @@ export interface Evento {
   fuente: string | null;
   preguntas_frecuentes: PreguntaFrecuente[];
   categoria: Categoria | null;
+  // 1-10, asignada por Gemini al generar/actualizar el plan — null en
+  // eventos que no se han regenerado desde que existe este campo (ver
+  // migración 0015). Ordena los listados largos por interés real.
+  relevancia: number | null;
   lat: number | null;
   lon: number | null;
   primera_deteccion: string;

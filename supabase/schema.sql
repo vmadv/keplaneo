@@ -50,6 +50,10 @@ create table eventos (
   -- temática (conciertos/exposiciones/teatro/monologos/otros) — permite
   -- navegar por categoría además de por fecha/audiencia/precio.
   categoria text not null default 'otros',
+  -- puntuación de atractivo (1-10) que asigna Gemini al generar/actualizar
+  -- el plan — ordena los listados largos por interés real, no alfabético.
+  -- Nullable: los eventos existentes no la tienen hasta que se regeneran.
+  relevancia smallint,
   -- geocodificadas una sola vez a partir de "ubicacion" (Nominatim/OSM),
   -- cacheadas aquí para no volver a llamar al geocoder en cada generación.
   lat double precision,

@@ -1,11 +1,29 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import EventosPageLayout from "@/components/EventosPageLayout";
 import { getMunicipio, getEventosGratisActivos } from "@/lib/queries";
 import { rangoSemanaLegible } from "@/lib/dates";
 import { ordenarPorDiaDeSemana } from "@/lib/semana";
+import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 
 export const revalidate = 86400;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ municipio: string }>;
+}): Promise<Metadata> {
+  const { municipio: municipioSlug } = await params;
+  const municipio = await getMunicipio(municipioSlug);
+  if (!municipio) return {};
+  const [tSemana, description] = await Promise.all([
+    getTranslations("Semana"),
+    construirMetaDescripcion(municipio.nombre, "semana", "gratis"),
+  ]);
+  const title = await construirTituloConSufijo(tSemana("tituloGratis", { municipio: municipio.nombre }));
+  return { title, description };
+}
 
 export default async function EstaSemanaGratisPage({
   params,

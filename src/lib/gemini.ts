@@ -17,6 +17,10 @@ export interface PlanGenerado {
   audiencia: Audiencia[];
   tipo: TipoPlan;
   categoria?: Categoria;
+  // 1-10, qué tan atractivo es este plan frente a otros parecidos — ver
+  // CAMPOS_JSON. Alimenta el orden de los listados largos (ej. "todo lo que
+  // puedes hacer todo el año"), donde no hay vigencia que ya los acote.
+  relevancia?: number;
   preguntas_frecuentes?: PreguntaFrecuente[];
   // Solo relevantes cuando tipo="excepcional": alimentan la página de
   // detalle propia de ese evento (ver src/lib/eventos.ts).
@@ -155,8 +159,9 @@ Cada elemento debe tener EXACTAMENTE estos campos:
 - "vigencia": array de strings
 - "audiencia": array — normalmente UN único valor de ["pareja", "familia", "generico"]; combina "pareja" y "familia" solo si el plan encaja excepcionalmente bien en los dos (poco frecuente), y no combines ninguno de los dos con "generico" (son alternativas, no se acumulan) — usa "generico" en solitario cuando el plan sirve para cualquier visitante sin un ángulo concreto
 - "tipo": "excepcional" (evento puntual con fecha concreta) | "generico" (disponible siempre)
-- "categoria": elige EXACTAMENTE una de esta lista: ${CATEGORIAS.join(", ")}. Usa "conciertos"/"exposiciones"/"teatro"/"monologos"/"deporte"/"ferias"/"fiestas"/"cine" solo cuando el plan sea genuinamente eso (ej. un partido o carrera es "deporte"; una feria del libro o mercadillo es "ferias"; una verbena, romería o cabalgata es "fiestas"; una proyección o ciclo de cine, incluido cine de verano al aire libre, es "cine"). Para todo lo demás (parques, rutas, gastronomía, monumentos sin espectáculo, danza/ópera/circo, charlas, fuegos artificiales...) usa "otros".
+- "categoria": elige EXACTAMENTE una de esta lista: ${CATEGORIAS.join(", ")}. Usa "conciertos"/"exposiciones"/"teatro"/"monologos"/"deporte"/"ferias"/"fiestas"/"cine" solo cuando el plan sea genuinamente eso (ej. un partido o carrera es "deporte"; una feria del libro o mercadillo es "ferias"; una verbena, romería o cabalgata es "fiestas"; una proyección o ciclo de cine, incluido cine de verano al aire libre, es "cine"). "conciertos" incluye también festivales de música (aunque duren varios días), espectáculos musicales y cualquier plan centrado en música en vivo, no solo un concierto suelto de un artista. Para todo lo demás (parques, rutas, gastronomía, monumentos sin espectáculo, danza/ópera/circo, charlas, fuegos artificiales...) usa "otros".
 - "precio": para TODOS los planes, no solo los excepcionales — ej. "Entrada gratuita", "Desde 15€", "6€ adultos / 3€ niños". Muchos monumentos y recintos que parecen "de siempre" (Catedral, Alcázar, museos) en realidad cobran entrada: compruébalo siempre, no asumas que un plan genérico es gratis. Omite el campo solo si de verdad no encuentras el dato, nunca lo inventes ni lo asumas.
+- "relevancia": entero del 1 al 10 — qué tan atractivo es este plan frente a otros parecidos de la misma ciudad, para alguien sin preferencias previas. Sé exigente y usa el rango completo, no lo comprimas todo en 7-8: la mayoría de planes genéricos habituales (un parque cualquiera, una plaza, una ruta sin nada que lo distinga) deberían quedar entre 3 y 6; reserva 8-10 para lo realmente singular, icónico o con un tirón claro (un monumento emblemático, una experiencia que no se encuentra en cualquier ciudad, un evento con mucha expectación). Esto se usa para ordenar listados largos donde ya no hay más criterio que "cuál merece más la pena" — una nota blanda que no diferencia nada no sirve de nada.
 - "preguntas_frecuentes": array de 2-3 objetos {"pregunta": string, "respuesta": string}. Usa las preguntas que un visitante real se haría de este plan concreto (¿es gratis?, ¿es apto para niños?, ¿cuánto dura?, ¿hasta cuándo está disponible?, ¿hay que reservar?...). IMPORTANTE: la respuesta debe basarse ÚNICAMENTE en los datos que ya has puesto en los demás campos de este mismo plan (horario, precio, audiencia, fechas, descripción) — no metas ningún dato nuevo que no hayas dado ya arriba. Si no tienes base para una pregunta concreta, no la incluyas.
 
 Además, SOLO para los planes con "tipo": "excepcional" (van a tener página propia con más detalle), añade estos campos cuando la información sea real y verificable — omite el campo si no la encuentras, no la inventes:
@@ -184,7 +189,7 @@ Los planes "generico" deben ir siempre al final del array, después de todos los
 
 Dentro de cada uno de esos dos bloques (excepcional / generico), ordena de MAYOR a MENOR popularidad o interés esperado — el evento más multitudinario o relevante primero, el más de nicho al final. Además:
 - Procura variedad real de temática entre los eventos puntuales: si encuentras 8 conciertos y ningún otro tipo, busca más en las demás categorías antes de rendirte — no llenes el listado a base de repetir el mismo tipo de plan.
-- Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Si tiene un ángulo claro de pareja (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas) márcalo SOLO "pareja"; si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya llevas "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para cuando el plan de verdad no tenga ningún ángulo hacia una audiencia concreta. Esta etiqueta se usa para filtrar planes por audiencia en el sitio; si casi todo lleva "generico" además de su etiqueta específica, el filtro deja de servir de nada.
+- Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Si tiene un ángulo claro de pareja o romántico (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas, un atardecer, cualquier plan explícitamente descrito como romántico aunque no sea la típica "cita") márcalo SOLO "pareja"; si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya llevas "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para cuando el plan de verdad no tenga ningún ángulo hacia una audiencia concreta. Esta etiqueta se usa para filtrar planes por audiencia en el sitio; si casi todo lleva "generico" además de su etiqueta específica, el filtro deja de servir de nada.
 
 ${CAMPOS_JSON}
 `.trim();
@@ -352,7 +357,7 @@ function normalizarTitulo(titulo: string): string {
 // Patagonia en CaixaForum Sevilla", encontrados por dos búsquedas
 // distintas) — se compara por contención y por solape de palabras en vez
 // de exigir una igualdad exacta, que dejaba pasar justo estos casos.
-function mismoEvento(a: string, b: string): boolean {
+export function mismoEvento(a: string, b: string): boolean {
   const na = normalizarTitulo(a);
   const nb = normalizarTitulo(b);
   if (na === nb) return true;
