@@ -8,6 +8,7 @@ import TextoConNegritas from "@/components/TextoConNegritas";
 import MapaEvento from "@/components/MapaEvento";
 import TiempoDelDia from "@/components/TiempoDelDia";
 import MunicipioPageNav from "@/components/MunicipioPageNav";
+import HeaderImagenEvento from "@/components/HeaderImagenEvento";
 import {
   getEvento,
   getMunicipio,
@@ -26,7 +27,6 @@ import {
 import type { SolicitudTiempo } from "@/lib/weather";
 import type { Audiencia, Evento, Plan } from "@/lib/types";
 import { construirEventoJsonLd, construirFaqJsonLd, textoPlano } from "@/lib/structuredData";
-import { urlFotoProxy } from "@/lib/places";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -204,36 +204,13 @@ export default async function EventoPage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }} />
       )}
       <div className="max-w-3xl mx-auto px-6 py-16">
-        {evento.cartel_url ? (
-          // Cartel real y verificado (poco frecuente, solo destacados) —
-          // se muestra tal cual, sin leyenda: es del evento en sí.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={evento.cartel_url}
-            alt={evento.titulo}
-            className="w-full rounded-2xl mb-2 object-cover max-h-96"
-            style={{ border: "2px solid var(--foreground)", boxShadow: "6px 6px 0px 0px var(--border)" }}
-          />
-        ) : (
-          evento.foto_lugar_nombre &&
-          evento.ubicacion && (
-            <div className="mb-6">
-              {/* Foto del lugar (Google Places), no del evento en sí — la
-                  leyenda lo deja claro para que nadie la confunda con un
-                  cartel, ver conversación. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={urlFotoProxy(evento.foto_lugar_nombre, 800)}
-                alt={evento.ubicacion}
-                className="w-full rounded-2xl mb-2 object-cover max-h-96"
-                style={{ border: "2px solid var(--foreground)", boxShadow: "6px 6px 0px 0px var(--border)" }}
-              />
-              <p className="text-xs px-1" style={{ color: "var(--muted-foreground)" }}>
-                {tEvento("fotoDeLaUbicacion", { lugar: evento.ubicacion })}
-              </p>
-            </div>
-          )
-        )}
+        <HeaderImagenEvento
+          cartelUrl={evento.cartel_url}
+          fotoLugarNombre={evento.foto_lugar_nombre}
+          ubicacion={evento.ubicacion}
+          titulo={evento.titulo}
+          textoFotoUbicacion={evento.ubicacion ? tEvento("fotoDeLaUbicacion", { lugar: evento.ubicacion }) : ""}
+        />
         <Breadcrumb
           items={[
             { label: tNav("inicio"), href: "/" },
