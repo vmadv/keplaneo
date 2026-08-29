@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generarNovedades, fusionarPlanesDuplicados, estimarCoste } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
-import { hoyISO, fechaDeHoyLegible, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "@/lib/dates";
+import { hoyISO, hoyEnMadrid, fechaDeHoyLegible, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
 
 export const maxDuration = 300;
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   const hoy = hoyISO();
-  const diaSemana = new Date().getDay(); // 0=domingo … 6=sábado
+  const diaSemana = hoyEnMadrid().getDay(); // 0=domingo … 6=sábado
 
   if (diaSemana === 1) {
     return NextResponse.json({ fecha: hoy, resultados: [], nota: "Lunes: cubierto por generate-weekly" });

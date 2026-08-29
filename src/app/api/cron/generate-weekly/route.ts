@@ -11,7 +11,7 @@ import {
 } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { getTitulosGenericosActivos } from "@/lib/queries";
-import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible } from "@/lib/dates";
+import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible, hoyISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
 
 export const maxDuration = 300;
@@ -89,8 +89,7 @@ export async function GET(request: NextRequest) {
   }
   const admin = supabaseAdmin;
 
-  const hoy = new Date();
-  const hoyISOStr = formatearFechaISO(hoy);
+  const hoyISOStr = hoyISO();
   // No asumir que "hoy" es lunes solo porque el cron esté pensado para
   // correr ese día — calcular el lunes de verdad hace que sea seguro
   // relanzarlo a mano cualquier día, o si el horario del cron cambia en

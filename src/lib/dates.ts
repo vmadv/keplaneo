@@ -1,22 +1,44 @@
 import { MESES, type MesSlug } from "./types";
 
+// Todas las fechas de "hoy"/"esta semana"/"este mes" del sitio son las del
+// calendario de España, no las del huso horario del proceso que ejecuta el
+// código (en Vercel, UTC) — sin esto, justo después de medianoche en
+// España pero antes de medianoche UTC (hasta 2h en verano, 1h en invierno)
+// el sitio seguía pensando que era "ayer": el partido de "hoy", la agenda
+// de "esta semana", el mes en curso... todo se quedaba con la fecha del
+// día anterior durante esa ventana (ver conversación). Se usa en vez de
+// "new Date()" en cualquier cálculo de "hoy" de este archivo — el resto de
+// getters (getDate, getMonth, getDay...) siguen siendo del huso horario
+// del proceso, pero como aquí construimos el Date a partir de los números
+// del calendario de Madrid, devuelven el valor correcto igualmente.
+export function hoyEnMadrid(): Date {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const valor = (tipo: string) => Number(partes.find((p) => p.type === tipo)!.value);
+  return new Date(valor("year"), valor("month") - 1, valor("day"));
+}
+
 export function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return formatearFechaISO(hoyEnMadrid());
 }
 
 export function mesActualSlug(): MesSlug {
-  return MESES[new Date().getMonth()];
+  return MESES[hoyEnMadrid().getMonth()];
 }
 
 export function mesSiguienteSlug(): MesSlug {
-  return MESES[(new Date().getMonth() + 1) % 12];
+  return MESES[(hoyEnMadrid().getMonth() + 1) % 12];
 }
 
 // Mes en curso + los siguientes — usado tanto para qué meses generar
 // (cron) como para qué meses enlazar en la navegación, así los dos
 // coinciden siempre: no se enlaza un mes que no se ha generado.
 export function proximosMesesSlugs(cantidad: number): MesSlug[] {
-  const mesActual = new Date().getMonth();
+  const mesActual = hoyEnMadrid().getMonth();
   return Array.from({ length: cantidad }, (_, i) => MESES[(mesActual + i) % 12]);
 }
 
@@ -39,7 +61,7 @@ export function formatearFechaLegible(fecha: Date, locale: string = "es"): strin
 // Para que los títulos de "hoy" digan la fecha real (mejor SEO/frescura que
 // dejarlo implícito) — ej. "Qué hacer hoy en Sevilla (22 de agosto de 2026)".
 export function fechaDeHoyLegible(locale: string = "es"): string {
-  return formatearFechaLegible(new Date(), locale);
+  return formatearFechaLegible(hoyEnMadrid(), locale);
 }
 
 // El lunes de la semana natural en curso (a diferencia de
@@ -47,7 +69,7 @@ export function fechaDeHoyLegible(locale: string = "es"): string {
 // no la semana natural) — lo usa el repaso diario para saber qué días
 // quedan por delante hasta el domingo de ESTA semana natural.
 export function lunesDeLaSemanaActual(): Date {
-  const hoy = new Date();
+  const hoy = hoyEnMadrid();
   const diaSemana = hoy.getDay(); // 0=domingo … 6=sábado
   const diasDesdeLunes = diaSemana === 0 ? 6 : diaSemana - 1;
   const lunes = new Date(hoy);
@@ -86,7 +108,7 @@ function formatearRangoFechas(inicio: Date, fin: Date, locale: string = "es"): s
 }
 
 export function rangoFinDeSemanaLegible(locale: string = "es"): string {
-  const { sabado, domingo } = proximoFinDeSemana(new Date());
+  const { sabado, domingo } = proximoFinDeSemana(hoyEnMadrid());
   return formatearRangoFechas(sabado, domingo, locale);
 }
 
@@ -96,7 +118,7 @@ export function rangoFinDeSemanaLegible(locale: string = "es"): string {
 // Ver conversación: "esta semana" debe contemplar de hoy a dentro de 7
 // días desde el día en que se consulta, sea cual sea.
 export function diasRelevantesEstaSemana(): Date[] {
-  const hoy = new Date();
+  const hoy = hoyEnMadrid();
   return Array.from({ length: 7 }, (_, i) => {
     const dia = new Date(hoy);
     dia.setDate(hoy.getDate() + i);
@@ -203,7 +225,7 @@ export function diasIncluidosEnRango(
 }
 
 export function fechasFinDeSemanaISO(): { sabado: string; domingo: string } {
-  const { sabado, domingo } = proximoFinDeSemana(new Date());
+  const { sabado, domingo } = proximoFinDeSemana(hoyEnMadrid());
   return { sabado: formatearFechaISO(sabado), domingo: formatearFechaISO(domingo) };
 }
 
@@ -222,7 +244,7 @@ function diasFindeIncluidos(
   const hasta = fin ?? inicio;
   if (!desde || !hasta) return null;
 
-  const { sabado, domingo } = proximoFinDeSemana(new Date());
+  const { sabado, domingo } = proximoFinDeSemana(hoyEnMadrid());
   const desdeEp = diaEpoch(desde);
   const hastaEp = diaEpoch(hasta);
   const sabadoEp = diaEpoch(sabado);
