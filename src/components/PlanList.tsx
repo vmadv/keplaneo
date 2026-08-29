@@ -4,6 +4,7 @@ import { Sun, Moon, Sparkles, CalendarDays } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
 import { etiquetaDiaFinde } from "@/lib/dates";
+import { urlFotoProxy } from "@/lib/places";
 import type { Plan } from "@/lib/types";
 
 export default async function PlanList({
@@ -40,19 +41,35 @@ export default async function PlanList({
             ? etiquetaDiaFinde(plan.evento_fecha_inicio ?? null, plan.evento_fecha_fin ?? null, locale)
             : null;
 
+        // Cartel real primero (poco frecuente, solo destacados verificados
+        // a mano — ver conversación); si no, la foto del lugar vía Google
+        // Places, que sí escala gratis gracias a la caché por recinto.
+        const foto = plan.evento_cartel_url ?? plan.evento_foto_lugar_nombre ?? undefined;
+        const esCartel = Boolean(plan.evento_cartel_url);
+
         const contenido = (
           <>
             <div className="flex items-start gap-3">
-              <span
-                className="icon-chip w-9 h-9 shrink-0"
-                style={{ background: plan.momento === "noche" ? "var(--foreground)" : "var(--tertiary)" }}
-              >
-                {plan.momento === "noche" ? (
-                  <Moon size={16} strokeWidth={2.5} color="var(--background)" />
-                ) : (
-                  <Sun size={16} strokeWidth={2.5} />
-                )}
-              </span>
+              {foto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={esCartel ? foto : urlFotoProxy(foto, 128)}
+                  alt=""
+                  className="w-16 h-16 rounded-lg object-cover shrink-0"
+                  style={{ border: "2px solid var(--foreground)" }}
+                />
+              ) : (
+                <span
+                  className="icon-chip w-9 h-9 shrink-0"
+                  style={{ background: plan.momento === "noche" ? "var(--foreground)" : "var(--tertiary)" }}
+                >
+                  {plan.momento === "noche" ? (
+                    <Moon size={16} strokeWidth={2.5} color="var(--background)" />
+                  ) : (
+                    <Sun size={16} strokeWidth={2.5} />
+                  )}
+                </span>
+              )}
               <div className="min-w-0">
                 <div className="flex flex-wrap gap-1.5 mb-1.5">
                   {plan.tipo === "excepcional" && (

@@ -19,7 +19,7 @@
     "filtraMas": "Filtra más",
     "siempre": "Siempre",
     "hoy": "Hoy",
-    "finde": "Este fin de semana",
+    "finde": "Este finde",
     "semana": "Esta semana",
     "enPareja": "En pareja",
     "enFamilia": "Con niños",
@@ -84,16 +84,19 @@
   },
   "Hoy": {
     "titulo": "Qué hacer hoy en {municipio}",
-    "tituloAudiencia": "Qué hacer hoy en {municipio} {audiencia}"
+    "tituloAudiencia": "Qué hacer hoy en {municipio} {audiencia}",
+    "masPlanes": "Más planes para hoy en {municipio}"
   },
   "Finde": {
     "titulo": "Qué hacer este fin de semana en {municipio}",
-    "tituloAudiencia": "Qué hacer este fin de semana en {municipio} {audiencia}"
+    "tituloAudiencia": "Qué hacer este fin de semana en {municipio} {audiencia}",
+    "masPlanes": "Más planes para este fin de semana en {municipio}"
   },
   "Semana": {
     "titulo": "Qué hacer esta semana en {municipio}",
     "tituloAudiencia": "Qué hacer esta semana en {municipio} {audiencia}",
-    "tituloGratis": "Qué hacer gratis esta semana en {municipio}"
+    "tituloGratis": "Qué hacer gratis esta semana en {municipio}",
+    "masPlanes": "Más planes para esta semana en {municipio}"
   },
   "Gratis": {
     "titulo": "Qué hacer gratis hoy en {municipio}",
@@ -155,6 +158,8 @@
     "precio": "Precio",
     "fechas": "Fechas",
     "fuente": "Fuente",
+    "verMasInformacion": "Ver más información",
+    "fotoDeLaUbicacion": "Foto de la ubicación: {lugar}",
     "desdeEl": "Desde el {fecha}",
     "hastaEl": "Hasta el {fecha}",
     "preguntasFrecuentes": "Preguntas frecuentes",
@@ -166,6 +171,10 @@
   },
   "Home": {
     "titulo": "Keplaneo",
+    "rotativoEnSevilla": "en Sevilla",
+    "rotativoEsteFinde": "este finde",
+    "rotativoHoy": "hoy",
+    "rotativoConciertos": "conciertos",
     "descripcion": "Los mejores planes de la provincia de Sevilla, ciudad a ciudad.",
     "sinMunicipios": "Todavía no hay municipios cargados.",
     "tituloCiudades": "Ciudades disponibles",
@@ -174,6 +183,7 @@
     "tituloFiltros": "Descubre más planes",
     "tituloCategorias": "Por categoría",
     "tituloSevilla": "Los mejores planes en Sevilla",
+    "verMasSevilla": "Ver más planes en Sevilla",
     "tituloProvincia": "Los mejores planes en la provincia",
     "tituloPareja": "En pareja",
     "tituloFamilia": "Con niños",
@@ -279,8 +289,8 @@
     "aperturaFinde": "Este fin de semana hay donde elegir{calificadorElegir} en {municipio}",
     "aperturaSemana": "Esta semana hay donde elegir{calificadorElegir} en {municipio}",
     "aperturaSiempre": "En {municipio} no faltan planes{calificador}",
-    "introConDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {un plan en total} other {# planes en total}}, con {frases}.",
-    "introSinDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {un plan en total} other {# planes en total}}.",
+    "introConDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {**un plan en total**} other {**# planes en total**}}, con {frases}.",
+    "introSinDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {**un plan en total**} other {**# planes en total**}}.",
     "tituloLista": "Planes{calificador} en {municipio}{temporal}",
     "flavorConciertos": "para alargar la noche hasta tarde",
     "flavorTeatro": "para una noche distinta",

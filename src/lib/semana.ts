@@ -18,12 +18,28 @@ export function ordenarPorDiaDeSemana(
     dias: diasSemanaIncluidos(evento.fecha_inicio, evento.fecha_fin),
   }));
 
-  const relevantes = conDias.filter(({ dias }) => dias === null || dias.some(Boolean));
+  // dias === null puede significar dos cosas muy distintas: el evento no
+  // tiene fecha en absoluto (genérico de verdad, se incluye igual) o SÍ
+  // tiene fecha_inicio/fecha_fin pero el texto no se pudo interpretar (ej.
+  // "2 de diciembre" sin año — ver conversación). Confundir los dos colaba
+  // eventos puntuales de meses futuros en "esta semana" solo porque
+  // Gemini olvidó el año; si hay texto de fecha pero no se pudo parsear,
+  // se excluye en vez de asumir que aplica siempre.
+  const relevantes = conDias.filter(({ evento, dias }) => {
+    if (dias !== null) return dias.some(Boolean);
+    return evento.fecha_inicio === null && evento.fecha_fin === null;
+  });
 
   relevantes.sort((a, b) => {
     const indiceA = a.dias ? a.dias.indexOf(true) : 99;
     const indiceB = b.dias ? b.dias.indexOf(true) : 99;
     if (indiceA !== indiceB) return indiceA - indiceB;
+    // Dentro del mismo día, relevancia decide antes que el alfabeto — ver
+    // conversación (un genérico de toda la vida no debe adelantar a algo
+    // más singular solo por el nombre).
+    const relA = a.evento.relevancia ?? 0;
+    const relB = b.evento.relevancia ?? 0;
+    if (relA !== relB) return relB - relA;
     return a.evento.titulo.localeCompare(b.evento.titulo, locale);
   });
 

@@ -48,6 +48,8 @@ export interface Plan {
   evento_fecha_inicio?: string | null;
   evento_fecha_fin?: string | null;
   evento_categoria?: Categoria | null;
+  evento_cartel_url?: string | null;
+  evento_foto_lugar_nombre?: string | null;
   enlace_afiliado: string | null;
   fuente: string | null;
 }
@@ -80,6 +82,13 @@ export interface Evento {
   relevancia: number | null;
   lat: number | null;
   lon: number | null;
+  // Cartel/imagen promocional real del evento (verificado, solo eventos
+  // puntuales destacados — ver conversación, no es escalable a todos por
+  // el coste real de la búsqueda). Cuando no hay, foto_lugar_nombre sirve
+  // de respaldo (foto del recinto vía Google Places, esa sí gratis y
+  // reutilizable entre eventos del mismo sitio).
+  cartel_url: string | null;
+  foto_lugar_nombre: string | null;
   primera_deteccion: string;
   ultima_deteccion: string;
   activo: boolean;

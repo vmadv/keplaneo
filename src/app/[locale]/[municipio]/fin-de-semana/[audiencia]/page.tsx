@@ -68,6 +68,10 @@ export default async function FindeAudienciaPage({
       fecha={rangoFinDeSemanaLegible(locale)}
       planes={planes}
       current={{ vigencia: "finde", extra }}
+      enlaceMasPlanes={{
+        href: `/${municipioSlug}/fin-de-semana`,
+        texto: tFinde("masPlanes", { municipio: municipio.nombre }),
+      }}
       breadcrumbExtra={[
         { label: tFiltros("finde"), href: `/${municipioSlug}/fin-de-semana` },
         { label: tAudiencia(extra) },

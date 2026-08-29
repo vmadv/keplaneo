@@ -137,6 +137,17 @@ function parsearFechaEspanola(texto: string): Date | null {
   return new Date(Number(m[3]), mes, Number(m[1]));
 }
 
+// Ataja el problema en el origen (ver conversación: Gemini guardó "2 de
+// diciembre" sin año, y eso colaba el evento en "esta semana" meses
+// después porque el parser fallaba en silencio y el resto del código
+// trataba "no se pudo interpretar" igual que "no tiene fecha"). Se usa al
+// normalizar lo que devuelve Gemini, antes de guardar nada: una fecha que
+// no cumpla el formato completo ("D de MES de AAAA") no se guarda en vez
+// de guardarse a medias.
+export function esFechaEspanolaValida(texto: string): boolean {
+  return parsearFechaEspanola(texto) !== null;
+}
+
 function diaEpoch(fecha: Date): number {
   return Math.floor(Date.UTC(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()) / 86400000);
 }

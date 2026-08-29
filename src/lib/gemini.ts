@@ -1,5 +1,6 @@
 import { CATEGORIAS, type Audiencia, type Categoria, type Momento, type TipoPlan } from "./types";
 import type { CandidatoLugar } from "./places";
+import { esFechaEspanolaValida } from "./dates";
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -161,14 +162,14 @@ Cada elemento debe tener EXACTAMENTE estos campos:
 - "tipo": "excepcional" (evento puntual con fecha concreta) | "generico" (disponible siempre)
 - "categoria": elige EXACTAMENTE una de esta lista: ${CATEGORIAS.join(", ")}. Usa "conciertos"/"exposiciones"/"teatro"/"monologos"/"deporte"/"ferias"/"fiestas"/"cine" solo cuando el plan sea genuinamente eso (ej. un partido o carrera es "deporte"; una feria del libro o mercadillo es "ferias"; una verbena, romería o cabalgata es "fiestas"; una proyección o ciclo de cine, incluido cine de verano al aire libre, es "cine"). "conciertos" incluye también festivales de música (aunque duren varios días), espectáculos musicales y cualquier plan centrado en música en vivo, no solo un concierto suelto de un artista. Para todo lo demás (parques, rutas, gastronomía, monumentos sin espectáculo, danza/ópera/circo, charlas, fuegos artificiales...) usa "otros".
 - "precio": para TODOS los planes, no solo los excepcionales — ej. "Entrada gratuita", "Desde 15€", "6€ adultos / 3€ niños". Muchos monumentos y recintos que parecen "de siempre" (Catedral, Alcázar, museos) en realidad cobran entrada: compruébalo siempre, no asumas que un plan genérico es gratis. Omite el campo solo si de verdad no encuentras el dato, nunca lo inventes ni lo asumas.
-- "relevancia": entero del 1 al 10 — qué tan atractivo es este plan frente a otros parecidos de la misma ciudad, para alguien sin preferencias previas. Sé exigente y usa el rango completo, no lo comprimas todo en 7-8: la mayoría de planes genéricos habituales (un parque cualquiera, una plaza, una ruta sin nada que lo distinga) deberían quedar entre 3 y 6; reserva 8-10 para lo realmente singular, icónico o con un tirón claro (un monumento emblemático, una experiencia que no se encuentra en cualquier ciudad, un evento con mucha expectación). Esto se usa para ordenar listados largos donde ya no hay más criterio que "cuál merece más la pena" — una nota blanda que no diferencia nada no sirve de nada.
+- "ubicacion": para TODOS los planes, no solo los excepcionales — lugar físico concreto donde ocurre o se encuentra, si es un sitio fijo e identificable (un parque, un museo, un monumento, una sala también llevan este campo, igual que un evento puntual). Usa siempre el NOMBRE OFICIAL COMPLETO del lugar, tal como aparece en mapas o en su web oficial — nunca una abreviatura, sigla o apodo (ej. "Centro Andaluz de Arte Contemporáneo", nunca "CAAC"; "Real Alcázar de Sevilla", no solo "el Alcázar"): un nombre real pero mal recortado hace que luego no se pueda localizar en el mapa. Omite el campo si el plan no ocurre en un lugar fijo (una ruta sin sede concreta, una actividad genérica "por la ciudad") o si no tienes el dato con certeza.
+- "fuente": para TODOS los planes, no solo los excepcionales — un plan genérico que requiere reserva o entrada (ej. "previa reserva", "Desde 25€") es igual de inútil sin saber dónde reservar que un evento puntual sin esa información. SIEMPRE prioriza la fuente PRIMARIA/oficial (el ayuntamiento, la diputación, el recinto, el museo, la sala, el organizador real) por encima de webs intermediarias (agendas culturales, blogs de "qué hacer en...", portales de noticias locales que solo republican la información). Si conoces la URL exacta de esa página oficial, ponla aquí (ej. "https://..."); si no tienes una URL fiable pero sí sabes qué institución es la organizadora real, pon su nombre (ej. "Ayuntamiento de Sevilla", "Diputación de Sevilla") en vez del nombre del portal donde lo hayas visto. Usa un agregador/intermediario como último recurso, solo si de verdad no puedes identificar quién organiza el evento. Omite el campo si de verdad no encuentras ninguna fuente fiable.
+- "relevancia": entero del 1 al 10 — qué tan atractivo es este plan frente a otros parecidos de la misma ciudad, para alguien sin preferencias previas. Sé exigente y usa el rango completo, no lo comprimas todo en 7-8: la mayoría de planes genéricos habituales (un parque cualquiera, una plaza, una ruta sin nada que lo distinga) deberían quedar entre 3 y 6; reserva 8-10 para lo realmente singular, icónico o con un tirón claro (un monumento emblemático, una experiencia que no se encuentra en cualquier ciudad, un evento con mucha expectación). Dentro de lo genérico, no vale lo mismo cualquier cosa: una visita guiada a un monumento o edificio CONCRETO y con nombre propio (ej. "Visita a las Cubiertas de la Catedral", "Visita al Hospital de los Venerables") pesa más que una actividad-tipo genérica (una ruta en kayak, un paseo en bici, un "tapeo y mercado tradicional") que podría pasar en casi cualquier ciudad con río o mercado — aunque las dos estén "siempre disponibles", la primera está anclada a algo único de esta ciudad concreta, la segunda es más una categoría de actividad replicable que un lugar irrepetible. Esto se usa para ordenar listados largos donde ya no hay más criterio que "cuál merece más la pena" — una nota blanda que no diferencia nada no sirve de nada.
 - "preguntas_frecuentes": array de 2-3 objetos {"pregunta": string, "respuesta": string}. Usa las preguntas que un visitante real se haría de este plan concreto (¿es gratis?, ¿es apto para niños?, ¿cuánto dura?, ¿hasta cuándo está disponible?, ¿hay que reservar?...). IMPORTANTE: la respuesta debe basarse ÚNICAMENTE en los datos que ya has puesto en los demás campos de este mismo plan (horario, precio, audiencia, fechas, descripción) — no metas ningún dato nuevo que no hayas dado ya arriba. Si no tienes base para una pregunta concreta, no la incluyas.
 
 Además, SOLO para los planes con "tipo": "excepcional" (van a tener página propia con más detalle), añade estos campos cuando la información sea real y verificable — omite el campo si no la encuentras, no la inventes:
-- "ubicacion": lugar concreto donde ocurre (ej. "Real Alcázar, Patio de Banderas")
 - "horario": horario concreto (ej. "22:00h")
 - "fecha_inicio" / "fecha_fin": rango de fechas del evento si lo conoces (ej. "15 de agosto de 2026" / "31 de agosto de 2026") — omite el que no sepas
-- "fuente": SIEMPRE prioriza la fuente PRIMARIA/oficial (el ayuntamiento, la diputación, el recinto, el museo, la sala, el organizador real del evento) por encima de webs intermediarias (agendas culturales, blogs de "qué hacer en...", portales de noticias locales que solo republican la información). Si conoces la URL exacta de esa página oficial, ponla aquí (ej. "https://..."); si no tienes una URL fiable pero sí sabes qué institución es la organizadora real, pon su nombre (ej. "Ayuntamiento de Sevilla", "Diputación de Sevilla") en vez del nombre del portal donde lo hayas visto. Usa un agregador/intermediario como último recurso, solo si de verdad no puedes identificar quién organiza el evento.
 
 Devuelve EXCLUSIVAMENTE el array JSON, sin texto adicional ni bloques de markdown.
 `.trim();
@@ -189,7 +190,7 @@ Los planes "generico" deben ir siempre al final del array, después de todos los
 
 Dentro de cada uno de esos dos bloques (excepcional / generico), ordena de MAYOR a MENOR popularidad o interés esperado — el evento más multitudinario o relevante primero, el más de nicho al final. Además:
 - Procura variedad real de temática entre los eventos puntuales: si encuentras 8 conciertos y ningún otro tipo, busca más en las demás categorías antes de rendirte — no llenes el listado a base de repetir el mismo tipo de plan.
-- Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Si tiene un ángulo claro de pareja o romántico (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas, un atardecer, cualquier plan explícitamente descrito como romántico aunque no sea la típica "cita") márcalo SOLO "pareja"; si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya llevas "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para cuando el plan de verdad no tenga ningún ángulo hacia una audiencia concreta. Esta etiqueta se usa para filtrar planes por audiencia en el sitio; si casi todo lleva "generico" además de su etiqueta específica, el filtro deja de servir de nada.
+- Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Márcalo "pareja" en dos casos, dando más peso al primero: (1) tiene un ángulo claro romántico (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas, un atardecer, cualquier plan explícitamente descrito como romántico aunque no sea la típica "cita"); o (2), sin ese ángulo romántico explícito, es un plan cultural, de ocio o de entretenimiento que funciona bien como salida en pareja — una exposición, un concierto, una obra de teatro, un monólogo, una cata, una proyección de cine — no hace falta que sea "de cita" para marcarlo así, basta con que sea un plan que dos personas disfrutarían haciendo juntas. Si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya lleva "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para planes de infraestructura o rutina sin ningún ángulo hacia una audiencia concreta (un parque cualquiera, una plaza, un mercado, una ruta sin nada que la haga especialmente de pareja) y para eventos multitudinarios sin componente de experiencia compartida más allá de estar entre el público (un gran partido, una romería masiva). Esta etiqueta se usa para filtrar planes por audiencia en el sitio; no la apliques por inercia a cualquier plan cultural solo porque "podría valer" — resérvala para los que de verdad tienen ese carácter de salida compartida, o el filtro deja de servir de nada.
 
 ${CAMPOS_JSON}
 `.trim();
@@ -204,6 +205,15 @@ function normalizarPlan(p: PlanGenerado): PlanGenerado {
     (a): a is Audiencia => a === "pareja" || a === "familia" || a === "generico"
   );
 
+  // Gemini a veces omite el año ("2 de diciembre" en vez de "2 de
+  // diciembre de 2026") — guardar esa fecha a medias es peor que no
+  // guardar ninguna: el resto del código no puede distinguir después "no
+  // sé cuándo es" de "sé cuándo es pero no lo interpreté bien", y un
+  // evento puntual de un mes futuro acababa colándose en listados de la
+  // semana actual (ver conversación). Se corta aquí, antes de guardar nada.
+  const fechaInicioValida = p.fecha_inicio && esFechaEspanolaValida(p.fecha_inicio) ? p.fecha_inicio : undefined;
+  const fechaFinValida = p.fecha_fin && esFechaEspanolaValida(p.fecha_fin) ? p.fecha_fin : undefined;
+
   return {
     ...p,
     momento: p.momento === "noche" ? "noche" : "dia",
@@ -211,6 +221,8 @@ function normalizarPlan(p: PlanGenerado): PlanGenerado {
     audiencia: audienciaValida.length > 0 ? audienciaValida : ["generico"],
     vigencia: Array.isArray(p.vigencia) ? p.vigencia : [],
     categoria: (CATEGORIAS as readonly string[]).includes(p.categoria ?? "") ? p.categoria : "otros",
+    fecha_inicio: fechaInicioValida,
+    fecha_fin: fechaFinValida,
   };
 }
 
@@ -291,7 +303,7 @@ export const FOCOS_SEMANALES: Foco[] = [
 
 const DESCRIPCION_FOCO: Record<string, string> = {
   pareja:
-    "planes pensados especialmente para ir en pareja: catas nocturnas, conciertos o sesiones íntimas, cenas o experiencias con encanto (azoteas, miradores al atardecer, vistas), actividades pensadas para dos",
+    "planes que funcionan bien como salida en pareja — tanto los explícitamente románticos (catas nocturnas, cenas o experiencias con encanto, azoteas, miradores al atardecer) como, sin ese ángulo romántico, planes culturales o de ocio que dos personas disfrutarían haciendo juntas: exposiciones, conciertos, teatro, monólogos, catas, cine",
   familia:
     "planes pensados especialmente para ir con niños: espectáculos infantiles, parques temáticos o de atracciones, talleres familiares, exposiciones o museos con actividades para niños, cine de verano con película familiar",
   conciertos: "conciertos de cualquier género (pop, rock, flamenco, clásica, jazz, indie...) con fecha concreta",
@@ -357,10 +369,35 @@ function normalizarTitulo(titulo: string): string {
 // Patagonia en CaixaForum Sevilla", encontrados por dos búsquedas
 // distintas) — se compara por contención y por solape de palabras en vez
 // de exigir una igualdad exacta, que dejaba pasar justo estos casos.
+// "... vs/contra RIVAL" (partidos, pero también "concierto de X contra...",
+// enfrentamientos, etc.): si los dos títulos tienen esta forma y el rival
+// es distinto, son eventos DIFERENTES aunque el resto del título (el
+// molde de la frase, ej. "Partido de LaLiga EA Sports: Sevilla FC vs")
+// coincida casi entero — el ratio de palabras compartidas por sí solo no
+// sirve aquí: "vs Atlético de Madrid" y "vs FC Barcelona" comparten el
+// 80% de las palabras significativas del título completo (todo el molde),
+// más que casos de fusión real como "Cayetana" (75%) — subir el umbral
+// general rompía esos, así que este caso necesita su propio chequeo.
+function extraerTrasConector(texto: string): string | null {
+  const m = texto.match(/\b(vs\.?|contra)\s+(.+)$/i);
+  return m ? m[2].trim() : null;
+}
+
 export function mismoEvento(a: string, b: string): boolean {
   const na = normalizarTitulo(a);
   const nb = normalizarTitulo(b);
   if (na === nb) return true;
+
+  const rivalA = extraerTrasConector(a);
+  const rivalB = extraerTrasConector(b);
+  if (rivalA && rivalB) {
+    const nRivalA = normalizarTitulo(rivalA);
+    const nRivalB = normalizarTitulo(rivalB);
+    if (nRivalA !== nRivalB && !nRivalA.includes(nRivalB) && !nRivalB.includes(nRivalA)) {
+      return false;
+    }
+  }
+
   if (na.length > 8 && nb.length > 8 && (na.includes(nb) || nb.includes(na))) return true;
 
   const palabrasA = new Set(na.split(" ").filter((w) => w.length > 2));

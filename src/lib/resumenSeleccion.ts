@@ -185,7 +185,10 @@ function construirFraseCategoria(
   const etiqueta = etiquetaParaFrase(conteo.categoria, t, tCategorias);
   const clave = clavesMatiz(conteo.categoria, conteo.puntual);
   const matiz = clave ? ` ${t(clave)}` : "";
-  return `${conteo.cantidad} ${etiqueta}${matiz}`;
+  // Negrita solo en el dato (cantidad + categoría), no en el matiz de
+  // relleno — mismo criterio que ya sigue Gemini en las descripciones
+  // (ver CAMPOS_JSON en gemini.ts).
+  return `**${conteo.cantidad} ${etiqueta}**${matiz}`;
 }
 
 const TOP_CATEGORIAS_INTRO = 3;

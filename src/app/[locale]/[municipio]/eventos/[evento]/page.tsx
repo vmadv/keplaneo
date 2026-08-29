@@ -25,7 +25,21 @@ import {
 } from "@/lib/dates";
 import type { SolicitudTiempo } from "@/lib/weather";
 import type { Audiencia, Evento, Plan } from "@/lib/types";
-import { construirEventoJsonLd, construirFaqJsonLd } from "@/lib/structuredData";
+import { construirEventoJsonLd, construirFaqJsonLd, textoPlano } from "@/lib/structuredData";
+import { urlFotoProxy } from "@/lib/places";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+// Meta description/OG: nunca la descripción completa (varios párrafos, con
+// "**negritas**" de markdown sin procesar) — un extracto corto y limpio,
+// pensado para el snippet de búsqueda/redes, no para el cuerpo de la
+// página. Ver conversación: usar la descripción entera tal cual era un bug
+// real, no una mejora opcional.
+function extractoMeta(descripcion: string, limite = 155): string {
+  const primerParrafo = textoPlano(descripcion.split("\n\n")[0] ?? "").trim();
+  if (primerParrafo.length <= limite) return primerParrafo;
+  return `${primerParrafo.slice(0, limite - 1).trimEnd()}…`;
+}
 
 // Los eventos pueden pasar de activo a finalizado entre generaciones
 // diarias; se revalida más a menudo que las páginas de listado.
@@ -116,15 +130,33 @@ function datosTiempoParaEvento(
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ municipio: string; evento: string }>;
+  params: Promise<{ locale: string; municipio: string; evento: string }>;
 }): Promise<Metadata> {
-  const { municipio, evento: eventoSlug } = await params;
+  const { locale, municipio, evento: eventoSlug } = await params;
   const encontrado = await cargarEvento(municipio, eventoSlug);
   if (!encontrado) return {};
 
+  const titulo = `${encontrado.evento.titulo} — ${encontrado.municipio.nombre}`;
+  const descripcion = extractoMeta(encontrado.evento.descripcion);
+  // Sin el parámetro ?desde= — cambia qué "otros planes" se muestran al
+  // final, pero es la misma ficha; sin canonical, Google podía indexar
+  // /eventos/x, /eventos/x?desde=hoy y /eventos/x?desde=finde como páginas
+  // casi duplicadas en vez de una sola (ver conversación).
+  const prefijo = locale === "es" ? "" : `/${locale}`;
+  const canonical = `${SITE_URL}${prefijo}/${municipio}/eventos/${eventoSlug}`;
+
   return {
-    title: `${encontrado.evento.titulo} — ${encontrado.municipio.nombre}`,
-    description: encontrado.evento.descripcion,
+    title: titulo,
+    description: descripcion,
+    alternates: { canonical },
+    openGraph: {
+      title: titulo,
+      description: descripcion,
+      url: canonical,
+      siteName: "Keplaneo",
+      locale,
+      type: "article",
+    },
     // Un evento ya finalizado se mantiene accesible (no rompemos la URL),
     // pero no debe competir en el índice con contenido vigente.
     robots: encontrado.evento.activo ? undefined : { index: false, follow: true },
@@ -172,6 +204,36 @@ export default async function EventoPage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }} />
       )}
       <div className="max-w-3xl mx-auto px-6 py-16">
+        {evento.cartel_url ? (
+          // Cartel real y verificado (poco frecuente, solo destacados) —
+          // se muestra tal cual, sin leyenda: es del evento en sí.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={evento.cartel_url}
+            alt={evento.titulo}
+            className="w-full rounded-2xl mb-2 object-cover max-h-96"
+            style={{ border: "2px solid var(--foreground)", boxShadow: "6px 6px 0px 0px var(--border)" }}
+          />
+        ) : (
+          evento.foto_lugar_nombre &&
+          evento.ubicacion && (
+            <div className="mb-6">
+              {/* Foto del lugar (Google Places), no del evento en sí — la
+                  leyenda lo deja claro para que nadie la confunda con un
+                  cartel, ver conversación. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={urlFotoProxy(evento.foto_lugar_nombre, 800)}
+                alt={evento.ubicacion}
+                className="w-full rounded-2xl mb-2 object-cover max-h-96"
+                style={{ border: "2px solid var(--foreground)", boxShadow: "6px 6px 0px 0px var(--border)" }}
+              />
+              <p className="text-xs px-1" style={{ color: "var(--muted-foreground)" }}>
+                {tEvento("fotoDeLaUbicacion", { lugar: evento.ubicacion })}
+              </p>
+            </div>
+          )
+        )}
         <Breadcrumb
           items={[
             { label: tNav("inicio"), href: "/" },
@@ -288,7 +350,7 @@ export default async function EventoPage({
                 <span className="font-bold">{tEvento("fuente")}: </span>
                 {esUrl(evento.fuente) ? (
                   <a href={evento.fuente} className="hover:underline" style={{ color: "var(--accent)" }} rel="noopener noreferrer nofollow">
-                    {evento.fuente}
+                    {tEvento("verMasInformacion")}
                   </a>
                 ) : (
                   evento.fuente

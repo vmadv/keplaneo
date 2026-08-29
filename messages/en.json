@@ -84,16 +84,19 @@
   },
   "Hoy": {
     "titulo": "What to do today in {municipio}",
-    "tituloAudiencia": "What to do today in {municipio} {audiencia}"
+    "tituloAudiencia": "What to do today in {municipio} {audiencia}",
+    "masPlanes": "More plans for today in {municipio}"
   },
   "Finde": {
     "titulo": "What to do this weekend in {municipio}",
-    "tituloAudiencia": "What to do this weekend in {municipio} {audiencia}"
+    "tituloAudiencia": "What to do this weekend in {municipio} {audiencia}",
+    "masPlanes": "More plans for this weekend in {municipio}"
   },
   "Semana": {
     "titulo": "What to do this week in {municipio}",
     "tituloAudiencia": "What to do this week in {municipio} {audiencia}",
-    "tituloGratis": "Free things to do this week in {municipio}"
+    "tituloGratis": "Free things to do this week in {municipio}",
+    "masPlanes": "More plans for this week in {municipio}"
   },
   "Gratis": {
     "titulo": "Free things to do today in {municipio}",
@@ -155,6 +158,8 @@
     "precio": "Price",
     "fechas": "Dates",
     "fuente": "Source",
+    "verMasInformacion": "See more information",
+    "fotoDeLaUbicacion": "Photo of the venue: {lugar}",
     "desdeEl": "From {fecha}",
     "hastaEl": "Until {fecha}",
     "preguntasFrecuentes": "Frequently asked questions",
@@ -166,6 +171,10 @@
   },
   "Home": {
     "titulo": "Keplaneo",
+    "rotativoEnSevilla": "in Sevilla",
+    "rotativoEsteFinde": "this weekend",
+    "rotativoHoy": "today",
+    "rotativoConciertos": "concerts",
     "descripcion": "The best plans in Seville's province, city by city.",
     "sinMunicipios": "No towns loaded yet.",
     "tituloCiudades": "Available cities",
@@ -174,6 +183,7 @@
     "tituloFiltros": "Discover more plans",
     "tituloCategorias": "By category",
     "tituloSevilla": "The best plans in Seville",
+    "verMasSevilla": "See more plans in Seville",
     "tituloProvincia": "The best plans in the province",
     "tituloPareja": "As a couple",
     "tituloFamilia": "With kids",
@@ -279,8 +289,8 @@
     "aperturaFinde": "There is plenty to choose{calificadorElegir} in {municipio} this weekend",
     "aperturaSemana": "There is plenty to choose{calificadorElegir} in {municipio} this week",
     "aperturaSiempre": "{municipio} never runs out of plans{calificador}",
-    "introConDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {one plan in total} other {# plans in total}}, including {frases}.",
-    "introSinDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {one plan in total} other {# plans in total}}.",
+    "introConDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {**one plan in total**} other {**# plans in total**}}, including {frases}.",
+    "introSinDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {**one plan in total**} other {**# plans in total**}}.",
     "tituloLista": "Plans{calificador} in {municipio}{temporal}",
     "flavorConciertos": "to stretch the night out",
     "flavorTeatro": "for a different kind of night",

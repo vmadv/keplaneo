@@ -1,6 +1,7 @@
 import { construirIntroNarrativa, construirTituloLista, type ItemResumible } from "@/lib/resumenSeleccion";
 import type { Vigencia, Extra } from "@/lib/filtros";
 import type { PreguntaFrecuente } from "@/lib/types";
+import TextoConNegritas from "./TextoConNegritas";
 
 // Párrafo bajo el título — un resumen con algo de gancho (no un recuento
 // seco) de lo que hay realmente en ESTA selección concreta: abre según
@@ -26,7 +27,7 @@ export async function IntroSeleccion({
 
   return (
     <p className="text-base mb-6 text-balance" style={{ color: "var(--muted-foreground)" }}>
-      {texto}
+      <TextoConNegritas texto={texto} />
     </p>
   );
 }

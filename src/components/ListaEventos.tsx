@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Sun, Moon, CalendarDays } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
+import { urlFotoProxy } from "@/lib/places";
 import type { Evento } from "@/lib/types";
 
 // Como PlanList, pero para Evento[] — se usa en páginas que leen
@@ -35,21 +36,35 @@ export default async function ListaEventos({
         const href = contexto
           ? `${base}/eventos/${evento.slug}?desde=${contexto}`
           : `${base}/eventos/${evento.slug}`;
+        // Cartel real primero (poco frecuente); si no, foto del lugar vía
+        // Google Places — misma lógica que PlanList.tsx, ver conversación.
+        const foto = evento.cartel_url ?? evento.foto_lugar_nombre ?? undefined;
+        const esCartel = Boolean(evento.cartel_url);
 
         return (
           <li key={evento.id}>
             <Link href={href} className="card-sticker block p-4">
               <div className="flex items-start gap-3">
-                <span
-                  className="icon-chip w-9 h-9 shrink-0"
-                  style={{ background: evento.momento === "noche" ? "var(--foreground)" : "var(--tertiary)" }}
-                >
-                  {evento.momento === "noche" ? (
-                    <Moon size={16} strokeWidth={2.5} color="var(--background)" />
-                  ) : (
-                    <Sun size={16} strokeWidth={2.5} />
-                  )}
-                </span>
+                {foto ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={esCartel ? foto : urlFotoProxy(foto, 128)}
+                    alt=""
+                    className="w-16 h-16 rounded-lg object-cover shrink-0"
+                    style={{ border: "2px solid var(--foreground)" }}
+                  />
+                ) : (
+                  <span
+                    className="icon-chip w-9 h-9 shrink-0"
+                    style={{ background: evento.momento === "noche" ? "var(--foreground)" : "var(--tertiary)" }}
+                  >
+                    {evento.momento === "noche" ? (
+                      <Moon size={16} strokeWidth={2.5} color="var(--background)" />
+                    ) : (
+                      <Sun size={16} strokeWidth={2.5} />
+                    )}
+                  </span>
+                )}
                 <div className="min-w-0">
                   <div className="flex flex-wrap gap-1.5 mb-1.5">
                     <BadgeCategoria categoria={evento.categoria} />

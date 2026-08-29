@@ -1,6 +1,8 @@
 import { Heart, Users, Gift } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import ListaCiudadesHome from "@/components/ListaCiudadesHome";
+import TituloHeroAnimado from "@/components/TituloHeroAnimado";
 import TarjetaEnlaceFiltro from "@/components/TarjetaEnlaceFiltro";
 import TarjetaPlanDestacado from "@/components/TarjetaPlanDestacado";
 import { ICONO_CATEGORIA } from "@/lib/filtros";
@@ -38,8 +40,8 @@ export default async function HomePage() {
     { filtro: "gratis", titulo: tHome("tituloGratis"), Icono: Gift, color: "var(--tertiary)" },
   ];
 
-  const bloquesContenido: { titulo: string; planes: typeof planesSevilla }[] = [
-    { titulo: tHome("tituloSevilla"), planes: planesSevilla },
+  const bloquesContenido: { titulo: string; planes: typeof planesSevilla; href?: string }[] = [
+    { titulo: tHome("tituloSevilla"), planes: planesSevilla, href: sevilla ? `/${sevilla.slug}` : undefined },
     { titulo: tHome("tituloProvincia"), planes: planesProvincia },
   ];
 
@@ -52,7 +54,15 @@ export default async function HomePage() {
             style={{ background: "var(--tertiary)", opacity: 0.5 }}
             aria-hidden="true"
           />
-          <h1 className="text-5xl font-extrabold mb-3 text-balance">{tHome("titulo")}</h1>
+          <TituloHeroAnimado
+            estatico={tHome("titulo")}
+            rotativos={[
+              tHome("rotativoEnSevilla"),
+              tHome("rotativoEsteFinde"),
+              tHome("rotativoHoy"),
+              tHome("rotativoConciertos"),
+            ]}
+          />
           <p className="text-lg" style={{ color: "var(--muted-foreground)" }}>
             {tHome("descripcion")}
           </p>
@@ -88,13 +98,22 @@ export default async function HomePage() {
                 {seccion.planes.length === 0 ? (
                   <p style={{ color: "var(--muted-foreground)" }}>{tHome("vacioSeccion")}</p>
                 ) : (
-                  <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {seccion.planes.map((plan) => (
-                      <li key={plan.id}>
-                        <TarjetaPlanDestacado plan={plan} etiquetaEventoPuntual={tBadges("eventoPuntual")} />
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {seccion.planes.map((plan) => (
+                        <li key={plan.id}>
+                          <TarjetaPlanDestacado plan={plan} etiquetaEventoPuntual={tBadges("eventoPuntual")} />
+                        </li>
+                      ))}
+                    </ul>
+                    {seccion.href && (
+                      <p className="mt-4">
+                        <Link href={seccion.href} className="btn-secondary text-sm">
+                          {tHome("verMasSevilla")} →
+                        </Link>
+                      </p>
+                    )}
+                  </>
                 )}
               </section>
             ))}

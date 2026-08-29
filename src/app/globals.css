@@ -162,12 +162,13 @@ a {
     border: 2px solid var(--foreground);
   }
 
-  /* Empuja la mirada de "Cuándo" hacia "Filtra más" — un par de rebotes
-     cortos hacia abajo en vez de un bucle infinito, para invitar a
-     combinar los dos filtros sin resultar cargante. */
+  /* Empuja la mirada hacia las pastillas de al lado — un par de rebotes
+     cortos hacia la derecha (la etiqueta va en línea con ellas, no encima)
+     en vez de un bucle infinito, para invitar a combinar los dos filtros
+     sin resultar cargante. */
   @keyframes rebote-invitacion {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(3px); }
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
   }
   .icono-invitacion {
     animation: rebote-invitacion 0.9s ease-in-out 2;

@@ -75,6 +75,7 @@ export default async function EstaSemanaAudienciaPage({
       contexto="semana"
       obtenerEtiqueta={(evento) => etiquetas.get(evento.id) ?? null}
       mensajeVacio={tPlanList("vacioSemanaFiltro")}
+      enlaceMasPlanes={{ href: `${base}/esta-semana`, texto: tSemana("masPlanes", { municipio: municipio.nombre }) }}
       breadcrumbExtra={[
         { label: tFiltros("semana"), href: `${base}/esta-semana` },
         { label: tAudiencia(extra) },

@@ -174,7 +174,7 @@ async function getPlanesPorVigencia(
   let query = supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, relevancia, cartel_url, foto_lugar_nombre)"
     )
     .eq("municipio_id", municipioId)
     .contains("vigencia", [vigencia]);
@@ -192,15 +192,20 @@ async function getPlanesPorVigencia(
   }
 
   // "excepcional" ordena antes que "generico" alfabéticamente: los planes
-  // puntuales van primero y los genéricos de relleno quedan al final,
-  // como pide el prompt de generación.
-  const { data } = await query.order("tipo").order("momento");
+  // puntuales van primero y los genéricos de relleno (ej. "Mercado de
+  // Abastos", "Tapas tradicionales") quedan siempre al final, como pide el
+  // prompt de generación — relevancia solo desempata DENTRO de cada grupo,
+  // nunca hace que un genérico adelante a un puntual (ver conversación).
+  const { data } = await query
+    .order("tipo")
+    .order("momento")
+    .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 
   return (data ?? []).map((fila) => {
     const { eventos, ...plan } = fila as unknown as Plan & {
       eventos:
-        | { slug: string; fecha_inicio: string | null; fecha_fin: string | null; categoria: Categoria | null }
-        | { slug: string; fecha_inicio: string | null; fecha_fin: string | null; categoria: Categoria | null }[]
+        | EventosDelPlanJoin
+        | EventosDelPlanJoin[]
         | null;
     };
     const ev = Array.isArray(eventos) ? eventos[0] : eventos;
@@ -210,8 +215,20 @@ async function getPlanesPorVigencia(
       evento_fecha_inicio: ev?.fecha_inicio ?? null,
       evento_fecha_fin: ev?.fecha_fin ?? null,
       evento_categoria: ev?.categoria ?? null,
+      evento_cartel_url: ev?.cartel_url ?? null,
+      evento_foto_lugar_nombre: ev?.foto_lugar_nombre ?? null,
     };
   });
+}
+
+interface EventosDelPlanJoin {
+  slug: string;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  categoria: Categoria | null;
+  relevancia: number | null;
+  cartel_url: string | null;
+  foto_lugar_nombre: string | null;
 }
 
 export async function getEvento(
@@ -221,7 +238,7 @@ export async function getEvento(
   const { data } = await supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, lat, lon, primera_deteccion, ultima_deteccion, activo"
     )
     .eq("municipio_id", municipioId)
     .eq("slug", slug)
@@ -470,7 +487,7 @@ async function getEventosDelMunicipio(
   let query = supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, lat, lon, primera_deteccion, ultima_deteccion, activo"
     )
     .eq("municipio_id", municipioId)
     .eq("activo", true);
@@ -479,8 +496,22 @@ async function getEventosDelMunicipio(
     // Estricto, mismo criterio que getPlanesPorVigencia — ver conversación.
     query = query.contains("audiencia", [audiencia]);
   }
-  const { data } = await query.order("titulo");
-  return data ?? [];
+  const { data } = await query;
+
+  // Puntual siempre antes que genérico (mismo criterio que
+  // getPlanesPorVigencia: un evento con fecha real gana siempre a un
+  // "Mercado de Abastos" o "Tapas tradicionales" de toda la vida), y
+  // relevancia como desempate dentro de cada grupo — no en SQL porque aquí
+  // no hay una columna "tipo" propia, solo fecha_inicio.
+  return (data ?? []).sort((a, b) => {
+    const puntualA = a.fecha_inicio !== null ? 0 : 1;
+    const puntualB = b.fecha_inicio !== null ? 0 : 1;
+    if (puntualA !== puntualB) return puntualA - puntualB;
+    const relA = a.relevancia ?? 0;
+    const relB = b.relevancia ?? 0;
+    if (relA !== relB) return relB - relA;
+    return a.titulo.localeCompare(b.titulo);
+  });
 }
 
 // Para la página genérica de categoría (ej. /sevilla/conciertos): todos los
@@ -535,21 +566,33 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
   const { data } = await supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, precio)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, precio, relevancia, cartel_url, foto_lugar_nombre)"
     )
     .eq("municipio_id", municipioId)
     .contains("vigencia", [vigencia])
     .eq("fecha_generacion", hoyISO())
     .order("tipo")
-    .order("momento");
+    .order("momento")
+    .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 
   return (data ?? [])
     .map((fila) => {
       const { eventos, ...plan } = fila as unknown as Plan & {
-        eventos: { slug: string; precio: string | null } | { slug: string; precio: string | null }[] | null;
+        eventos:
+          | { slug: string; precio: string | null; relevancia: number | null; cartel_url: string | null; foto_lugar_nombre: string | null }
+          | { slug: string; precio: string | null; relevancia: number | null; cartel_url: string | null; foto_lugar_nombre: string | null }[]
+          | null;
       };
       const ev = Array.isArray(eventos) ? eventos[0] : eventos;
-      return { plan: { ...plan, evento_slug: ev?.slug ?? null }, precio: ev?.precio ?? null };
+      return {
+        plan: {
+          ...plan,
+          evento_slug: ev?.slug ?? null,
+          evento_cartel_url: ev?.cartel_url ?? null,
+          evento_foto_lugar_nombre: ev?.foto_lugar_nombre ?? null,
+        },
+        precio: ev?.precio ?? null,
+      };
     })
     .filter(({ precio }) => esPrecioGratis(precio))
     .map(({ plan }) => plan);

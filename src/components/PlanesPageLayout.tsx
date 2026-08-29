@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import Breadcrumb, { type BreadcrumbItem } from "./Breadcrumb";
 import FiltrosPagina from "./FiltrosPagina";
 import PlanList from "./PlanList";
@@ -19,6 +20,7 @@ export default async function PlanesPageLayout({
   planes,
   current,
   breadcrumbExtra,
+  enlaceMasPlanes,
 }: {
   municipio: MunicipioConComunidad;
   municipioSlug: string;
@@ -27,6 +29,11 @@ export default async function PlanesPageLayout({
   planes: Plan[];
   current: { vigencia: "hoy" | "finde"; extra?: Extra };
   breadcrumbExtra: BreadcrumbItem[];
+  // Enlace a la variante sin filtro de audiencia de esta misma vigencia
+  // (p. ej. desde "este finde en pareja" a "este finde" a secas) — un
+  // filtro de audiencia estricto puede dejar pocos resultados, y este
+  // botón al final de la página es la salida para quien quiera ver más.
+  enlaceMasPlanes?: { href: string; texto: string };
 }) {
   const base = `/${municipioSlug}`;
   const [primarios, secundarios, tNav] = await Promise.all([
@@ -58,13 +65,13 @@ export default async function PlanesPageLayout({
           ]}
         />
         <HeroPortada imagenHero={imagenHero} alt={municipio.nombre} titulo={titulo} fecha={fecha} />
+        <FiltrosPagina primarios={primarios} secundarios={secundarios} />
         <IntroSeleccion
           items={itemsResumen}
           municipio={municipio.nombre}
           vigencia={current.vigencia}
           extra={current.extra}
         />
-        <FiltrosPagina primarios={primarios} secundarios={secundarios} />
         {planes.length > 0 && (
           <TituloLista municipio={municipio.nombre} vigencia={current.vigencia} extra={current.extra} />
         )}
@@ -74,6 +81,13 @@ export default async function PlanesPageLayout({
           mostrarDiaFinde={current.vigencia === "finde"}
           contexto={current.vigencia}
         />
+        {enlaceMasPlanes && (
+          <p className="mt-8 text-center">
+            <Link href={enlaceMasPlanes.href} className="btn-primary text-base px-6 py-3">
+              {enlaceMasPlanes.texto} →
+            </Link>
+          </p>
+        )}
         <FaqSeleccion preguntas={preguntas} />
       </div>
     </main>

@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import Breadcrumb, { type BreadcrumbItem } from "./Breadcrumb";
 import FiltrosPagina from "./FiltrosPagina";
 import ListaEventos from "./ListaEventos";
@@ -25,6 +26,7 @@ export default async function EventosPageLayout({
   contexto,
   obtenerEtiqueta,
   mensajeVacio,
+  enlaceMasPlanes,
 }: {
   municipio: MunicipioConComunidad;
   municipioSlug: string;
@@ -36,6 +38,10 @@ export default async function EventosPageLayout({
   contexto?: string;
   obtenerEtiqueta?: (evento: Evento) => string | null;
   mensajeVacio?: string;
+  // Enlace a la variante sin filtro de audiencia de esta misma vigencia
+  // (p. ej. desde "esta semana en pareja" a "esta semana" a secas) — ver
+  // PlanesPageLayout.
+  enlaceMasPlanes?: { href: string; texto: string };
 }) {
   const base = `/${municipioSlug}`;
   const [primarios, secundarios, tNav] = await Promise.all([
@@ -67,13 +73,13 @@ export default async function EventosPageLayout({
           ]}
         />
         <HeroPortada imagenHero={imagenHero} alt={municipio.nombre} titulo={titulo} fecha={fecha} />
+        <FiltrosPagina primarios={primarios} secundarios={secundarios} />
         <IntroSeleccion
           items={itemsResumen}
           municipio={municipio.nombre}
           vigencia={current.vigencia}
           extra={current.extra}
         />
-        <FiltrosPagina primarios={primarios} secundarios={secundarios} />
         {eventos.length > 0 && (
           <TituloLista municipio={municipio.nombre} vigencia={current.vigencia} extra={current.extra} />
         )}
@@ -84,6 +90,13 @@ export default async function EventosPageLayout({
           obtenerEtiqueta={obtenerEtiqueta}
           mensajeVacio={mensajeVacio}
         />
+        {enlaceMasPlanes && (
+          <p className="mt-8 text-center">
+            <Link href={enlaceMasPlanes.href} className="btn-primary text-base px-6 py-3">
+              {enlaceMasPlanes.texto} →
+            </Link>
+          </p>
+        )}
         <FaqSeleccion preguntas={preguntas} />
       </div>
     </main>

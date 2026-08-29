@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 // Los datos estructurados son texto plano para máquinas — la negrita en
 // "**texto**" (la única convención markdown que se le pide a Gemini, ver
 // TextoConNegritas) no debe llegar tal cual, con asteriscos sueltos.
-function textoPlano(texto: string): string {
+export function textoPlano(texto: string): string {
   return texto.replace(/\*\*([^*]+)\*\*/g, "$1");
 }
 
