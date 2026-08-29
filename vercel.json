@@ -2,6 +2,6 @@
   "crons": [
     { "path": "/api/cron/generate-weekly", "schedule": "30 4 * * 1" },
     { "path": "/api/cron/generate-daily", "schedule": "0 5 * * *" },
-    { "path": "/api/cron/generate-monthly", "schedule": "0 4 1 * *" }
+    { "path": "/api/cron/generate-monthly", "schedule": "0 6 * * 1" }
   ]
 }

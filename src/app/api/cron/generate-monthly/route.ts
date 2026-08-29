@@ -12,7 +12,10 @@ export const maxDuration = 300;
 // pero las 12 URLs existen igualmente y así nunca dan una página vacía a
 // quien busca con más antelación, ni a Google). Con 9 municipios × 12
 // meses son 108 llamadas a Gemini — en lotes concurrentes en vez de una a
-// una, para caber en el límite de 300s de la función.
+// una, para caber en el límite de 300s de la función. Programado semanal
+// (vercel.json, lunes 6:00), no mensual: así el mes en curso no se queda
+// una semana entera sin reflejar un evento anunciado a media semana — ver
+// conversación.
 async function enLotes<T, R>(items: T[], tamano: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const resultados: R[] = [];
   for (let i = 0; i < items.length; i += tamano) {
