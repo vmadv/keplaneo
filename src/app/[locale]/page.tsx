@@ -1,4 +1,4 @@
-import { Heart, Users, Gift } from "lucide-react";
+import { Heart, Users, Gift, MapPin, CalendarDays, Sun, Music } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import ListaCiudadesHome from "@/components/ListaCiudadesHome";
@@ -48,19 +48,14 @@ export default async function HomePage() {
   return (
     <main className="flex-1 bg-dots">
       <div className="max-w-5xl mx-auto px-6 py-20">
-        <div className="relative mb-14">
-          <div
-            className="absolute -top-8 -left-6 w-40 h-40 rounded-full -z-10"
-            style={{ background: "var(--tertiary)", opacity: 0.5 }}
-            aria-hidden="true"
-          />
+        <div className="mb-14">
           <TituloHeroAnimado
             estatico={tHome("titulo")}
             rotativos={[
-              tHome("rotativoEnSevilla"),
-              tHome("rotativoEsteFinde"),
-              tHome("rotativoHoy"),
-              tHome("rotativoConciertos"),
+              { texto: tHome("rotativoEnSevilla"), icono: <MapPin size={34} strokeWidth={2.5} />, fondo: "var(--secondary)", colorTexto: "var(--secondary-foreground)" },
+              { texto: tHome("rotativoEsteFinde"), icono: <CalendarDays size={34} strokeWidth={2.5} />, fondo: "var(--tertiary)", colorTexto: "var(--tertiary-foreground)" },
+              { texto: tHome("rotativoHoy"), icono: <Sun size={34} strokeWidth={2.5} />, fondo: "var(--quaternary)", colorTexto: "var(--quaternary-foreground)" },
+              { texto: tHome("rotativoConciertos"), icono: <Music size={34} strokeWidth={2.5} />, fondo: "var(--accent)", colorTexto: "var(--accent-foreground)" },
             ]}
           />
           <p className="text-lg" style={{ color: "var(--muted-foreground)" }}>
