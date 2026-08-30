@@ -10,19 +10,13 @@ import { alternatesIdiomas, hrefFiltro, segmentoVigencia } from "@/lib/rutasLoca
 import { fechaDesdeTextoEspanol, hoyEnMadrid } from "@/lib/dates";
 import { CATEGORIAS_CON_PAGINA, MESES } from "@/lib/types";
 
-export const revalidate = 86400;
-
-// Sitemap dividido en varios ficheros (generateSitemaps, convención de
-// Next) en vez de uno solo — ver conversación: separado por tipo de página
-// para que sea fácil de revisar/mantener, no por límite de tamaño (muy
-// lejos de las 50.000 URLs que permite un solo sitemap).
-// 0 = home, 1 = páginas "genéricas" por municipio (una sola variable:
-// vigencia O categoría, sin combinar), 2 = combinaciones con más de una
-// variable (vigencia+audiencia/gratis, categoría+vigencia, categoría+mes,
-// mes a secas), 3 = fichas de evento, 4 = vertical de Rankings.
-export async function generateSitemaps() {
-  return [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
-}
+// Datos de los sitemaps, separados por tipo de página en varios ficheros
+// (home / genéricas / variables / eventos / rankings) en vez de uno solo
+// — para que sea fácil de revisar/mantener, no por límite de tamaño (muy
+// lejos de las 50.000 URLs que permite un solo sitemap). Cada uno se sirve
+// desde su propio route.ts (ver /sitemap_*.xml), no desde la convención
+// especial sitemap.ts de Next: esa reserva /sitemap.xml para sí misma, y
+// esa ruta la necesitamos libre para el índice real (ver conversación).
 
 // Cada entrada española + inglesa por separado (recomendación de Google
 // para sitemaps multilingües), ambas con el mismo bloque alternates.
@@ -44,14 +38,14 @@ async function municipiosDeLaProvincia() {
   return comunidad ? getMunicipiosByComunidad(comunidad.id) : [];
 }
 
-async function sitemapHome(): Promise<MetadataRoute.Sitemap> {
+export async function sitemapHome(): Promise<MetadataRoute.Sitemap> {
   return entradasBilingues("/", { changeFrequency: "daily", priority: 1 });
 }
 
 // Una página por (municipio × una sola variable): la franja de "Cuándo" a
 // secas (siempre/hoy/finde/esta-semana), las tres variantes atemporales
 // (gratis/con-ninos/en-pareja) y el hub de cada categoría a secas.
-async function sitemapGenericas(): Promise<MetadataRoute.Sitemap> {
+export async function sitemapPaginas(): Promise<MetadataRoute.Sitemap> {
   const municipios = await municipiosDeLaProvincia();
   const entradas: MetadataRoute.Sitemap = [];
 
@@ -78,7 +72,7 @@ async function sitemapGenericas(): Promise<MetadataRoute.Sitemap> {
 // vigencia, categoría+mes, y el mes a secas (12 meses, mismo criterio que
 // generateStaticParams de [categoriaOMes]/page.tsx: no solo los 2 más
 // próximos que enlaza la navegación, también el resto — ver conversación).
-async function sitemapVariables(): Promise<MetadataRoute.Sitemap> {
+export async function sitemapVariables(): Promise<MetadataRoute.Sitemap> {
   const municipios = await municipiosDeLaProvincia();
   const entradas: MetadataRoute.Sitemap = [];
   const VIGENCIAS_TEMPORALES = ["hoy", "finde", "semana"] as const;
@@ -116,7 +110,7 @@ async function sitemapVariables(): Promise<MetadataRoute.Sitemap> {
 // con la misma fecha real que usa esa página, no con el flag `activo`
 // (puede seguir activo unos días de margen tras finalizar, ver
 // upsertEventosDelLote).
-async function sitemapEventos(): Promise<MetadataRoute.Sitemap> {
+export async function sitemapEventos(): Promise<MetadataRoute.Sitemap> {
   const eventos = await getEventosActivosParaSitemap();
   const hoy = hoyEnMadrid();
   const entradas: MetadataRoute.Sitemap = [];
@@ -144,7 +138,7 @@ async function sitemapEventos(): Promise<MetadataRoute.Sitemap> {
 // lugar/sección individuales (alcanzables igualmente por rastreo normal
 // desde esas páginas), para no disparar el número de consultas a la BD
 // solo para el sitemap.
-async function sitemapRankings(): Promise<MetadataRoute.Sitemap> {
+export async function sitemapRankings(): Promise<MetadataRoute.Sitemap> {
   const municipios = await getMunicipiosConRankings();
   const entradas: MetadataRoute.Sitemap = [
     ...entradasBilingues("/rankings", { changeFrequency: "weekly", priority: 0.5 }),
@@ -166,24 +160,4 @@ async function sitemapRankings(): Promise<MetadataRoute.Sitemap> {
     }
   }
   return entradas;
-}
-
-export default async function sitemap({ id }: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
-  // Desde Next 16, el id llega como Promise<string> (antes era un number
-  // plano) — ver conversación, comparar contra números aquí nunca
-  // coincidía y devolvía los 5 sitemaps vacíos en silencio.
-  switch (await id) {
-    case "0":
-      return sitemapHome();
-    case "1":
-      return sitemapGenericas();
-    case "2":
-      return sitemapVariables();
-    case "3":
-      return sitemapEventos();
-    case "4":
-      return sitemapRankings();
-    default:
-      return [];
-  }
 }
