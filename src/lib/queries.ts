@@ -191,13 +191,15 @@ async function getPlanesPorVigencia(
     query = query.contains("audiencia", [audiencia]);
   }
 
-  // "excepcional" ordena antes que "generico" alfabéticamente: los planes
-  // puntuales van primero y los genéricos de relleno (ej. "Mercado de
-  // Abastos", "Tapas tradicionales") quedan siempre al final, como pide el
-  // prompt de generación — relevancia solo desempata DENTRO de cada grupo,
-  // nunca hace que un genérico adelante a un puntual (ver conversación).
+  // Orden de prioridad en 4 niveles (ver conversación): puntual del propio
+  // municipio, puntual de zona cercana, genérico del propio municipio,
+  // genérico de zona cercana — "excepcional" ordena antes que "generico"
+  // alfabéticamente, y dentro de cada uno lo propio del municipio
+  // (zona_cercana null) ordena antes que lo de zona cercana. Relevancia
+  // solo desempata DENTRO de cada grupo.
   const { data } = await query
     .order("tipo")
+    .order("zona_cercana", { ascending: true, nullsFirst: true, referencedTable: "eventos" })
     .order("momento")
     .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 
@@ -341,7 +343,11 @@ async function getPlanesPorVigenciaMulti(
         query = query.eq("fecha_generacion", hoyISO());
       }
 
-      const { data } = await query.order("tipo").order("momento").limit(porMunicipio);
+      const { data } = await query
+        .order("tipo")
+        .order("zona_cercana", { ascending: true, nullsFirst: true, referencedTable: "eventos" })
+        .order("momento")
+        .limit(porMunicipio);
       return (data ?? []).map((fila) => filaAPlanConMunicipio(fila as never, m));
     })
   );
@@ -514,15 +520,27 @@ async function getEventosDelMunicipio(
   }
   const { data } = await query;
 
-  // Puntual siempre antes que genérico (mismo criterio que
-  // getPlanesPorVigencia: un evento con fecha real gana siempre a un
-  // "Mercado de Abastos" o "Tapas tradicionales" de toda la vida), y
-  // relevancia como desempate dentro de cada grupo — no en SQL porque aquí
-  // no hay una columna "tipo" propia, solo fecha_inicio.
+  // Orden de prioridad en 4 niveles (ver conversación): puntual del propio
+  // municipio primero, luego puntual de zona cercana, luego genérico del
+  // propio municipio, y genérico de zona cercana al final — un evento con
+  // fecha real del municipio siempre gana a un "Mercado de Abastos" de toda
+  // la vida, y lo propio del municipio siempre gana a lo de un pueblo
+  // cercano, aunque ese sea puntual. Relevancia desempata dentro de cada
+  // grupo. No en SQL porque aquí no hay una columna "tipo" propia (solo
+  // fecha_inicio) y esta función también sirve para categoría/audiencia.
+  function grupo(e: Evento): number {
+    const puntual = e.fecha_inicio !== null;
+    const cercano = e.zona_cercana !== null;
+    if (puntual && !cercano) return 0;
+    if (puntual && cercano) return 1;
+    if (!puntual && !cercano) return 2;
+    return 3;
+  }
+
   return (data ?? []).sort((a, b) => {
-    const puntualA = a.fecha_inicio !== null ? 0 : 1;
-    const puntualB = b.fecha_inicio !== null ? 0 : 1;
-    if (puntualA !== puntualB) return puntualA - puntualB;
+    const grupoA = grupo(a);
+    const grupoB = grupo(b);
+    if (grupoA !== grupoB) return grupoA - grupoB;
     const relA = a.relevancia ?? 0;
     const relB = b.relevancia ?? 0;
     if (relA !== relB) return relB - relA;
@@ -609,6 +627,7 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
     .contains("vigencia", [vigencia])
     .eq("fecha_generacion", hoyISO())
     .order("tipo")
+    .order("zona_cercana", { ascending: true, nullsFirst: true, referencedTable: "eventos" })
     .order("momento")
     .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 

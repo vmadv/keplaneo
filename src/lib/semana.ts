@@ -34,7 +34,13 @@ export function ordenarPorDiaDeSemana(
     const indiceA = a.dias ? a.dias.indexOf(true) : 99;
     const indiceB = b.dias ? b.dias.indexOf(true) : 99;
     if (indiceA !== indiceB) return indiceA - indiceB;
-    // Dentro del mismo día, relevancia decide antes que el alfabeto — ver
+    // Dentro del mismo día (o de los genéricos sin fecha, todos con índice
+    // 99), lo propio del municipio ordena antes que lo de zona cercana —
+    // ver conversación sobre prioridad en 4 niveles.
+    const cercanoA = a.evento.zona_cercana !== null ? 1 : 0;
+    const cercanoB = b.evento.zona_cercana !== null ? 1 : 0;
+    if (cercanoA !== cercanoB) return cercanoA - cercanoB;
+    // Y dentro de eso, relevancia decide antes que el alfabeto — ver
     // conversación (un genérico de toda la vida no debe adelantar a algo
     // más singular solo por el nombre).
     const relA = a.evento.relevancia ?? 0;
