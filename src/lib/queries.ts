@@ -706,10 +706,46 @@ async function getEventosDelMunicipio(
     return 3;
   }
 
+  // Dentro del mismo grupo, un evento con fecha concreta y corta (un solo
+  // día, o un rango de hasta 7 días) ordena primero por esa fecha real (el
+  // más próximo antes) — más útil que la relevancia en un listado tipo
+  // "Todos los conciertos", donde lo lógico es ver primero lo que pasa
+  // antes (ver conversación). Un rango largo (ej. una exposición de un mes)
+  // no es "lo próximo" de la misma forma que un concierto de un día
+  // concreto — se pospone, cae de vuelta a relevancia+alfabético, igual que
+  // una fecha que no se pudo interpretar.
+  const hoy = hoyEnMadrid();
+  const UN_DIA_MS = 24 * 60 * 60 * 1000;
+  const DURACION_MAXIMA_DIAS = 7;
+  function fechaOrdenable(e: Evento): number | null {
+    if (!e.fecha_inicio) return null;
+    const inicio = fechaDesdeTextoEspanol(e.fecha_inicio);
+    // Una fecha ya pasada no es "la más próxima" — sería absurdo que un
+    // evento caducado se colara el primero solo por tener el timestamp más
+    // pequeño (bug real encontrado en conversación: un concierto de abril
+    // salía antes que uno de septiembre).
+    if (!inicio || inicio < hoy) return null;
+
+    if (e.fecha_fin && e.fecha_fin !== e.fecha_inicio) {
+      const fin = fechaDesdeTextoEspanol(e.fecha_fin);
+      // Rango sin fecha de fin interpretable: no se sabe cuánto dura de
+      // verdad, mejor conservador que asumir que es corto.
+      if (!fin) return null;
+      const duracionDias = (fin.getTime() - inicio.getTime()) / UN_DIA_MS;
+      if (duracionDias > DURACION_MAXIMA_DIAS) return null;
+    }
+    return inicio.getTime();
+  }
+
   return (data ?? []).sort((a, b) => {
     const grupoA = grupo(a);
     const grupoB = grupo(b);
     if (grupoA !== grupoB) return grupoA - grupoB;
+    const fechaA = fechaOrdenable(a);
+    const fechaB = fechaOrdenable(b);
+    if (fechaA !== null && fechaB !== null) return fechaA - fechaB;
+    if (fechaA !== null) return -1;
+    if (fechaB !== null) return 1;
     const relA = a.relevancia ?? 0;
     const relB = b.relevancia ?? 0;
     if (relA !== relB) return relB - relA;

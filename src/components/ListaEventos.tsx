@@ -4,7 +4,7 @@ import { Sparkles, CalendarDays, Navigation } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
 import FotoTarjeta from "./FotoTarjeta";
-import { etiquetaDiasSemanaGenerico } from "@/lib/dates";
+import { etiquetaDiasSemanaGenerico, fechaDesdeTextoEspanol } from "@/lib/dates";
 import { localizado } from "@/lib/contenidoLocalizado";
 import type { Evento } from "@/lib/types";
 
@@ -40,6 +40,18 @@ export default async function ListaEventos({
     <ol className="grid gap-5">
       {eventos.map((evento) => {
         const etiquetaDia = obtenerEtiqueta?.(evento) ?? null;
+        // Fecha real (ej. "28 may"), solo cuando no hay ya una etiqueta de
+        // día de semana (esta semana/destacados) ni de patrón recurrente —
+        // es el fallback para el listado "Todos", que hasta ahora no
+        // mostraba ninguna fecha (ver conversación). Un rango de días no
+        // cuenta como fecha única.
+        const fechaUnica =
+          !etiquetaDia && evento.fecha_inicio && (!evento.fecha_fin || evento.fecha_fin === evento.fecha_inicio)
+            ? fechaDesdeTextoEspanol(evento.fecha_inicio)
+            : null;
+        const etiquetaFecha = fechaUnica
+          ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(fechaUnica)
+          : null;
         const href = contexto
           ? `${base}/eventos/${evento.slug}?desde=${contexto}`
           : `${base}/eventos/${evento.slug}`;
@@ -82,6 +94,15 @@ export default async function ListaEventos({
                       >
                         <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
                         {etiquetaDiasSemanaGenerico(evento.dias_semana, locale)}
+                      </span>
+                    )}
+                    {!etiquetaDia && !(evento.dias_semana && evento.dias_semana.length > 0) && etiquetaFecha && (
+                      <span
+                        className="badge-pill"
+                        style={{ background: "var(--quaternary)", color: "var(--quaternary-foreground)", borderColor: "var(--quaternary)" }}
+                      >
+                        <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
+                        {etiquetaFecha}
                       </span>
                     )}
                     {evento.zona_cercana && evento.zona_cercana_minutos != null && municipioNombre && (
