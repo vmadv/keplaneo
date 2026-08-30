@@ -5,14 +5,18 @@ import {
   generarPlanesSemanales,
   generarPlanesEnfocados,
   generarPlanesGenericos,
+  generarPlanesGenericosNinos,
   FOCOS_SEMANALES,
   fusionarPlanesDuplicados,
+  traducirPlanesAIngles,
   estimarCoste,
+  estimarCosteTraduccion,
 } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { getTitulosGenericosActivos } from "@/lib/queries";
 import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible, hoyISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
+import { llevaEnfocadas } from "@/lib/nivelesMunicipio";
 
 export const maxDuration = 300;
 
@@ -36,9 +40,17 @@ export const maxDuration = 300;
 // activos para este municipio — sin esto, los genéricos solo salían como
 // relleno de la búsqueda mixta cuando faltaban puntuales, así que en
 // ciudades con agenda activa el catálogo de "todo el año" apenas crecía
-// (ver conversación). Las 8 llamadas de un mismo municipio van en paralelo
-// (el reintento con jitter de llamarGeminiConReintentos ya cuenta con
-// esto); los municipios se procesan en lotes para no acercarse al límite
+// (ver conversación). generarPlanesGenericosNinos hace lo mismo pero
+// dedicado a planes para niños — antes competían por hueco dentro de
+// generarPlanesGenericos y salían 1-2 como mucho (ver conversación). Cada
+// búsqueda recibe además la lista de los demás municipios que ya cubrimos
+// (municipiosExcluidos), para que un genérico de zona cercana no duplique
+// el catálogo de otro municipio con página propia — los puntuales sí
+// pueden venir de esos municipios si son relevantes (ver conversación).
+// Hasta 9 llamadas por municipio (3 si es "mediano"/"pequeño", sin las 6
+// enfocadas — ver src/lib/nivelesMunicipio.ts) van en paralelo (el reintento con
+// jitter de llamarGeminiConReintentos ya cuenta con esto); los municipios
+// se procesan en lotes para no acercarse al límite
 // de 300s de la función.
 
 async function enLotes<T, R>(items: T[], tamano: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -51,12 +63,13 @@ async function enLotes<T, R>(items: T[], tamano: number, fn: (item: T) => Promis
 }
 
 function sumarUso(
-  usos: { promptTokenCount?: number; candidatesTokenCount?: number }[]
-): { promptTokenCount?: number; candidatesTokenCount?: number } {
+  usos: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number }[]
+): { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number } {
   return usos.reduce(
     (acc, u) => ({
       promptTokenCount: (acc.promptTokenCount ?? 0) + (u.promptTokenCount ?? 0),
       candidatesTokenCount: (acc.candidatesTokenCount ?? 0) + (u.candidatesTokenCount ?? 0),
+      thoughtsTokenCount: (acc.thoughtsTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0),
     }),
     {}
   );
@@ -112,21 +125,48 @@ export async function GET(request: NextRequest) {
   const resultados = await enLotes(municipios, 3, async (municipio) => {
     try {
       const conocidos = await getTitulosGenericosActivos(municipio.id);
-      const [mixta, generico, ...enfocadas] = await Promise.all([
-        generarPlanesSemanales(municipio.nombre, fechaLunesLegible, fechaDomingoLegible),
-        generarPlanesGenericos(municipio.nombre, conocidos),
-        ...FOCOS_SEMANALES.map((foco) =>
-          generarPlanesEnfocados(municipio.nombre, fechaLunesLegible, fechaDomingoLegible, foco)
+      const municipiosExcluidos = municipios
+        .filter((m) => m.id !== municipio.id)
+        .map((m) => m.nombre);
+      // Nivel por tamaño (ver conversación sobre coste): solo los
+      // municipios "grande" pagan las 6 búsquedas enfocadas — mediano y
+      // pequeño se quedan con la general + genéricos + niños.
+      const focos = llevaEnfocadas(municipio.slug) ? FOCOS_SEMANALES : [];
+      const [mixta, generico, ninos, ...enfocadas] = await Promise.all([
+        generarPlanesSemanales(municipio.nombre, fechaLunesLegible, fechaDomingoLegible, municipiosExcluidos),
+        generarPlanesGenericos(municipio.nombre, conocidos, municipiosExcluidos),
+        generarPlanesGenericosNinos(municipio.nombre, conocidos, municipiosExcluidos),
+        ...focos.map((foco) =>
+          generarPlanesEnfocados(municipio.nombre, fechaLunesLegible, fechaDomingoLegible, foco, municipiosExcluidos)
         ),
       ]);
-      const planesCrudos = [mixta, generico, ...enfocadas].flatMap((r) => r.planes);
-      const usage = sumarUso([mixta, generico, ...enfocadas].map((r) => r.usage));
+      const planesCrudos = [mixta, generico, ninos, ...enfocadas].flatMap((r) => r.planes);
+      const usageGeneracion = sumarUso([mixta, generico, ninos, ...enfocadas].map((r) => r.usage));
 
       // El mismo evento real puede salir tanto en la búsqueda mixta como en
       // una enfocada (con otra redacción) — se fusiona aquí, antes de que
       // la fila repetida llegue a `planes.insert` (el vínculo con `eventos`
       // ya lo agrupa, pero eso no evita la fila de más en `planes`).
       const planes = fusionarPlanesDuplicados(planesCrudos);
+
+      // Traducción al inglés en una llamada aparte, sin grounding (ver
+      // conversación) — sobre el lote ya fusionado, para no traducir
+      // duplicados que luego se descartarían. En su propio try/catch: un
+      // fallo aquí no debe tirar toda la generación real en español — se
+      // queda sin inglés esta vez y se traduce en la siguiente pasada.
+      let traducciones: Awaited<ReturnType<typeof traducirPlanesAIngles>>["traducciones"] = [];
+      let usageTraduccion: Awaited<ReturnType<typeof traducirPlanesAIngles>>["usage"] = {};
+      try {
+        ({ traducciones, usage: usageTraduccion } = await traducirPlanesAIngles(planes));
+      } catch (err) {
+        console.error(`traducirPlanesAIngles (${municipio.slug}): ${err}`);
+      }
+      planes.forEach((p, i) => Object.assign(p, traducciones[i]));
+      // Tokens en crudo (solo informativos) sí se suman; el coste NO — cada
+      // llamada usa un modelo con tarifa distinta (ver estimarCosteTraduccion
+      // en gemini.ts), así que se calcula por separado y se suman los euros.
+      const usage = sumarUso([usageGeneracion, usageTraduccion]);
+      const costeTotal = estimarCoste(usageGeneracion) + estimarCosteTraduccion(usageTraduccion);
 
       // "Foto completa" de la semana: cualquier evento de este municipio no
       // detectado aquí se marca inactivo (desactivarNoEncontrados=true).
@@ -165,7 +205,7 @@ export async function GET(request: NextRequest) {
         estado: "ok",
         tokens_input: usage.promptTokenCount ?? null,
         tokens_output: usage.candidatesTokenCount ?? null,
-        coste_estimado: estimarCoste(usage),
+        coste_estimado: costeTotal,
       });
 
       const base = `/${municipio.slug}`;

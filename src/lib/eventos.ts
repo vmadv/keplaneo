@@ -161,6 +161,25 @@ export async function upsertEventosDelLote(
     const audienciaUnida = Array.from(new Set(grupo.flatMap((i) => planes[i].audiencia)));
     const especificas = audienciaUnida.filter((a) => a !== "generico");
 
+    // Traducción: si traducirPlanesAIngles falló esta pasada (ver
+    // conversación, ahora no aborta la generación), p.descripcion_en/
+    // precio_en/preguntas_frecuentes_en llegan `undefined` — en ese caso NO
+    // se toca lo que ya hubiera guardado (evita borrar una traducción buena
+    // de una pasada anterior por un fallo puntual de red/API). Cuando el
+    // campo en español real SÍ ha desaparecido (precio ya no viene, sin
+    // preguntas frecuentes), su traducción se fuerza a null/vacío igual,
+    // haya fallado la traducción o no — no tiene sentido dejar un precio o
+    // unas FAQ en inglés de algo que ya no está en español.
+    const traduccionDescripcion = p.descripcion_en !== undefined ? { descripcion_en: p.descripcion_en } : {};
+    const traduccionPrecio =
+      p.precio == null ? { precio_en: null } : p.precio_en !== undefined ? { precio_en: p.precio_en } : {};
+    const traduccionPreguntas =
+      !p.preguntas_frecuentes || p.preguntas_frecuentes.length === 0
+        ? { preguntas_frecuentes_en: null }
+        : p.preguntas_frecuentes_en !== undefined
+          ? { preguntas_frecuentes_en: p.preguntas_frecuentes_en }
+          : {};
+
     const datos = {
       descripcion: p.descripcion,
       momento: p.momento,
@@ -176,6 +195,10 @@ export async function upsertEventosDelLote(
       relevancia: p.relevancia ?? null,
       zona_cercana: p.zona_cercana ?? null,
       zona_cercana_minutos: p.zona_cercana_minutos ?? null,
+      dias_semana: p.dias_semana ?? null,
+      ...traduccionDescripcion,
+      ...traduccionPrecio,
+      ...traduccionPreguntas,
     };
 
     const idxExistente = disponibles.findIndex(
@@ -235,6 +258,7 @@ export async function upsertEventosDelLote(
           municipio_id: municipioId,
           slug,
           titulo: p.titulo,
+          titulo_en: p.titulo_en ?? null,
           ...datos,
           lat: coords?.lat ?? null,
           lon: coords?.lon ?? null,

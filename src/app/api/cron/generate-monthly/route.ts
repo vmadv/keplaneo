@@ -1,21 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { generarPlanesDelMes, estimarCoste } from "@/lib/gemini";
+import { generarPlanesDelMes, traducirPlanesAIngles, estimarCoste, estimarCosteTraduccion } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
-import { hoyISO, proximosMesesSlugs } from "@/lib/dates";
+import { hoyISO, proximosMesesSlugs, fechaDeHoyLegible, numeroSemanaDesde2020 } from "@/lib/dates";
 
 export const maxDuration = 300;
 
 // Genera los 12 meses del año (no solo mes en curso + siguiente — ver
 // conversación: la navegación "Por mes" solo enlaza los 2 más próximos,
 // pero las 12 URLs existen igualmente y así nunca dan una página vacía a
-// quien busca con más antelación, ni a Google). Con 9 municipios × 12
-// meses son 108 llamadas a Gemini — en lotes concurrentes en vez de una a
-// una, para caber en el límite de 300s de la función. Programado semanal
+// quien busca con más antelación, ni a Google). Programado semanal
 // (vercel.json, lunes 6:00), no mensual: así el mes en curso no se queda
 // una semana entera sin reflejar un evento anunciado a media semana — ver
 // conversación.
+//
+// PERO no los 12 con la misma frecuencia (ver conversación sobre coste):
+// el mes en curso y el siguiente sí se regeneran CADA semana (son los que
+// enlaza la navegación y donde de verdad puede aparecer algo nuevo); los
+// otros 10 (hasta 11 meses vista, ej. enero del año que viene) solo hace
+// falta que existan y se posicionen, no que se repitan 4 veces al mes por
+// nada — se reparten en 4 grupos rotativos por número de semana, así cada
+// uno se refresca aproximadamente una vez al mes en vez de cada semana.
 async function enLotes<T, R>(items: T[], tamano: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const resultados: R[] = [];
   for (let i = 0; i < items.length; i += tamano) {
@@ -39,7 +45,12 @@ export async function GET(request: NextRequest) {
   const admin = supabaseAdmin;
 
   const hoy = hoyISO();
-  const meses = proximosMesesSlugs(12);
+  const todosLosMeses = proximosMesesSlugs(12);
+  const mesesCercanos = todosLosMeses.slice(0, 2); // actual + siguiente: cada semana
+  const mesesLejanos = todosLosMeses.slice(2); // el resto: rotación de 4 grupos (~1 vez al mes)
+  const grupoEstaSemana = numeroSemanaDesde2020() % 4;
+  const mesesLejanosDeEstaSemana = mesesLejanos.filter((_, i) => i % 4 === grupoEstaSemana);
+  const meses = [...mesesCercanos, ...mesesLejanosDeEstaSemana];
 
   const { data: municipios, error } = await admin
     .from("municipios")
@@ -57,7 +68,36 @@ export async function GET(request: NextRequest) {
 
   const resultados = await enLotes(combos, 6, async ({ municipio, mes }) => {
     try {
-      const { planes, usage } = await generarPlanesDelMes(municipio.nombre, mes);
+      const municipiosExcluidos = municipios
+        .filter((m) => m.id !== municipio.id)
+        .map((m) => m.nombre);
+      const { planes, usage: usageGeneracion } = await generarPlanesDelMes(
+        municipio.nombre,
+        mes,
+        fechaDeHoyLegible(),
+        municipiosExcluidos
+      );
+
+      // Traducción al inglés en una llamada aparte, sin grounding (ver
+      // conversación). En su propio try/catch: un fallo aquí no debe tirar
+      // toda la generación real en español — se queda sin inglés esta vez
+      // y se traduce en la siguiente pasada.
+      let traducciones: Awaited<ReturnType<typeof traducirPlanesAIngles>>["traducciones"] = [];
+      let usageTraduccion: Awaited<ReturnType<typeof traducirPlanesAIngles>>["usage"] = {};
+      try {
+        ({ traducciones, usage: usageTraduccion } = await traducirPlanesAIngles(planes));
+      } catch (err) {
+        console.error(`traducirPlanesAIngles (${municipio.slug}): ${err}`);
+      }
+      planes.forEach((p, i) => Object.assign(p, traducciones[i]));
+      // Tokens en crudo (solo informativos) sí se suman; el coste NO — cada
+      // llamada usa un modelo con tarifa distinta (ver estimarCosteTraduccion
+      // en gemini.ts), así que se calcula por separado y se suman los euros.
+      const usage = {
+        promptTokenCount: (usageGeneracion.promptTokenCount ?? 0) + (usageTraduccion.promptTokenCount ?? 0),
+        candidatesTokenCount: (usageGeneracion.candidatesTokenCount ?? 0) + (usageTraduccion.candidatesTokenCount ?? 0),
+      };
+      const costeTotal = estimarCoste(usageGeneracion) + estimarCosteTraduccion(usageTraduccion);
 
       // Mismo slug que use el cron diario para el mismo evento: si ya existe
       // (porque también salió en la generación de hoy/finde), se actualiza
@@ -103,7 +143,7 @@ export async function GET(request: NextRequest) {
         estado: "ok",
         tokens_input: usage.promptTokenCount ?? null,
         tokens_output: usage.candidatesTokenCount ?? null,
-        coste_estimado: estimarCoste(usage),
+        coste_estimado: costeTotal,
       });
 
       const base = `/${municipio.slug}`;

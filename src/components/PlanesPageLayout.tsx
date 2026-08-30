@@ -36,10 +36,11 @@ export default async function PlanesPageLayout({
   enlaceMasPlanes?: { href: string; texto: string };
 }) {
   const base = `/${municipioSlug}`;
-  const [primarios, secundarios, tNav] = await Promise.all([
+  const [primarios, secundarios, tNav, tPlanList] = await Promise.all([
     construirFiltrosTemporales(base, current.vigencia, current.extra),
     construirFiltrosSecundarios(base, current.vigencia, current.extra),
     getTranslations("Nav"),
+    getTranslations("PlanList"),
   ]);
   const imagenHero = buscarImagenHero(municipio.slug);
   const itemsResumen = planes.map((p) => ({
@@ -82,10 +83,16 @@ export default async function PlanesPageLayout({
           contexto={current.vigencia}
           municipioNombre={municipio.nombre}
         />
-        {enlaceMasPlanes && (
+        {enlaceMasPlanes ? (
           <p className="mt-8 text-center">
             <Link href={enlaceMasPlanes.href} className="btn-primary text-base px-6 py-3">
               {enlaceMasPlanes.texto} →
+            </Link>
+          </p>
+        ) : (
+          <p className="mt-8 text-center">
+            <Link href={base} className="btn-secondary text-base px-6 py-3">
+              {tPlanList("masPlanesTodoElAno", { municipio: municipio.nombre })} →
             </Link>
           </p>
         )}

@@ -33,9 +33,10 @@ export default async function HoyGratisPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tGratis, tFiltros, locale] = await Promise.all([
+  const [planes, tGratis, tHoy, tFiltros, locale] = await Promise.all([
     getPlanesGratisPorVigencia(municipio.id, "hoy"),
     getTranslations("Gratis"),
+    getTranslations("Hoy"),
     getTranslations("Filtros"),
     getLocale(),
   ]);
@@ -48,6 +49,10 @@ export default async function HoyGratisPage({
       fecha={fechaDeHoyLegible(locale)}
       planes={planes}
       current={{ vigencia: "hoy", extra: "gratis" }}
+      enlaceMasPlanes={{
+        href: `/${municipioSlug}/hoy`,
+        texto: tHoy("masPlanes", { municipio: municipio.nombre }),
+      }}
       breadcrumbExtra={[
         { label: tFiltros("hoy"), href: `/${municipioSlug}/hoy` },
         { label: tFiltros("gratis") },

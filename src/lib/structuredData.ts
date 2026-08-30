@@ -1,4 +1,4 @@
-import { fechaDesdeTextoEspanol, formatearFechaISO } from "./dates";
+import { fechaDesdeTextoEspanol, formatearFechaISO, hoyEnMadrid } from "./dates";
 import type { Evento, PreguntaFrecuente } from "./types";
 import type { MunicipioConComunidad } from "./queries";
 
@@ -14,19 +14,22 @@ export function textoPlano(texto: string): string {
 // Solo un evento puntual con fecha real es un Event de schema.org de
 // verdad — un plan genérico evergreen (un parque, una ruta sin fecha) no
 // tiene inicio/fin y fingir que sí es justo el tipo de dato estructurado
-// incorrecto que penaliza Google. Igual que el noindex de generateMetadata,
-// un evento ya finalizado tampoco se anuncia como Event vigente: Google
-// desaconseja explícitamente mostrar rich results de eventos ya pasados.
+// incorrecto que penaliza Google. Un evento ya finalizado tampoco se
+// anuncia como Event vigente: Google desaconseja explícitamente mostrar
+// rich results de eventos ya pasados. Eso se decide con la fecha real, no
+// con `evento.activo` — ese flag puede estar a `false` por otros motivos
+// sin que el evento haya pasado de verdad todavía (ver conversación).
 export function construirEventoJsonLd(
   evento: Evento,
   municipio: MunicipioConComunidad,
   municipioSlug: string
 ): Record<string, unknown> | null {
-  if (!evento.activo || !evento.fecha_inicio) return null;
+  if (!evento.fecha_inicio) return null;
 
   const inicio = fechaDesdeTextoEspanol(evento.fecha_inicio);
   if (!inicio) return null;
   const fin = evento.fecha_fin ? fechaDesdeTextoEspanol(evento.fecha_fin) : null;
+  if ((fin ?? inicio) < hoyEnMadrid()) return null;
 
   // Sin un parser de precios fiable para texto libre ("Desde 12€",
   // "Consultar", "12-15€"), solo se declara `offers` cuando el precio en

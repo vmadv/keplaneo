@@ -33,9 +33,10 @@ export default async function FindeGratisPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tGratis, tFiltros, locale] = await Promise.all([
+  const [planes, tGratis, tFinde, tFiltros, locale] = await Promise.all([
     getPlanesGratisPorVigencia(municipio.id, "finde"),
     getTranslations("Gratis"),
+    getTranslations("Finde"),
     getTranslations("Filtros"),
     getLocale(),
   ]);
@@ -48,6 +49,10 @@ export default async function FindeGratisPage({
       fecha={rangoFinDeSemanaLegible(locale)}
       planes={planes}
       current={{ vigencia: "finde", extra: "gratis" }}
+      enlaceMasPlanes={{
+        href: `/${municipioSlug}/fin-de-semana`,
+        texto: tFinde("masPlanes", { municipio: municipio.nombre }),
+      }}
       breadcrumbExtra={[
         { label: tFiltros("finde"), href: `/${municipioSlug}/fin-de-semana` },
         { label: tFiltros("gratis") },

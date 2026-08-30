@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Sun, Moon, MapPin, Clock, Tag, CalendarRange, Link2, ArrowRight, Navigation } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import TextoConNegritas from "@/components/TextoConNegritas";
@@ -20,6 +20,8 @@ import {
 import {
   esMesSlugValido,
   hoyISO,
+  hoyEnMadrid,
+  fechaDesdeTextoEspanol,
   fechaFindeParaTiempo,
   fechasFinDeSemanaISO,
   extraerHoraDeHorario,
@@ -27,6 +29,7 @@ import {
 import type { SolicitudTiempo } from "@/lib/weather";
 import type { Audiencia, Evento, Plan } from "@/lib/types";
 import { construirEventoJsonLd, construirFaqJsonLd, textoPlano } from "@/lib/structuredData";
+import { localizado } from "@/lib/contenidoLocalizado";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -44,6 +47,20 @@ function extractoMeta(descripcion: string, limite = 155): string {
 // Los eventos pueden pasar de activo a finalizado entre generaciones
 // diarias; se revalida más a menudo que las páginas de listado.
 export const revalidate = 3600;
+
+// Un puntual "finaliza" según su fecha real, nunca según `evento.activo`
+// — ese flag puede estar a `false` por otros motivos (ej. no detectado en
+// la última regeneración) sin que el evento haya pasado de verdad todavía:
+// uno válido hasta el domingo no debe verse finalizado mientras siga
+// siendo domingo (ver conversación). Un genérico nunca "finaliza" — como
+// mucho deja de estar en el catálogo, que es justo lo que sí refleja
+// `activo` para ese caso.
+function eventoFinalizado(evento: Evento): boolean {
+  if (evento.fecha_inicio === null) return false;
+  const textoFin = evento.fecha_fin ?? evento.fecha_inicio;
+  const fechaFin = textoFin ? fechaDesdeTextoEspanol(textoFin) : null;
+  return fechaFin !== null && fechaFin < hoyEnMadrid();
+}
 
 function esUrl(texto: string): boolean {
   return /^https?:\/\//i.test(texto);
@@ -136,8 +153,10 @@ export async function generateMetadata({
   const encontrado = await cargarEvento(municipio, eventoSlug);
   if (!encontrado) return {};
 
-  const titulo = `${encontrado.evento.titulo} — ${encontrado.municipio.nombre}`;
-  const descripcion = extractoMeta(encontrado.evento.descripcion);
+  const tituloEvento = localizado(encontrado.evento.titulo, encontrado.evento.titulo_en, locale);
+  const descripcionEvento = localizado(encontrado.evento.descripcion, encontrado.evento.descripcion_en, locale);
+  const titulo = `${tituloEvento} — ${encontrado.municipio.nombre}`;
+  const descripcion = extractoMeta(descripcionEvento);
   // Sin el parámetro ?desde= — cambia qué "otros planes" se muestran al
   // final, pero es la misma ficha; sin canonical, Google podía indexar
   // /eventos/x, /eventos/x?desde=hoy y /eventos/x?desde=finde como páginas
@@ -158,8 +177,12 @@ export async function generateMetadata({
       type: "article",
     },
     // Un evento ya finalizado se mantiene accesible (no rompemos la URL),
-    // pero no debe competir en el índice con contenido vigente.
-    robots: encontrado.evento.activo ? undefined : { index: false, follow: true },
+    // pero no debe competir en el índice con contenido vigente. Para un
+    // puntual, "finalizado" es la fecha real; para un genérico (sin fecha),
+    // sigue siendo `activo` — ahí sí significa "ya no en el catálogo".
+    robots: (encontrado.evento.fecha_inicio !== null ? eventoFinalizado(encontrado.evento) : !encontrado.evento.activo)
+      ? { index: false, follow: true }
+      : undefined,
   };
 }
 
@@ -177,7 +200,7 @@ export default async function EventoPage({
   const { municipio, evento } = encontrado;
 
   const base = `/${municipioSlug}`;
-  const [vigencia, tNav, tBadges, tAudiencia, tEvento, tTiempo, tMeses] = await Promise.all([
+  const [vigencia, tNav, tBadges, tAudiencia, tEvento, tTiempo, tMeses, locale] = await Promise.all([
     getVigenciaActualDeEvento(evento.id),
     getTranslations("Nav"),
     getTranslations("Badges"),
@@ -185,15 +208,26 @@ export default async function EventoPage({
     getTranslations("Evento"),
     getTranslations("Tiempo"),
     getTranslations("Meses"),
+    getLocale(),
   ]);
   const contexto = elegirContexto(vigencia, desde);
   const otrosPlanes = await cargarOtrosPlanes(municipio.id, evento.id, contexto);
   const etiquetaOtros = etiquetaOtrosPlanes(contexto, tEvento, tMeses);
   const tiempo = datosTiempoParaEvento(contexto, evento, tTiempo);
 
+  const titulo = localizado(evento.titulo, evento.titulo_en, locale);
+  const descripcion = localizado(evento.descripcion, evento.descripcion_en, locale);
+  const precio = localizado(evento.precio, evento.precio_en, locale);
+  const preguntasFrecuentes = localizado(evento.preguntas_frecuentes, evento.preguntas_frecuentes_en, locale);
+
   const esNoche = evento.momento === "noche";
-  const jsonLdEvento = construirEventoJsonLd(evento, municipio, municipioSlug);
-  const jsonLdFaq = construirFaqJsonLd(evento.preguntas_frecuentes);
+  const finalizado = eventoFinalizado(evento);
+  const jsonLdEvento = construirEventoJsonLd(
+    { ...evento, titulo, descripcion, precio },
+    municipio,
+    municipioSlug
+  );
+  const jsonLdFaq = construirFaqJsonLd(preguntasFrecuentes);
 
   return (
     <main className="flex-1 bg-dots">
@@ -208,7 +242,7 @@ export default async function EventoPage({
           cartelUrl={evento.cartel_url}
           fotoLugarNombre={evento.foto_lugar_nombre}
           ubicacion={evento.ubicacion}
-          titulo={evento.titulo}
+          titulo={titulo}
           textoFotoUbicacion={evento.ubicacion ? tEvento("fotoDeLaUbicacion", { lugar: evento.ubicacion }) : ""}
         />
         <Breadcrumb
@@ -216,7 +250,7 @@ export default async function EventoPage({
             { label: tNav("inicio"), href: "/" },
             { label: municipio.comunidad.nombre },
             { label: municipio.nombre, href: base },
-            { label: evento.titulo },
+            { label: titulo },
           ]}
         />
 
@@ -262,7 +296,7 @@ export default async function EventoPage({
                 {tAudiencia(a)}
               </span>
             ))}
-            {!evento.activo && (
+            {finalizado && (
               <span className="badge-pill" style={{ background: "var(--secondary)", color: "var(--secondary-foreground)", borderColor: "var(--foreground)" }}>
                 {tBadges("finalizado")}
               </span>
@@ -270,10 +304,10 @@ export default async function EventoPage({
           </div>
         </div>
 
-        <h1 className="text-4xl font-extrabold mb-4 text-balance">{evento.titulo}</h1>
+        <h1 className="text-4xl font-extrabold mb-4 text-balance">{titulo}</h1>
 
         <div className="grid gap-3 mb-6">
-          {evento.descripcion.split("\n\n").filter(Boolean).map((parrafo, i) => (
+          {descripcion.split("\n\n").filter(Boolean).map((parrafo, i) => (
             <p key={i} className="text-base" style={{ color: "var(--foreground)" }}>
               <TextoConNegritas texto={parrafo} />
             </p>
@@ -311,12 +345,12 @@ export default async function EventoPage({
               <span><span className="font-bold">{tEvento("horario")}: </span>{evento.horario}</span>
             </div>
           )}
-          {evento.precio && (
+          {precio && (
             <div className="flex gap-2.5 items-start">
               <span className="icon-chip w-6 h-6 shrink-0 mt-0.5" style={{ background: "var(--tertiary)" }}>
                 <Tag size={12} strokeWidth={3} />
               </span>
-              <span><span className="font-bold">{tEvento("precio")}: </span>{evento.precio}</span>
+              <span><span className="font-bold">{tEvento("precio")}: </span>{precio}</span>
             </div>
           )}
           {(evento.fecha_inicio || evento.fecha_fin) && (
@@ -325,10 +359,22 @@ export default async function EventoPage({
                 <CalendarRange size={12} strokeWidth={3} color="var(--accent-foreground)" />
               </span>
               <span>
-                <span className="font-bold">{tEvento("fechas")}: </span>
-                {evento.fecha_inicio && tEvento("desdeEl", { fecha: evento.fecha_inicio })}
-                {evento.fecha_inicio && evento.fecha_fin && " — "}
-                {evento.fecha_fin && tEvento("hastaEl", { fecha: evento.fecha_fin })}
+                {evento.fecha_inicio && evento.fecha_fin ? (
+                  <>
+                    <span className="font-bold">{tEvento("fechas")}: </span>
+                    {tEvento("desdeEl", { fecha: evento.fecha_inicio })} — {tEvento("hastaEl", { fecha: evento.fecha_fin })}
+                  </>
+                ) : (
+                  // Sin fecha_fin es un evento de un solo día (ver
+                  // CAMPOS_JSON en gemini.ts: se omite a propósito cuando no
+                  // dura más de un día) — mostrar "Desde el X" sin más daba
+                  // a entender que sigue abierto sin fecha de fin conocida,
+                  // en vez de que ES solo ese día (ver conversación).
+                  <>
+                    <span className="font-bold">{tEvento("fecha")}: </span>
+                    {evento.fecha_inicio ?? evento.fecha_fin}
+                  </>
+                )}
               </span>
             </div>
           )}
@@ -351,11 +397,11 @@ export default async function EventoPage({
           )}
         </dl>
 
-        {evento.preguntas_frecuentes.length > 0 && (
+        {preguntasFrecuentes.length > 0 && (
           <section className="mb-6">
             <h2 className="text-lg font-extrabold mb-3">{tEvento("preguntasFrecuentes")}</h2>
             <div className="grid gap-3">
-              {evento.preguntas_frecuentes.map((pf) => (
+              {preguntasFrecuentes.map((pf) => (
                 <div key={pf.pregunta} className="card-sticker p-4">
                   <p className="font-bold">{pf.pregunta}</p>
                   <p className="text-sm mt-1" style={{ color: "var(--muted-foreground)" }}>{pf.respuesta}</p>
@@ -374,7 +420,7 @@ export default async function EventoPage({
         />
 
         {evento.lat !== null && evento.lon !== null ? (
-          <MapaEvento lat={evento.lat} lon={evento.lon} etiqueta={evento.titulo} direccionTexto={evento.ubicacion ?? undefined} />
+          <MapaEvento lat={evento.lat} lon={evento.lon} etiqueta={titulo} direccionTexto={evento.ubicacion ?? undefined} />
         ) : (
           evento.ubicacion && (
             <p className="mb-6 text-sm">
@@ -396,22 +442,25 @@ export default async function EventoPage({
               {tEvento("otrosPlanesEn", { municipio: municipio.nombre, cuando: etiquetaOtros })}
             </h2>
             <ul className="grid gap-2 text-sm">
-              {otrosPlanes.slice(0, 6).map((p) => (
-                <li key={p.id}>
-                  {p.evento_slug ? (
-                    <Link
-                      href={`${base}/eventos/${p.evento_slug}?desde=${contexto}`}
-                      className="hover:underline font-medium inline-flex items-start gap-1"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      <ArrowRight size={12} strokeWidth={2.5} className="shrink-0 mt-1" />
-                      {p.titulo}
-                    </Link>
-                  ) : (
-                    p.titulo
-                  )}
-                </li>
-              ))}
+              {otrosPlanes.slice(0, 6).map((p) => {
+                const tituloOtro = localizado(p.titulo, p.evento_titulo_en, locale);
+                return (
+                  <li key={p.id}>
+                    {p.evento_slug ? (
+                      <Link
+                        href={`${base}/eventos/${p.evento_slug}?desde=${contexto}`}
+                        className="hover:underline font-medium inline-flex items-start gap-1"
+                        style={{ color: "var(--foreground)" }}
+                      >
+                        <ArrowRight size={12} strokeWidth={2.5} className="shrink-0 mt-1" />
+                        {tituloOtro}
+                      </Link>
+                    ) : (
+                      tituloOtro
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}

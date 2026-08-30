@@ -52,6 +52,11 @@ export interface Plan {
   evento_foto_lugar_nombre?: string | null;
   evento_zona_cercana?: string | null;
   evento_zona_cercana_minutos?: number | null;
+  evento_dias_semana?: number[] | null;
+  evento_titulo_en?: string | null;
+  evento_descripcion_en?: string | null;
+  evento_precio_en?: string | null;
+  evento_preguntas_frecuentes_en?: PreguntaFrecuente[] | null;
   enlace_afiliado: string | null;
   fuente: string | null;
 }
@@ -97,6 +102,20 @@ export interface Evento {
   // {municipio}" en vez de tratarlo como si fuera del propio municipio.
   zona_cercana: string | null;
   zona_cercana_minutos: number | null;
+  // Días de la semana (0=domingo … 6=sábado, como Date.getDay()) en que un
+  // "generico" con patrón semanal fijo realmente está disponible (ej. un
+  // mercadillo que solo existe los jueves) — ver conversación, migración
+  // 0019. null/vacío = sin restricción, disponible cualquier día (la
+  // inmensa mayoría de genéricos).
+  dias_semana: number[] | null;
+  // Traducción al inglés del contenido real (no la interfaz del sitio, que
+  // ya estaba traducida) — ver conversación, migración 0020. null = todavía
+  // no traducido (contenido generado antes de este campo); el renderizado
+  // cae de vuelta al español mientras tanto.
+  titulo_en: string | null;
+  descripcion_en: string | null;
+  precio_en: string | null;
+  preguntas_frecuentes_en: PreguntaFrecuente[] | null;
   primera_deteccion: string;
   ultima_deteccion: string;
   activo: boolean;

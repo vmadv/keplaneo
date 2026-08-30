@@ -1,7 +1,7 @@
 {
   "Sitio": {
     "titulo": "Keplaneo Sevilla",
-    "descripcion": "What to do today, this weekend, or this month in Seville and the towns of its province."
+    "descripcion": "Things to do today, this weekend, or this month in Seville and the towns of its province."
   },
   "Nav": {
     "inicio": "Home",
@@ -10,7 +10,7 @@
     "precio": "Price",
     "tematica": "Category",
     "verTodosLosPlanes": "See all plans in {municipio} →",
-    "queHacer": "What to do",
+    "queHacer": "Things to do",
     "listados": "Rankings",
     "ciudad": "City"
   },
@@ -37,8 +37,8 @@
     "familia": "With kids",
     "generico": "For everyone",
     "conNinos": "With kids",
-    "tituloSiemprePareja": "What to do in {municipio} for couples",
-    "tituloSiempreConNinos": "What to do in {municipio} with kids"
+    "tituloSiemprePareja": "Things to do in {municipio} for couples",
+    "tituloSiempreConNinos": "Things to do in {municipio} with kids"
   },
   "Meses": {
     "enero": "January",
@@ -63,13 +63,14 @@
     "vacioSiempre": "No active plans right now. Check back in a few days.",
     "vacioSiempreGratis": "No active free plans right now. Check back in a few days.",
     "reservar": "Book →",
-    "aMinDe": "{minutos} min from {municipio}"
+    "aMinDe": "{minutos} min from {municipio}",
+    "masPlanesTodoElAno": "More plans all year round in {municipio}"
   },
   "ComunidadHome": {
-    "titulo": "What to do in {comunidad}"
+    "titulo": "Things to do in {comunidad}"
   },
   "MunicipioHome": {
-    "titulo": "What to do in {municipio}",
+    "titulo": "Things to do in {municipio}",
     "hoyFecha": "Today, {fecha}",
     "tituloDestacados": "The best of {municipio} this week",
     "tituloTodo": "Everything you can do in {municipio} all year round",
@@ -84,18 +85,18 @@
     "tituloTodoGratis": "Everything free to do in {municipio} all year round"
   },
   "Hoy": {
-    "titulo": "What to do today in {municipio}",
-    "tituloAudiencia": "What to do today in {municipio} {audiencia}",
+    "titulo": "Things to do today in {municipio}",
+    "tituloAudiencia": "Things to do today in {municipio} {audiencia}",
     "masPlanes": "More plans for today in {municipio}"
   },
   "Finde": {
-    "titulo": "What to do this weekend in {municipio}",
-    "tituloAudiencia": "What to do this weekend in {municipio} {audiencia}",
+    "titulo": "Things to do this weekend in {municipio}",
+    "tituloAudiencia": "Things to do this weekend in {municipio} {audiencia}",
     "masPlanes": "More plans for this weekend in {municipio}"
   },
   "Semana": {
-    "titulo": "What to do this week in {municipio}",
-    "tituloAudiencia": "What to do this week in {municipio} {audiencia}",
+    "titulo": "Things to do this week in {municipio}",
+    "tituloAudiencia": "Things to do this week in {municipio} {audiencia}",
     "tituloGratis": "Free things to do this week in {municipio}",
     "masPlanes": "More plans for this week in {municipio}"
   },
@@ -105,7 +106,7 @@
     "tituloSiempre": "Free things to do in {municipio}"
   },
   "Mes": {
-    "titulo": "What to do in {municipio} in {mes}",
+    "titulo": "Things to do in {municipio} in {mes}",
     "metaDescripcion": "Check out the plans in {municipio} for {mes}: concerts, exhibitions, theater, and more, automatically updated."
   },
   "Categoria": {
@@ -122,7 +123,7 @@
   },
   "NearbyMunicipios": {
     "titulo": "Plans near {municipio}",
-    "queHacerHoyEn": "What to do today in {municipio}"
+    "queHacerHoyEn": "Things to do today in {municipio}"
   },
   "MunicipioPageNav": {
     "titulo": "More plans in {municipio}",
@@ -157,6 +158,7 @@
     "donde": "Where",
     "horario": "Schedule",
     "precio": "Price",
+    "fecha": "Date",
     "fechas": "Dates",
     "fuente": "Source",
     "verMasInformacion": "See more information",
@@ -293,6 +295,8 @@
     "aperturaSiempre": "{municipio} never runs out of plans{calificador}",
     "introConDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {**one plan in total**} other {**# plans in total**}}, including {frases}.",
     "introSinDesglose": "{apertura}: {total, plural, =0 {no plans are active right now} one {**one plan in total**} other {**# plans in total**}}.",
+    "introSiempreConDesglose": "{apertura}, including {frases} among plenty more to discover all year round.",
+    "introSiempreSinDesglose": "{apertura}, with something for everyone all year round.",
     "tituloLista": "Plans{calificador} in {municipio}{temporal}",
     "flavorConciertos": "to stretch the night out",
     "flavorTeatro": "for a different kind of night",

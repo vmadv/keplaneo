@@ -1,10 +1,11 @@
 import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Sun, Moon, Sparkles, CalendarDays, Navigation } from "lucide-react";
+import { Sparkles, CalendarDays, Navigation } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
-import { etiquetaDiaFinde } from "@/lib/dates";
-import { urlFotoProxy } from "@/lib/places";
+import FotoTarjeta from "./FotoTarjeta";
+import { etiquetaDiaFinde, etiquetaDiasSemanaGenerico } from "@/lib/dates";
+import { localizado } from "@/lib/contenidoLocalizado";
 import type { Plan } from "@/lib/types";
 
 export default async function PlanList({
@@ -45,36 +46,18 @@ export default async function PlanList({
           mostrarDiaFinde && plan.tipo === "excepcional"
             ? etiquetaDiaFinde(plan.evento_fecha_inicio ?? null, plan.evento_fecha_fin ?? null, locale)
             : null;
-
-        // Cartel real primero (poco frecuente, solo destacados verificados
-        // a mano — ver conversación); si no, la foto del lugar vía Google
-        // Places, que sí escala gratis gracias a la caché por recinto.
-        const foto = plan.evento_cartel_url ?? plan.evento_foto_lugar_nombre ?? undefined;
-        const esCartel = Boolean(plan.evento_cartel_url);
+        const titulo = localizado(plan.titulo, plan.evento_titulo_en, locale);
+        const descripcion = localizado(plan.descripcion, plan.evento_descripcion_en, locale);
 
         const contenido = (
           <>
             <div className="flex items-start gap-3">
-              {foto ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={esCartel ? foto : urlFotoProxy(foto, 128)}
-                  alt=""
-                  className="w-16 h-16 rounded-lg object-cover shrink-0"
-                  style={{ border: "2px solid var(--foreground)" }}
-                />
-              ) : (
-                <span
-                  className="icon-chip w-9 h-9 shrink-0"
-                  style={{ background: plan.momento === "noche" ? "var(--foreground)" : "var(--tertiary)" }}
-                >
-                  {plan.momento === "noche" ? (
-                    <Moon size={16} strokeWidth={2.5} color="var(--background)" />
-                  ) : (
-                    <Sun size={16} strokeWidth={2.5} />
-                  )}
-                </span>
-              )}
+              <FotoTarjeta
+                cartelUrl={plan.evento_cartel_url ?? null}
+                fotoLugarNombre={plan.evento_foto_lugar_nombre ?? null}
+                momento={plan.momento}
+                alt=""
+              />
               <div className="min-w-0">
                 <div className="flex flex-wrap gap-1.5 mb-1.5">
                   {plan.tipo === "excepcional" && (
@@ -90,6 +73,12 @@ export default async function PlanList({
                       {diaFinde}
                     </span>
                   )}
+                  {!diaFinde && plan.evento_dias_semana && plan.evento_dias_semana.length > 0 && (
+                    <span className="badge-pill" style={{ background: "var(--quaternary)", color: "var(--quaternary-foreground)", borderColor: "var(--quaternary)" }}>
+                      <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
+                      {etiquetaDiasSemanaGenerico(plan.evento_dias_semana, locale)}
+                    </span>
+                  )}
                   {plan.evento_zona_cercana && plan.evento_zona_cercana_minutos != null && municipioNombre && (
                     <span className="badge-pill" style={{ background: "var(--muted)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}>
                       <Navigation size={11} strokeWidth={2.5} className="mr-1" />
@@ -97,9 +86,9 @@ export default async function PlanList({
                     </span>
                   )}
                 </div>
-                <h3 className="font-extrabold text-base">{plan.titulo}</h3>
+                <h3 className="font-extrabold text-base">{titulo}</h3>
                 <p className="text-sm mt-1 line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
-                  <TextoConNegritas texto={plan.descripcion.split("\n\n")[0]} />
+                  <TextoConNegritas texto={descripcion.split("\n\n")[0]} />
                 </p>
               </div>
             </div>

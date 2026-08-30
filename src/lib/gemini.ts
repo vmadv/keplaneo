@@ -5,6 +5,18 @@ import { esFechaEspanolaValida } from "./dates";
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// Modelo aparte, más barato, SOLO para traducirPlanesAIngles — traducir un
+// texto que ya está terminado en español es una tarea mucho más sencilla
+// que la búsqueda+redacción real (que sí justifica pagar el Flash completo,
+// ver GEMINI_MODEL), así que no necesita ni grounding ni el modelo caro.
+// Pinneado a una versión explícita, no un alias "-latest" (ver conversación:
+// los alias han dado problemas reales de estabilidad). Probado en directo
+// contra gemini-3.1-flash-lite y gemini-3.5-flash-lite con el mismo prompt
+// real de traducción: 3.1 tradujo mejor (3.5 dejó "El" sin traducir al
+// principio de una frase) y además es más barato — no hace falta "thinking"
+// para esto, ninguno de los dos lo activa por defecto.
+const MODELO_TRADUCCION = "gemini-3.1-flash-lite";
+
 export interface PreguntaFrecuente {
   pregunta: string;
   respuesta: string;
@@ -37,11 +49,33 @@ export interface PlanGenerado {
   // de los municipios que ya tienen página propia).
   zona_cercana?: string;
   zona_cercana_minutos?: number;
+  // Solo para "generico" con patrón semanal fijo (ej. un mercadillo que
+  // solo existe los jueves) — días 0-6 (0=domingo…6=sábado) en que
+  // realmente aplica. Omitir para lo que está disponible cualquier día —
+  // ver conversación, migración 0019.
+  dias_semana?: number[];
+  // Traducción al inglés — no la rellena Gemini en la generación normal,
+  // se añade después con traducirPlanesAIngles() y se fusiona aquí antes
+  // de guardar (ver conversación, migración 0020). Ubicación y horario no
+  // llevan versión en inglés (nombres propios y horas).
+  titulo_en?: string;
+  descripcion_en?: string;
+  precio_en?: string;
+  preguntas_frecuentes_en?: PreguntaFrecuente[];
 }
 
 interface UsoTokens {
   promptTokenCount?: number;
   candidatesTokenCount?: number;
+  // Tokens de "thinking" (razonamiento interno del modelo antes de
+  // responder) — gemini-3.6-flash lo usa por defecto sin que el código lo
+  // pida, y Google lo factura al precio de OUTPUT, no aparte. Se
+  // descubrió que faltaba en estimarCoste probando la traducción al
+  // inglés: para 2 planes pequeños salieron 1947 tokens de pensamiento
+  // frente a 181 de salida visible — el coste real era ~8x el reportado
+  // (ver conversación). Sin esto, generation_log llevaba tiempo
+  // subestimando el gasto de TODAS las llamadas, no solo la traducción.
+  thoughtsTokenCount?: number;
 }
 
 // Al pedir párrafos separados por "\n\n" dentro de un string JSON, Gemini a
@@ -94,13 +128,21 @@ function extraerJSON(texto: string): unknown {
 }
 
 async function llamarGemini(
-  prompt: string
+  prompt: string,
+  // Traducir no necesita buscar nada nuevo (el contenido real ya se
+  // encontró en la llamada de generación) — desactivar el grounding en ese
+  // caso ahorra su coste y simplifica el prompt, sin perder nada (ver
+  // conversación sobre la traducción al inglés).
+  conGrounding = true,
+  // Solo traducirPlanesAIngles pasa MODELO_TRADUCCION aquí — el resto de
+  // llamadas (vía llamarGeminiConReintentos) usan el modelo por defecto.
+  modelo = GEMINI_MODEL
 ): Promise<{ texto: string; usage: UsoTokens }> {
   if (!GEMINI_API_KEY) {
     throw new Error("Falta GEMINI_API_KEY en las variables de entorno");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
 
   // NOTA: el nombre del tool de grounding con Google Search ha cambiado
   // entre generaciones de modelo (googleSearchRetrieval -> google_search).
@@ -108,7 +150,7 @@ async function llamarGemini(
   // desplegar a producción.
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    tools: [{ google_search: {} }],
+    ...(conGrounding ? { tools: [{ google_search: {} }] } : {}),
   };
 
   const res = await fetch(url, {
@@ -154,9 +196,14 @@ De estos bloques, "conciertos" (dentro de Música), "exposiciones" (dentro de Ar
 // generarNovedades/generarPlanesDelMes) y las búsquedas dedicadas por variable
 // (generarPlanesEnfocados) — la lista de campos y sus reglas es la misma en
 // los dos casos, solo cambia lo que se les pide buscar antes de esto.
-const CAMPOS_JSON = `
+function camposJson(municipioNombre: string, municipiosExcluidos: string[] = []): string {
+  const notaExcluidos =
+    municipiosExcluidos.length > 0
+      ? ` Distingue según el "tipo" cuando la zona cercana resulte ser ${municipiosExcluidos.join(", ")} (municipios que ya cubrimos con su propia agenda dedicada en este mismo sitio): si el plan es "generico" (evergreen, sin fecha), NO lo incluyas — su catálogo de siempre ya está cubierto en la página propia de ese municipio, y repetirlo aquí sería un duplicado. Si el plan es "excepcional" (puntual, con fecha concreta) SÍ puedes incluirlo aunque esté en uno de esos municipios, siempre que sea genuinamente relevante e interesante — un evento puntual real en un municipio vecino no es un duplicado de su catálogo, es información útil para quien vive en ${municipioNombre}.`
+      : "";
+  return `
 Cada elemento debe tener EXACTAMENTE estos campos:
-- "titulo": string, corto y concreto
+- "titulo": string, corto y concreto. Si el plan es en realidad una visita de pago a un monumento/museo/recinto (necesita entrada, aunque sea gratuita con reserva), el título NO debe empezar por "Paseo" ni "Recorrido libre" — eso suena a caminar sin más, y confunde justo con el tipo de plan que se quiere evitar (ver más abajo). Usa "Visita a...", "Recorrido por..." (sin "libre") o el nombre del lugar directamente. Reserva "Paseo" para cuando el plan sea de verdad eso: caminar por una calle, parque o zona sin entrada ni recorrido guiado.
 - "descripcion": string con 2-3 PÁRRAFOS separados por "\n\n" (doble salto de línea real dentro del string). Todos los planes tienen página propia, así que esto es el contenido principal, no una ficha de listado — no te cortes en longitud. Reparte el contenido así:
   - Párrafo 1: qué es el plan y por qué merece la pena, con contexto (histórico, cultural, del propio recinto...).
   - Párrafo 2: qué te vas a encontrar/hacer allí en concreto, con el máximo detalle real que puedas dar.
@@ -165,32 +212,38 @@ Cada elemento debe tener EXACTAMENTE estos campos:
 - "momento": "dia" | "noche"
 - "vigencia": array de strings
 - "audiencia": array — normalmente UN único valor de ["pareja", "familia", "generico"]; combina "pareja" y "familia" solo si el plan encaja excepcionalmente bien en los dos (poco frecuente), y no combines ninguno de los dos con "generico" (son alternativas, no se acumulan) — usa "generico" en solitario cuando el plan sirve para cualquier visitante sin un ángulo concreto
-- "tipo": "excepcional" (evento puntual con fecha concreta) | "generico" (disponible siempre)
+- "tipo": "excepcional" (evento puntual con fecha concreta) | "generico" (disponible de verdad TODO el año, cualquier mes). "generico" NO es un cajón de sastre para "no tengo una fecha exacta que ponerle" — un programa o ciclo que solo existe en una temporada concreta (ej. un ciclo de conciertos "de verano", unas "noches" estivales en un patio o jardín, una feria o mercadillo que solo se monta en unas fechas) sigue sin estar disponible siempre aunque no sepas el día exacto de cada sesión: para eso, o encuentras la fecha real de una sesión/edición concreta y lo metes como "excepcional", o lo dejas fuera por completo — nunca lo describas como si fuera un plan de todo el año. Reserva "generico" para lo que de verdad puedes visitar en cualquier época (un monumento, un museo, un parque, un mercado permanente, una ruta) — no para la versión "genérica" de algo que en realidad es estacional.
+- "dias_semana": SOLO para "generico" con un patrón semanal FIJO — existe todas las semanas del año, pero solo en uno o varios días concretos de esa semana (ej. un mercadillo o rastro que solo se monta los jueves, una feria semanal de los domingos). Array de enteros 0-6 (0=domingo, 1=lunes, 2=martes, 3=miércoles, 4=jueves, 5=viernes, 6=sábado) con esos días exactos (ej. [4] para "solo jueves"). Omite este campo por completo si el plan está disponible cualquier día (la inmensa mayoría de genéricos) — no lo rellenes "por si acaso", solo cuando de verdad solo aplica días concretos de la semana.
 - "categoria": elige EXACTAMENTE una de esta lista: ${CATEGORIAS.join(", ")}. Usa "conciertos"/"exposiciones"/"teatro"/"monologos"/"deporte"/"ferias"/"fiestas"/"cine" solo cuando el plan sea genuinamente eso (ej. un partido o carrera es "deporte"; una feria del libro o mercadillo es "ferias"; una verbena, romería o cabalgata es "fiestas"; una proyección o ciclo de cine, incluido cine de verano al aire libre, es "cine"). "conciertos" incluye también festivales de música (aunque duren varios días), espectáculos musicales y cualquier plan centrado en música en vivo, no solo un concierto suelto de un artista. Para todo lo demás (parques, rutas, gastronomía, monumentos sin espectáculo, danza/ópera/circo, charlas, fuegos artificiales...) usa "otros".
 - "precio": para TODOS los planes, no solo los excepcionales — ej. "Entrada gratuita", "Desde 15€", "6€ adultos / 3€ niños". Muchos monumentos y recintos que parecen "de siempre" (Catedral, Alcázar, museos) en realidad cobran entrada: compruébalo siempre, no asumas que un plan genérico es gratis. Muchos museos, palacios y monumentos además tienen condiciones de entrada gratuita que no son "todo gratis" ni "todo de pago" — compruébalas y refléjalas con precisión en vez de simplificar: si existe una franja realmente abierta a cualquier visitante (un día y hora concretos, con o sin reserva previa, aunque tenga aforo limitado), empieza el texto por "Gratis" y añade la condición (ej. "Gratis los viernes a las 10:00 (solo planta baja)", "Gratis los lunes de 15:00 a 19:00 con reserva previa; el resto de días 10€"); si en cambio la entrada gratuita es solo para un colectivo concreto (residentes empadronados en la ciudad, estudiantes, menores de cierta edad, clientes de una entidad, ciudadanos UE en museos estatales...) mientras el visitante habitual paga, NO empieces por "Gratis" — indica primero el precio general y la excepción después (ej. "10€ (gratis para empadronados en Sevilla y menores de 12 años)"): sigue siendo un dato valioso que mostrar, pero no es gratis para cualquiera. Omite el campo solo si de verdad no encuentras el dato, nunca lo inventes ni lo asumas.
 - "ubicacion": para TODOS los planes, no solo los excepcionales — lugar físico concreto donde ocurre o se encuentra, si es un sitio fijo e identificable (un parque, un museo, un monumento, una sala también llevan este campo, igual que un evento puntual). Usa siempre el NOMBRE OFICIAL COMPLETO del lugar, tal como aparece en mapas o en su web oficial — nunca una abreviatura, sigla o apodo (ej. "Centro Andaluz de Arte Contemporáneo", nunca "CAAC"; "Real Alcázar de Sevilla", no solo "el Alcázar"): un nombre real pero mal recortado hace que luego no se pueda localizar en el mapa. Omite el campo si el plan no ocurre en un lugar fijo (una ruta sin sede concreta, una actividad genérica "por la ciudad") o si no tienes el dato con certeza.
+- "zona_cercana" / "zona_cercana_minutos": estás buscando principalmente DENTRO de ${municipioNombre}, pero si en el camino encuentras un plan real e interesante a MENOS DE 15 MINUTOS EN COCHE que en realidad ocurre en un pueblo, pedanía o zona cercana (NO dentro de ${municipioNombre} mismo), inclúyelo igualmente — no lo descartes por eso, siempre que esté dentro de ese radio — pero es OBLIGATORIO marcarlo con estos dos campos para que no se confunda con un plan del propio ${municipioNombre}: "zona_cercana" es el nombre real de ese lugar (ej. "Villanueva del Ariscal"), nunca "${municipioNombre}"; "zona_cercana_minutos" es un entero con los minutos aproximados en coche desde ${municipioNombre} hasta allí (nunca más de 15). Si el plan SÍ está dentro de ${municipioNombre}, omite los dos campos por completo. Los planes propios de ${municipioNombre} siguen teniendo prioridad sobre estos — esto es solo para no dejar fuera algo real e interesante a un paso de la ciudad cuando la propia agenda se queda corta.${notaExcluidos}
 - "fuente": para TODOS los planes, no solo los excepcionales — un plan genérico que requiere reserva o entrada (ej. "previa reserva", "Desde 25€") es igual de inútil sin saber dónde reservar que un evento puntual sin esa información. SIEMPRE prioriza la fuente PRIMARIA/oficial (el ayuntamiento, la diputación, el recinto, el museo, la sala, el organizador real) por encima de webs intermediarias (agendas culturales, blogs de "qué hacer en...", portales de noticias locales que solo republican la información). Si conoces la URL exacta de esa página oficial, ponla aquí (ej. "https://..."); si no tienes una URL fiable pero sí sabes qué institución es la organizadora real, pon su nombre (ej. "Ayuntamiento de Sevilla", "Diputación de Sevilla") en vez del nombre del portal donde lo hayas visto. Usa un agregador/intermediario como último recurso, solo si de verdad no puedes identificar quién organiza el evento. Omite el campo si de verdad no encuentras ninguna fuente fiable.
 - "relevancia": entero del 1 al 10 — qué tan atractivo es este plan frente a otros parecidos de la misma ciudad, para alguien sin preferencias previas. Sé exigente y usa el rango completo, no lo comprimas todo en 7-8: la mayoría de planes genéricos habituales (un parque cualquiera, una plaza, una ruta sin nada que lo distinga) deberían quedar entre 3 y 6; reserva 8-10 para lo realmente singular, icónico o con un tirón claro (un monumento emblemático, una experiencia que no se encuentra en cualquier ciudad, un evento con mucha expectación). Dentro de lo genérico, no vale lo mismo cualquier cosa: una visita guiada a un monumento o edificio CONCRETO y con nombre propio (ej. "Visita a las Cubiertas de la Catedral", "Visita al Hospital de los Venerables") pesa más que una actividad-tipo genérica (una ruta en kayak, un paseo en bici, un "tapeo y mercado tradicional") que podría pasar en casi cualquier ciudad con río o mercado — aunque las dos estén "siempre disponibles", la primera está anclada a algo único de esta ciudad concreta, la segunda es más una categoría de actividad replicable que un lugar irrepetible. Esto se usa para ordenar listados largos donde ya no hay más criterio que "cuál merece más la pena" — una nota blanda que no diferencia nada no sirve de nada.
 - "preguntas_frecuentes": array de 2-3 objetos {"pregunta": string, "respuesta": string}. Usa las preguntas que un visitante real se haría de este plan concreto (¿es gratis?, ¿es apto para niños?, ¿cuánto dura?, ¿hasta cuándo está disponible?, ¿hay que reservar?...). IMPORTANTE: la respuesta debe basarse ÚNICAMENTE en los datos que ya has puesto en los demás campos de este mismo plan (horario, precio, audiencia, fechas, descripción) — no metas ningún dato nuevo que no hayas dado ya arriba. Si no tienes base para una pregunta concreta, no la incluyas.
 
 Además, SOLO para los planes con "tipo": "excepcional" (van a tener página propia con más detalle), añade estos campos cuando la información sea real y verificable — omite el campo si no la encuentras, no la inventes:
 - "horario": horario concreto (ej. "22:00h")
-- "fecha_inicio" / "fecha_fin": rango de fechas del evento si lo conoces (ej. "15 de agosto de 2026" / "31 de agosto de 2026") — omite el que no sepas
+- "fecha_inicio" / "fecha_fin": rango de fechas del evento si lo conoces (ej. "15 de agosto de 2026" / "31 de agosto de 2026") — omite el que no sepas. IMPORTANTE: esto es para un evento/ciclo/exposición concreto (normalmente días o pocas semanas), NUNCA para la temporada operativa completa de un recinto (ej. "el parque abre de abril a noviembre") — un rango de varios MESES no es un evento puntual, es que el sitio funciona así todo ese tiempo. Si lo único que tienes es "esta temporada dura de tal mes a tal otro" sin una sesión, edición o programación concreta dentro de ese rango, no lo metas como "excepcional": descríbelo como "generico" (sin fecha) en su lugar, o busca la fecha real de algo puntual que ocurra ahí (una noche concreta, un espectáculo con fecha, un evento especial dentro de esa temporada).
 
 Devuelve EXCLUSIVAMENTE el array JSON, sin texto adicional ni bloques de markdown.
 `.trim();
+}
 
 // Instrucciones para la búsqueda MIXTA (varias temáticas y "generico" de
 // relleno a la vez) — la usan generarPlanesSemanales/generarNovedades/
 // generarPlanesDelMes. Las búsquedas dedicadas por variable
-// (generarPlanesEnfocados) usan CAMPOS_JSON directamente, sin este bloque.
-const INSTRUCCIONES_FORMATO = `
+// (generarPlanesEnfocados) usan camposJson directamente, sin este bloque.
+function instruccionesFormato(municipioNombre: string, municipiosExcluidos: string[] = []): string {
+  return `
 Orden de prioridad, en este orden estricto:
-1. Primero, todos los eventos puntuales y temporales que encuentres (agenda concreta con fecha). Estos van "tipo": "excepcional".
+1. Primero, todos los eventos puntuales y temporales que encuentres (agenda concreta con fecha) DENTRO de ${municipioNombre} mismo. Estos van "tipo": "excepcional".
 
 ${TIPOS_EVENTO_PUNTUAL}
 
 2. Solo si no encuentras suficientes eventos puntuales verificables para llegar a 10 planes, completa el resto con planes genéricos de calidad, disponibles siempre. Estos van "tipo": "generico". Busca variedad real de TIPO de lugar, no solo de actividad — como referencia orientativa (no una lista cerrada ni obligatoria), piensa en monumentos, palacios, conventos, museos, iglesias, mercados, parques/jardines, rincones únicos poco conocidos, ferias/fiestas tradicionales y calles o barrios con carácter propio. No excluyas los monumentos o museos más conocidos de la ciudad solo por ser conocidos — un lugar concreto con nombre propio (aunque sea obvio) aporta más que una actividad-tipo genérica sin anclaje real (ver el criterio de "relevancia" más abajo). Lo que sí evita es meter el MISMO lugar real dos veces disfrazado de actividades distintas (ej. no listes "Parque de María Luisa" tanto como "paseo botánico" y como "inmersión histórica" — es el mismo sitio: cuenta una sola vez, con el ángulo que mejor lo represente).
+
+El público objetivo de este sitio es gente que YA VIVE en la ciudad, no turistas — evita planes pensados sobre todo para visitantes de fuera y con poco interés real para un vecino (un tablao flamenco genérico, un espectáculo "típico" para turistas), salvo que haya algo puntual y genuinamente noticiable ahí (en ese caso sí entra, como evento puntual). Dentro de los genéricos, prioriza planes "dinámicos" que impliquen entrar a un sitio concreto o hacer algo — una visita con entrada, un museo, una actividad, una experiencia — frente a un simple paseo por una calle o barrio sin más contenido que caminar (ej. "paseo por la Calle X"): un plan así de "paseo sin más" es el último recurso, solo si no hay suficientes alternativas con entrada/actividad real, y nunca el primero de la lista.
 
 Los planes "generico" deben ir siempre al final del array, después de todos los "excepcional". No inventes eventos puntuales que no existan solo por rellenar — ante la duda, usa un plan genérico real en su lugar.
 
@@ -198,8 +251,9 @@ Dentro de cada uno de esos dos bloques (excepcional / generico), ordena de MAYOR
 - Procura variedad real de temática entre los eventos puntuales: si encuentras 8 conciertos y ningún otro tipo, busca más en las demás categorías antes de rendirte — no llenes el listado a base de repetir el mismo tipo de plan.
 - Sé preciso con "audiencia" — no la trates como una lista de "a quién le podría gustar esto", sino como "para quién es este plan sobre todo". Márcalo "pareja" en dos casos, dando más peso al primero: (1) tiene un ángulo claro romántico (una cata de vino nocturna, un concierto de jazz íntimo, una cena con vistas, un atardecer, cualquier plan explícitamente descrito como romántico aunque no sea la típica "cita"); o (2), sin ese ángulo romántico explícito, es un plan cultural, de ocio o de entretenimiento que funciona bien como salida en pareja — una exposición, un concierto, una obra de teatro, un monólogo, una cata, una proyección de cine — no hace falta que sea "de cita" para marcarlo así, basta con que sea un plan que dos personas disfrutarían haciendo juntas. Si es claramente pensado para ir con niños (un espectáculo infantil, un parque temático, un taller familiar) márcalo SOLO "familia". No le añadas "generico" a la vez a un plan que ya lleva "pareja" o "familia" — son alternativas, no se acumulan. Reserva "generico" para planes de infraestructura o rutina sin ningún ángulo hacia una audiencia concreta (un parque cualquiera, una plaza, un mercado, una ruta sin nada que la haga especialmente de pareja) y para eventos multitudinarios sin componente de experiencia compartida más allá de estar entre el público (un gran partido, una romería masiva). Esta etiqueta se usa para filtrar planes por audiencia en el sitio; no la apliques por inercia a cualquier plan cultural solo porque "podría valer" — resérvala para los que de verdad tienen ese carácter de salida compartida, o el filtro deja de servir de nada.
 
-${CAMPOS_JSON}
+${camposJson(municipioNombre)}
 `.trim();
+}
 
 // Gemini no tiene un esquema forzado (pedimos JSON libre en el prompt), así
 // que de vez en cuando devuelve un valor fuera de la lista permitida en
@@ -220,6 +274,13 @@ function normalizarPlan(p: PlanGenerado): PlanGenerado {
   const fechaInicioValida = p.fecha_inicio && esFechaEspanolaValida(p.fecha_inicio) ? p.fecha_inicio : undefined;
   const fechaFinValida = p.fecha_fin && esFechaEspanolaValida(p.fecha_fin) ? p.fecha_fin : undefined;
 
+  // Solo válido para "generico": enteros 0-6 sin duplicados. Un array
+  // vacío o inválido no es distinto de omitirlo — sin restricción.
+  const diasSemanaValidos =
+    p.tipo === "generico" && Array.isArray(p.dias_semana)
+      ? Array.from(new Set(p.dias_semana.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)))
+      : [];
+
   return {
     ...p,
     momento: p.momento === "noche" ? "noche" : "dia",
@@ -229,6 +290,7 @@ function normalizarPlan(p: PlanGenerado): PlanGenerado {
     categoria: (CATEGORIAS as readonly string[]).includes(p.categoria ?? "") ? p.categoria : "otros",
     fecha_inicio: fechaInicioValida,
     fecha_fin: fechaFinValida,
+    dias_semana: diasSemanaValidos.length > 0 ? diasSemanaValidos : undefined,
   };
 }
 
@@ -268,6 +330,83 @@ async function llamarGeminiConReintentos(
   throw ultimoError instanceof Error ? ultimoError : new Error(`${nombreFn}: no debería llegar aquí`);
 }
 
+export interface TraduccionPlan {
+  titulo_en?: string;
+  descripcion_en?: string;
+  precio_en?: string;
+  preguntas_frecuentes_en?: PreguntaFrecuente[];
+}
+
+// Traduce el lote ya generado (en español) a inglés, en una sola llamada
+// para toda la tanda en vez de una por plan — ver conversación: para
+// posicionar en SEO en inglés de verdad hace falta que el contenido esté
+// traducido de antemano (no "al vuelo" cuando alguien visita, que llega
+// tarde para el rastreador de Google). No necesita buscar nada nuevo (el
+// contenido real ya se encontró en la llamada de generación), así que va
+// sin grounding — más barato y el prompt es mucho más simple. Ubicación y
+// horario no se traducen (nombres propios y horas, iguales en los dos
+// idiomas). Devuelve un array del MISMO tamaño y en el MISMO orden que
+// `planes`, para poder emparejar por índice sin ambigüedad.
+export async function traducirPlanesAIngles(
+  planes: PlanGenerado[]
+): Promise<{ traducciones: TraduccionPlan[]; usage: UsoTokens }> {
+  if (planes.length === 0) return { traducciones: [], usage: {} };
+
+  const origen = planes.map((p, i) => ({
+    indice: i,
+    titulo: p.titulo,
+    descripcion: p.descripcion,
+    ...(p.precio ? { precio: p.precio } : {}),
+    ...(p.preguntas_frecuentes && p.preguntas_frecuentes.length > 0
+      ? { preguntas_frecuentes: p.preguntas_frecuentes }
+      : {}),
+  }));
+
+  const prompt = `
+Traduce al inglés cada uno de estos planes turísticos/de ocio, EXACTAMENTE tal y como están en español — no resumas, no acortes, no añadas ni quites información, solo tradúcelo con naturalidad para un hablante nativo de inglés.
+
+${JSON.stringify(origen)}
+
+Reglas:
+- Devuelve un array JSON de EXACTAMENTE ${origen.length} elementos, en el MISMO orden que la entrada (usa el mismo "indice" de cada uno para que no haya dudas).
+- Cada elemento debe tener: "indice" (el mismo número que en la entrada), "titulo_en" (traducción de "titulo"), "descripcion_en" (traducción completa de "descripcion", con los mismos párrafos separados por "\\n\\n" y las mismas negritas "**así**" en los mismos datos).
+- Si el original tenía "precio", incluye también "precio_en" (traduce solo las palabras, ej. "Gratis" → "Free", "adultos" → "adults" — los números y el símbolo € se quedan igual).
+- Si el original tenía "preguntas_frecuentes", incluye también "preguntas_frecuentes_en" con el mismo array traducido (misma cantidad de preguntas, mismo orden, campos "pregunta" y "respuesta").
+- No traduzcas nombres propios de lugares, calles o monumentos (ej. "Real Alcázar de Sevilla" se queda igual, no se traduce a "Royal Alcazar").
+- Importante sobre los títulos: traduce SIEMPRE la parte genérica del título ("Visita a" → "Visit to", "Paseo por" → "Walk along", "Recorrido por" → "Tour of"), incluso cuando el resto sea un nombre propio. Nunca dejes el título entero sin traducir — solo el nombre propio del monumento/lugar en sí se queda igual.
+
+Devuelve EXCLUSIVAMENTE el array JSON, sin texto adicional ni bloques de markdown.
+`.trim();
+
+  const INTENTOS = 4;
+  let ultimoError: unknown;
+  for (let intento = 1; intento <= INTENTOS; intento++) {
+    try {
+      const { texto, usage } = await llamarGemini(prompt, false, MODELO_TRADUCCION);
+      const parseado = extraerJSON(texto);
+      if (!Array.isArray(parseado)) throw new Error("traducirPlanesAIngles: la respuesta no es un array");
+
+      const traducciones: TraduccionPlan[] = planes.map((_, i) => {
+        const item = parseado.find((t) => t && typeof t === "object" && t.indice === i) as
+          | (TraduccionPlan & { indice: number })
+          | undefined;
+        if (!item) return {};
+        return {
+          titulo_en: item.titulo_en,
+          descripcion_en: item.descripcion_en,
+          precio_en: item.precio_en,
+          preguntas_frecuentes_en: item.preguntas_frecuentes_en,
+        };
+      });
+      return { traducciones, usage };
+    } catch (err) {
+      ultimoError = err;
+      if (intento < INTENTOS) await esperar(2000 * intento + Math.round(Math.random() * 2000));
+    }
+  }
+  throw ultimoError instanceof Error ? ultimoError : new Error("traducirPlanesAIngles: no debería llegar aquí");
+}
+
 // Generación semanal (cron de los lunes): pide de una vez la agenda de toda
 // la semana en vez de repetir la búsqueda cada día — cada evento real se
 // redacta una sola vez, con su fecha real, y de ahí se derivan hoy/finde/
@@ -276,7 +415,8 @@ async function llamarGeminiConReintentos(
 export async function generarPlanesSemanales(
   municipioNombre: string,
   fechaLunesLegible: string,
-  fechaDomingoLegible: string
+  fechaDomingoLegible: string,
+  municipiosExcluidos: string[] = []
 ): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
   const prompt = `
 Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España) para la semana del ${fechaLunesLegible} al ${fechaDomingoLegible}.
@@ -285,7 +425,7 @@ Genera idealmente entre 20 y 35 planes que cubran TODA la semana (lunes a doming
 
 Para cada plan con "tipo": "excepcional", es OBLIGATORIO indicar "fecha_inicio" (y "fecha_fin" si dura más de un día) con una fecha real dentro de esta semana o que se solape con ella — sin esa fecha no se puede saber en qué día mostrarlo. Si no encuentras una fecha real y verificable para un evento puntual, no lo incluyas (usa un plan genérico en su lugar antes que inventar la fecha).
 
-${INSTRUCCIONES_FORMATO}
+${instruccionesFormato(municipioNombre, municipiosExcluidos)}
 `.trim();
 
   return llamarGeminiConReintentos(prompt, "generarPlanesSemanales");
@@ -335,7 +475,8 @@ export async function generarPlanesEnfocados(
   municipioNombre: string,
   fechaLunesLegible: string,
   fechaDomingoLegible: string,
-  foco: Foco
+  foco: Foco,
+  municipiosExcluidos: string[] = []
 ): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
   const prompt = `
 Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España) para la semana del ${fechaLunesLegible} al ${fechaDomingoLegible}.
@@ -349,7 +490,7 @@ ${
     : ""
 }
 
-${CAMPOS_JSON}
+${camposJson(municipioNombre, municipiosExcluidos)}
 `.trim();
 
   return llamarGeminiConReintentos(prompt, "generarPlanesEnfocados");
@@ -367,7 +508,8 @@ ${CAMPOS_JSON}
 // vez de volver a redactar los mismos de siempre.
 export async function generarPlanesGenericos(
   municipioNombre: string,
-  conocidos: string[]
+  conocidos: string[],
+  municipiosExcluidos: string[] = []
 ): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
   const listaConocidos =
     conocidos.length > 0
@@ -378,15 +520,51 @@ export async function generarPlanesGenericos(
 Eres un editor local que conoce a fondo ${municipioNombre} (España) todo el año, no solo la agenda de esta semana.
 
 Busca planes "generico" (disponibles siempre, sin fecha concreta) reales y verificables, con variedad real de TIPO de lugar — como referencia orientativa (no una lista cerrada ni obligatoria), piensa en monumentos, palacios, conventos, museos, iglesias, mercados, parques/jardines, rincones únicos poco conocidos, ferias/fiestas tradicionales y calles o barrios con carácter propio.
+
+El público objetivo es gente que YA VIVE en la ciudad, no turistas — evita planes claramente pensados para visitantes de fuera con poco interés real para un vecino (un tablao flamenco genérico, una experiencia "típica" turística). Prioriza siempre planes "dinámicos" que impliquen entrar a un sitio concreto o hacer algo (visita con entrada, museo, actividad) frente a un simple paseo por una calle o barrio sin más contenido que caminar — un "paseo por la Calle X" sin nada más es el último recurso, no el primero.
+
+Dentro de esta tanda, procura que al menos algún plan tenga lo GRATIS como valor real y claro (un monumento con entrada libre, un parque, una visita sin coste) — indícalo con precisión en "precio" (ver más abajo), no lo fuerces si en realidad no es gratis.
 ${listaConocidos}
-Genera entre 8 y 15 planes si de verdad existen sitios genuinamente distintos — mejor devolver menos (o un array vacío) que rellenar con variaciones del mismo lugar o con actividades-tipo genéricas sin anclaje real (una ruta en bici sin destino, un "paseo por el barrio histórico" sin más).
+Genera entre 10 y 20 planes si de verdad existen sitios genuinamente distintos — mejor devolver menos (o un array vacío) que rellenar con variaciones del mismo lugar o con actividades-tipo genéricas sin anclaje real (una ruta en bici sin destino, un "paseo por el barrio histórico" sin más).
 
 Todos los planes que devuelvas aquí llevan "tipo": "generico".
 
-${CAMPOS_JSON}
+${camposJson(municipioNombre, municipiosExcluidos)}
 `.trim();
 
   return llamarGeminiConReintentos(prompt, "generarPlanesGenericos");
+}
+
+// Búsqueda dedicada a genéricos pensados específicamente para ir CON NIÑOS
+// — antes esto era solo "al menos algún plan" dentro de generarPlanesGenericos,
+// compitiendo por hueco con monumentos/museos/mercados generalistas, y el
+// resultado real era 1-2 planes de niños como mucho (ver conversación:
+// "hoy con niños" se quedaba en 3-4 planes en vez de los 10-15 buscados).
+// Igual que con las variables enfocadas (FOCOS_SEMANALES), preguntar
+// directamente por esto encuentra bastante más que dejarlo de relleno.
+export async function generarPlanesGenericosNinos(
+  municipioNombre: string,
+  conocidos: string[],
+  municipiosExcluidos: string[] = []
+): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
+  const listaConocidos =
+    conocidos.length > 0
+      ? `\nYa tenemos estos planes para niños en ${municipioNombre} — NO los repitas, y no generes otro plan sobre el mismo lugar real con un título distinto:\n${conocidos.map((t) => `- ${t}`).join("\n")}\n\nBusca EXCLUSIVAMENTE lugares NUEVOS que no estén ya en esa lista.\n`
+      : "";
+
+  const prompt = `
+Eres un editor local que conoce a fondo ${municipioNombre} (España) todo el año, buscando específicamente planes para ir CON NIÑOS que estén disponibles siempre (sin fecha concreta, "generico").
+
+Busca planes reales y verificables genuinamente pensados para niños — museos con salas o actividades infantiles, parques con zona de juegos o atracciones, espacios interactivos o de ciencia, granjas-escuela, parques temáticos o acuáticos, ludotecas, bibliotecas con programación infantil estable. El público objetivo son familias que YA VIVEN en la ciudad, no turistas — evita nada claramente pensado para visitantes de fuera. Prioriza planes "dinámicos" con entrada o actividad concreta frente a un simple paseo o parque sin nada más que el propio espacio — un parque sin zona de juegos ni actividad específica es el último recurso, no el primero.
+${listaConocidos}
+Genera entre 8 y 15 planes si de verdad existen sitios genuinamente distintos para niños — mejor devolver menos (o un array vacío) que forzar algo que no encaje de verdad.
+
+Todos los planes que devuelvas aquí llevan "tipo": "generico" y "audiencia": ["familia"].
+
+${camposJson(municipioNombre, municipiosExcluidos)}
+`.trim();
+
+  return llamarGeminiConReintentos(prompt, "generarPlanesGenericosNinos");
 }
 
 // Búsqueda dedicada para municipios pequeños con poca agenda propia (ej.
@@ -406,17 +584,17 @@ export async function generarPlanesZonaCercana(
   const prompt = `
 Eres un editor local que conoce a fondo la zona alrededor de ${municipioNombre} (España), incluyendo los pueblos y núcleos cercanos, no solo el propio municipio.
 
-Busca planes reales y verificables (eventos puntuales con fecha o lugares genéricos disponibles siempre) en pueblos, barrios o zonas a menos de 20-25 minutos en coche de ${municipioNombre}, pero que NO estén dentro del propio ${municipioNombre}.
+Busca planes reales y verificables (eventos puntuales con fecha o lugares genéricos disponibles siempre) en pueblos, barrios o zonas a menos de 15 minutos en coche de ${municipioNombre}, pero que NO estén dentro del propio ${municipioNombre}.
 
-MUY IMPORTANTE: ninguno de estos planes puede estar en ${municipiosExcluidos.join(", ")} — son municipios que ya cubrimos con su propia agenda dedicada, así que un plan de cualquiera de ellos aquí sería un duplicado. Si el único sitio interesante cerca de ${municipioNombre} resulta estar en uno de esos municipios, no lo incluyas.
+MUY IMPORTANTE: distingue según el "tipo" cuando el sitio resulte estar en ${municipiosExcluidos.join(", ")} (municipios que ya cubrimos con su propia agenda dedicada) — si el plan es "generico" (evergreen, sin fecha), NO lo incluyas: su catálogo de siempre ya está cubierto en la página propia de ese municipio, y repetirlo aquí sería un duplicado. Si el plan es "excepcional" (puntual, con fecha concreta) SÍ puedes incluirlo aunque esté en uno de esos municipios, siempre que sea genuinamente relevante e interesante para alguien en ${municipioNombre} — un evento puntual real en un municipio vecino no es un duplicado de su catálogo, es información útil.
 
 Para CADA plan que devuelvas, añade estos dos campos (obligatorios en esta búsqueda, a diferencia del resto):
-- "zona_cercana": el nombre real del pueblo, barrio o zona donde está (ej. "San Juan de Aznalfarache"), nunca "${municipioNombre}" ni ninguno de los municipios excluidos.
-- "zona_cercana_minutos": entero, minutos aproximados en coche desde ${municipioNombre} hasta ese lugar.
+- "zona_cercana": el nombre real del pueblo, barrio o zona donde está (ej. "San Juan de Aznalfarache"), nunca "${municipioNombre}".
+- "zona_cercana_minutos": entero, minutos aproximados en coche desde ${municipioNombre} hasta ese lugar (nunca más de 15).
 
-Genera entre 5 y 12 planes si de verdad existen sitios o eventos genuinamente distintos y cercanos — mejor devolver menos (o un array vacío) que forzar algo lejano o de relleno. Para los "excepcional" (con fecha), sigue siendo obligatorio indicar "fecha_inicio" real y verificable; si no la tienes, no incluyas el plan.
+Genera entre 5 y 12 planes si de verdad existen sitios o eventos genuinamente distintos y cercanos dentro de ese radio de 15 minutos — mejor devolver menos (o un array vacío) que forzar algo lejano o de relleno. Para los "excepcional" (con fecha), sigue siendo obligatorio indicar "fecha_inicio" real y verificable; si no la tienes, no incluyas el plan.
 
-${CAMPOS_JSON}
+${camposJson(municipioNombre, municipiosExcluidos)}
 `.trim();
 
   return llamarGeminiConReintentos(prompt, "generarPlanesZonaCercana");
@@ -526,7 +704,8 @@ export async function generarNovedades(
   municipioNombre: string,
   fechaHoyLegible: string,
   planesConocidos: string[],
-  enfoqueFinde: boolean
+  enfoqueFinde: boolean,
+  municipiosExcluidos: string[] = []
 ): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
   const listaConocidos =
     planesConocidos.length > 0 ? planesConocidos.map((t) => `- ${t}`).join("\n") : "(ninguno todavía)";
@@ -542,7 +721,7 @@ ${enfoqueFinde ? "\nHoy es viernes: presta atención especial a la agenda de est
 
 Para cada plan con "tipo": "excepcional", indica "fecha_inicio" (y "fecha_fin" si aplica) con una fecha real — si no la encuentras, mejor omite el plan.
 
-${INSTRUCCIONES_FORMATO}
+${instruccionesFormato(municipioNombre, municipiosExcluidos)}
 `.trim();
 
   const INTENTOS = 3;
@@ -559,14 +738,16 @@ ${INSTRUCCIONES_FORMATO}
 
 export async function generarPlanesDelMes(
   municipioNombre: string,
-  mesSlug: string
+  mesSlug: string,
+  fechaHoyLegible: string,
+  municipiosExcluidos: string[] = []
 ): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
   const prompt = `
-Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España) para el mes de ${mesSlug}.
+Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España) para el mes de ${mesSlug}. Hoy es ${fechaHoyLegible}.
 
-Genera entre 10 y 20 planes para ese mes completo (no solo para un día concreto), priorizando eventos puntuales de agenda por encima de planes genéricos (ver orden de prioridad más abajo). El campo "vigencia" de cada plan debe incluir "${mesSlug}".
+Genera entre 10 y 20 planes para lo que queda de ese mes DESDE HOY en adelante (no para el mes completo desde el día 1 — cualquier evento puntual con fecha ya pasada no sirve de nada aquí), priorizando eventos puntuales de agenda por encima de planes genéricos (ver orden de prioridad más abajo). El campo "vigencia" de cada plan debe incluir "${mesSlug}".
 
-${INSTRUCCIONES_FORMATO}
+${instruccionesFormato(municipioNombre, municipiosExcluidos)}
 `.trim();
 
   const { planes, usage } = await llamarGeminiConReintentos(prompt, "generarPlanesDelMes");
@@ -740,15 +921,40 @@ Sin texto adicional ni bloques de markdown.
   throw new Error("escribirIntroYFaqListado: no debería llegar aquí");
 }
 
-// Tarifa de gemini-3.5-flash-lite ($/1M tokens), el modelo real al que
-// resuelve el alias GEMINI_MODEL a fecha de escribir esto. Si cambias de
-// modelo o Google ajusta precios, actualiza estos dos valores — de ellos
-// depende que generation_log refleje el coste real y no uno inventado.
-const COSTE_INPUT_POR_MILLON = 0.3;
-const COSTE_OUTPUT_POR_MILLON = 2.5;
+// Tarifa real de gemini-3.6-flash ($/1M tokens, verificada agosto 2026) —
+// las cifras anteriores (0.3/2.5) eran de Flash-Lite, no del modelo Flash
+// completo que usa GEMINI_MODEL de verdad: llevaban meses subestimando el
+// coste real por 3-5x (ver conversación). Si cambias de modelo o Google
+// ajusta precios, actualiza estos dos valores — de ellos depende que
+// generation_log refleje el coste real y no uno inventado. NOTA: esto NO
+// incluye el coste del grounding con Google Search (5.000 peticiones
+// gratis al mes compartidas entre modelos Gemini 3, luego $14 por cada
+// 1.000 búsquedas — y una sola llamada puede disparar varias búsquedas) —
+// a nuestro volumen actual probablemente seguimos dentro del tramo
+// gratuito, pero no lo dábamos por hecho al escalar a más municipios.
+const COSTE_INPUT_POR_MILLON = 1.5;
+const COSTE_OUTPUT_POR_MILLON = 7.5;
 
 export function estimarCoste(usage: UsoTokens): number {
   const input = ((usage.promptTokenCount ?? 0) / 1_000_000) * COSTE_INPUT_POR_MILLON;
-  const output = ((usage.candidatesTokenCount ?? 0) / 1_000_000) * COSTE_OUTPUT_POR_MILLON;
+  // El "thinking" se factura como output, aunque Gemini lo devuelva en un
+  // campo aparte (thoughtsTokenCount) — ver la nota en UsoTokens.
+  const tokensOutput = (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0);
+  const output = (tokensOutput / 1_000_000) * COSTE_OUTPUT_POR_MILLON;
+  return input + output;
+}
+
+// Tarifa real de gemini-3.1-flash-lite (MODELO_TRADUCCION), verificada
+// agosto 2026 — mucho más barata que el Flash completo, y aparte porque es
+// un modelo distinto: sumar sus tokens a los de la generación y aplicar
+// COSTE_*_POR_MILLON de arriba daría un coste inventado (esa tarifa es de
+// otro modelo). Cada cron suma esta función Y estimarCoste() por separado,
+// nunca los tokens en crudo de las dos llamadas.
+const COSTE_INPUT_TRADUCCION_POR_MILLON = 0.25;
+const COSTE_OUTPUT_TRADUCCION_POR_MILLON = 1.5;
+
+export function estimarCosteTraduccion(usage: UsoTokens): number {
+  const input = ((usage.promptTokenCount ?? 0) / 1_000_000) * COSTE_INPUT_TRADUCCION_POR_MILLON;
+  const output = ((usage.candidatesTokenCount ?? 0) / 1_000_000) * COSTE_OUTPUT_TRADUCCION_POR_MILLON;
   return input + output;
 }

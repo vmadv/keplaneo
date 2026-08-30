@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { generarNovedades, fusionarPlanesDuplicados, estimarCoste } from "@/lib/gemini";
+import { generarNovedades, fusionarPlanesDuplicados, traducirPlanesAIngles, estimarCoste, estimarCosteTraduccion } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { hoyISO, hoyEnMadrid, fechaDeHoyLegible, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
+import { diasRepasoDiario } from "@/lib/nivelesMunicipio";
 
 export const maxDuration = 300;
 
@@ -65,6 +66,12 @@ export async function GET(request: NextRequest) {
   const resultados = [];
 
   for (const municipio of municipios) {
+    // Nivel por tamaño (ver conversación sobre coste): grande repasa
+    // martes a domingo, mediano solo martes y viernes, pequeño ningún día.
+    if (!diasRepasoDiario(municipio.slug).includes(diaSemana)) {
+      resultados.push({ municipio: municipio.slug, estado: "omitido", nota: "no toca repaso diario hoy para su nivel" });
+      continue;
+    }
     try {
       const { data: conocidos, error: errorConocidos } = await supabaseAdmin
         .from("eventos")
@@ -74,12 +81,16 @@ export async function GET(request: NextRequest) {
       if (errorConocidos) throw new Error(`eventos.select conocidos: ${errorConocidos.message}`);
 
       const titulosConocidos = (conocidos ?? []).map((e) => e.titulo);
+      const municipiosExcluidos = municipios
+        .filter((m) => m.id !== municipio.id)
+        .map((m) => m.nombre);
 
-      const { planes: planesCrudos, usage } = await generarNovedades(
+      const { planes: planesCrudos, usage: usageGeneracion } = await generarNovedades(
         municipio.nombre,
         fechaDeHoyLegible(),
         titulosConocidos,
-        enfoqueFinde
+        enfoqueFinde,
+        municipiosExcluidos
       );
       // Gemini puede describir el mismo evento real dos veces en una misma
       // respuesta (dos redacciones distintas) sin que eso choque con
@@ -87,6 +98,32 @@ export async function GET(request: NextRequest) {
       // ese duplicado llegue a `planes.insert`, no solo al vincular con
       // `eventos` (que ya lo agrupa, pero no evita la fila repetida).
       const planes = fusionarPlanesDuplicados(planesCrudos);
+
+      // Traducción al inglés en una llamada aparte, sin grounding (ver
+      // conversación) — se hace aquí, sobre el lote ya fusionado, para no
+      // traducir duplicados que luego se descartarían. En su propio
+      // try/catch: es una mejora aparte del contenido real en español, así
+      // que un fallo aquí (red, límite de la API...) no debe tirar toda la
+      // generación de hoy — se queda sin inglés esta vez y se traduce en
+      // la siguiente pasada, cuando upsertEventosDelLote vuelva a procesar
+      // este mismo evento.
+      let traducciones: Awaited<ReturnType<typeof traducirPlanesAIngles>>["traducciones"] = [];
+      let usageTraduccion: Awaited<ReturnType<typeof traducirPlanesAIngles>>["usage"] = {};
+      try {
+        ({ traducciones, usage: usageTraduccion } = await traducirPlanesAIngles(planes));
+      } catch (err) {
+        console.error(`traducirPlanesAIngles (${municipio.slug}): ${err}`);
+      }
+      planes.forEach((p, i) => Object.assign(p, traducciones[i]));
+      // Tokens en crudo (solo informativos) sí se suman entre las dos
+      // llamadas; el coste NO — cada una usa un modelo con tarifa distinta
+      // (ver estimarCosteTraduccion), así que se calcula por separado y se
+      // suman los euros, nunca los tokens antes de aplicar una tarifa.
+      const usage = {
+        promptTokenCount: (usageGeneracion.promptTokenCount ?? 0) + (usageTraduccion.promptTokenCount ?? 0),
+        candidatesTokenCount: (usageGeneracion.candidatesTokenCount ?? 0) + (usageTraduccion.candidatesTokenCount ?? 0),
+      };
+      const costeTotal = estimarCoste(usageGeneracion) + estimarCosteTraduccion(usageTraduccion);
 
       let filasInsertadas = 0;
       let vinculosNuevos: string[] = [];
@@ -123,7 +160,7 @@ export async function GET(request: NextRequest) {
         estado: "ok",
         tokens_input: usage.promptTokenCount ?? null,
         tokens_output: usage.candidatesTokenCount ?? null,
-        coste_estimado: estimarCoste(usage),
+        coste_estimado: costeTotal,
       });
 
       const base = `/${municipio.slug}`;

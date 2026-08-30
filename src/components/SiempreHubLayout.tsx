@@ -6,12 +6,14 @@ import ListaEventos from "./ListaEventos";
 import ExpandibleSeccion from "./ExpandibleSeccion";
 import TarjetaPlanDestacado from "./TarjetaPlanDestacado";
 import HeroPortada from "./HeroPortada";
+import { IntroSeleccion, FaqSeleccion } from "./ResumenSeleccion";
 import { getEventosActivos, getEventosGratisActivos, getPlanesDestacadosDeMunicipio } from "@/lib/queries";
 import { construirFiltrosTemporales, construirFiltrosSecundarios, hrefFiltro, type Extra } from "@/lib/filtros";
 import { buscarImagenHero } from "@/lib/heroImage";
 import { proximosMesesSlugs } from "@/lib/dates";
 import { ordenarPorRelevanciaConDiversidad } from "@/lib/ordenEventos";
-import { piezasTemporales } from "@/lib/resumenSeleccion";
+import { piezasTemporales, construirFaqSeleccion } from "@/lib/resumenSeleccion";
+import { construirFaqJsonLd } from "@/lib/structuredData";
 import type { MunicipioConComunidad } from "@/lib/queries";
 
 // Ver conversación: se muestran 20-25 de entrada, con "ver más" para
@@ -92,6 +94,20 @@ export default async function SiempreHubLayout({
   const genericosVisibles = genericos.slice(0, MAX_GENERICOS_VISIBLES);
   const genericosResto = genericos.slice(MAX_GENERICOS_VISIBLES);
 
+  // Mismo resumen narrativo + FAQ que ya llevan hoy/finde/esta semana (ver
+  // ResumenSeleccion/resumenSeleccion.ts) — el sistema ya soporta la
+  // vigencia "siempre" (aperturaSiempre existe desde el principio), solo
+  // faltaba conectarlo aquí: sin esto, el hub del municipio (la página con
+  // más autoridad de cada uno) no tenía ni un párrafo de texto único ni
+  // FAQ propias, solo tarjetas — un hueco real de cara a SEO.
+  const itemsResumen = eventos.map((e) => ({
+    categoria: e.categoria,
+    fechaActualizacion: e.ultima_deteccion,
+    puntual: e.fecha_inicio !== null,
+  }));
+  const preguntas = await construirFaqSeleccion(itemsResumen, municipio.nombre, "siempre", extra);
+  const jsonLdFaq = construirFaqJsonLd(preguntas);
+
   const tituloDestacados = extra ? tHome(CLAVE_DESTACADOS[extra], { municipio: municipio.nombre }) : tHome("tituloDestacados", { municipio: municipio.nombre });
   const tituloTodo = extra ? tHome(CLAVE_TODO[extra], { municipio: municipio.nombre }) : tHome("tituloTodo", { municipio: municipio.nombre });
   const { calificador } = await piezasTemporales("siempre", extra);
@@ -106,6 +122,9 @@ export default async function SiempreHubLayout({
 
   return (
     <main className="flex-1 bg-dots">
+      {jsonLdFaq && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }} />
+      )}
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Breadcrumb
           items={[
@@ -121,6 +140,8 @@ export default async function SiempreHubLayout({
         <HeroPortada imagenHero={imagenHero} alt={municipio.nombre} titulo={titulo} />
 
         <FiltrosPagina primarios={primarios} secundarios={secundarios} />
+
+        <IntroSeleccion items={itemsResumen} municipio={municipio.nombre} vigencia="siempre" extra={extra} />
 
         {destacados.length > 0 && (
           <section className="mb-10">
@@ -158,6 +179,8 @@ export default async function SiempreHubLayout({
             ))}
           </div>
         </section>
+
+        <FaqSeleccion preguntas={preguntas} />
 
         {children}
       </div>

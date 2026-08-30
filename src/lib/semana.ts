@@ -31,6 +31,16 @@ export function ordenarPorDiaDeSemana(
   });
 
   relevantes.sort((a, b) => {
+    // Cuántos días de esta semana ocupa: un puntual de un solo día (o dos)
+    // es más "puntual" de verdad que uno que dura toda la semana (ej. la
+    // temporada completa de un recinto) — este manda antes que el orden
+    // cronológico, para que lo realmente concreto no quede por detrás de
+    // algo disponible cualquier día solo porque cae antes en el calendario
+    // (ver conversación). Los genéricos (sin fecha, `dias` null) siempre
+    // van last, con una duración "infinita" que ningún puntual real alcanza.
+    const duracionA = a.dias ? a.dias.filter(Boolean).length : 8;
+    const duracionB = b.dias ? b.dias.filter(Boolean).length : 8;
+    if (duracionA !== duracionB) return duracionA - duracionB;
     const indiceA = a.dias ? a.dias.indexOf(true) : 99;
     const indiceB = b.dias ? b.dias.indexOf(true) : 99;
     if (indiceA !== indiceB) return indiceA - indiceB;

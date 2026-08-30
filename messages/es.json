@@ -63,7 +63,8 @@
     "vacioSiempre": "Todavía no hay planes activos ahora mismo. Vuelve a revisar en unos días.",
     "vacioSiempreGratis": "Todavía no hay planes gratis activos ahora mismo. Vuelve a revisar en unos días.",
     "reservar": "Reservar →",
-    "aMinDe": "A {minutos} min de {municipio}"
+    "aMinDe": "A {minutos} min de {municipio}",
+    "masPlanesTodoElAno": "Más planes todo el año en {municipio}"
   },
   "ComunidadHome": {
     "titulo": "Qué hacer en {comunidad}"
@@ -157,6 +158,7 @@
     "donde": "Dónde",
     "horario": "Horario",
     "precio": "Precio",
+    "fecha": "Fecha",
     "fechas": "Fechas",
     "fuente": "Fuente",
     "verMasInformacion": "Ver más información",
@@ -293,6 +295,8 @@
     "aperturaSiempre": "En {municipio} no faltan planes{calificador}",
     "introConDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {**un plan en total**} other {**# planes en total**}}, con {frases}.",
     "introSinDesglose": "{apertura}: {total, plural, =0 {no hay planes activos ahora mismo} one {**un plan en total**} other {**# planes en total**}}.",
+    "introSiempreConDesglose": "{apertura}, con {frases} entre mucho más para descubrir durante todo el año.",
+    "introSiempreSinDesglose": "{apertura}, con opciones para todos los gustos durante todo el año.",
     "tituloLista": "Planes{calificador} en {municipio}{temporal}",
     "flavorConciertos": "para alargar la noche hasta tarde",
     "flavorTeatro": "para una noche distinta",

@@ -1,8 +1,9 @@
 import { Sparkles, Navigation } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import TextoConNegritas from "./TextoConNegritas";
 import { urlFotoProxy } from "@/lib/places";
+import { localizado } from "@/lib/contenidoLocalizado";
 import type { PlanConMunicipio } from "@/lib/queries";
 
 // Tarjeta de la portada MVP (ver conversación): igual que las de PlanList,
@@ -19,13 +20,15 @@ export default async function TarjetaPlanDestacado({
   etiquetaEventoPuntual: string;
   mostrarMunicipio?: boolean;
 }) {
-  const t = await getTranslations("PlanList");
+  const [t, locale] = await Promise.all([getTranslations("PlanList"), getLocale()]);
   const base = `/${plan.municipio_slug}`;
   const href = plan.evento_slug ? `${base}/eventos/${plan.evento_slug}` : base;
   // Cartel real primero (poco frecuente); si no, foto del lugar vía Google
   // Places — mismo criterio que PlanList.tsx/ListaEventos.tsx.
   const foto = plan.evento_cartel_url ?? plan.evento_foto_lugar_nombre ?? undefined;
   const esCartel = Boolean(plan.evento_cartel_url);
+  const titulo = localizado(plan.titulo, plan.evento_titulo_en, locale);
+  const descripcion = localizado(plan.descripcion, plan.evento_descripcion_en, locale);
 
   return (
     <Link href={href} className="card-sticker relative block p-4 pt-6">
@@ -66,9 +69,9 @@ export default async function TarjetaPlanDestacado({
               {t("aMinDe", { minutos: plan.evento_zona_cercana_minutos, municipio: plan.municipio_nombre })}
             </span>
           )}
-          <h3 className="font-extrabold text-base text-balance">{plan.titulo}</h3>
+          <h3 className="font-extrabold text-base text-balance">{titulo}</h3>
           <p className="text-sm mt-1 line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
-            <TextoConNegritas texto={plan.descripcion.split("\n\n")[0]} />
+            <TextoConNegritas texto={descripcion.split("\n\n")[0]} />
           </p>
         </div>
       </div>

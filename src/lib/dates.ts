@@ -77,6 +77,18 @@ export function lunesDeLaSemanaActual(): Date {
   return lunes;
 }
 
+// Contador de semanas naturales desde un lunes de referencia fijo — no es
+// el número ISO oficial, solo necesita crecer de una semana a la siguiente
+// de forma estable, para repartir por rotación tareas que no caben todas
+// en la misma semana (ej. qué meses lejanos tocan esta semana en
+// generate-monthly — ver conversación sobre coste).
+export function numeroSemanaDesde2020(): number {
+  const lunes = lunesDeLaSemanaActual();
+  const epoch = new Date(2020, 0, 6);
+  const dias = Math.round((lunes.getTime() - epoch.getTime()) / 86400000);
+  return Math.floor(dias / 7);
+}
+
 // El sábado y domingo de "este fin de semana": si hoy ya es sábado o
 // domingo, ese es el fin de semana en curso, no el siguiente.
 function proximoFinDeSemana(hoy: Date): { sabado: Date; domingo: Date } {
@@ -280,13 +292,17 @@ export function etiquetaDiaFinde(
 }
 
 // Qué fecha ISO usar para pedir el tiempo de un evento de fin de semana: el
-// domingo si el evento es solo de domingo, el sábado en cualquier otro caso
-// (incluye "ambos días" y "sin fecha conocida", donde el sábado es la mejor
-// referencia disponible).
+// domingo si el evento es solo de domingo; el sábado si es solo de sábado.
+// Si cubre los DOS días, no basta con elegir siempre sábado por defecto — si
+// hoy ya es domingo, el sábado ya ha pasado y preguntar su tiempo no sirve
+// de nada (ver conversación): se usa hoy si hoy es uno de los dos días del
+// evento, y solo se cae al sábado como referencia por defecto antes de que
+// empiece el fin de semana (o si no se conoce la fecha).
 export function fechaFindeParaTiempo(fechaInicio: string | null, fechaFin: string | null): string {
   const incluidos = diasFindeIncluidos(fechaInicio, fechaFin);
   const { sabado, domingo } = fechasFinDeSemanaISO();
   if (incluidos?.domingo && !incluidos.sabado) return domingo;
+  if (incluidos?.sabado && incluidos?.domingo && hoyISO() === domingo) return domingo;
   return sabado;
 }
 
@@ -340,7 +356,11 @@ export function etiquetaDiaSemana(dias: boolean[], locale: string = "es"): strin
     if (incluido) acc.push(i);
     return acc;
   }, []);
-  if (indices.length === 0) return null;
+  // Más de 3 días de 7 ya no es información que acote nada real (roza "toda
+  // la semana") — la etiqueta solo aporta cuando de verdad reduce a un día,
+  // dos o tres concretos (ver conversación: "domingo a sábado" en un plan
+  // que dura semanas no dice nada útil, mejor no mostrar nada).
+  if (indices.length === 0 || indices.length > 3) return null;
 
   const nombres = indices.map((i) => nombresDia[fechas[i].getDay()]);
   if (nombres.length === 1) return nombres[0];
@@ -349,4 +369,16 @@ export function etiquetaDiaSemana(dias: boolean[], locale: string = "es"): strin
   const conector = locale === "en" ? "to" : "a";
   if (esConsecutivo) return `${nombres[0]} ${conector} ${nombres[nombres.length - 1].toLowerCase()}`;
   return nombres.join(", ");
+}
+
+// Etiqueta para un "generico" con patrón semanal fijo (ej. "Jueves", o
+// "Sábado y domingo") — a diferencia de etiquetaDiaSemana, esto no mira
+// fechas de esta semana concreta: son los días 0-6 (dias_semana, ver
+// migración 0019) en que ese plan recurre cada semana del año.
+export function etiquetaDiasSemanaGenerico(dias: number[], locale: string = "es"): string {
+  const nombresDia = NOMBRES_DIA_POR_LOCALE[locale] ?? NOMBRES_DIA_POR_LOCALE.es;
+  const nombres = [...dias].sort((a, b) => a - b).map((d) => nombresDia[d]);
+  if (nombres.length === 1) return nombres[0];
+  const conector = locale === "en" ? "and" : "y";
+  return `${nombres.slice(0, -1).join(", ")} ${conector} ${nombres[nombres.length - 1].toLowerCase()}`;
 }

@@ -44,10 +44,11 @@ export default async function EventosPageLayout({
   enlaceMasPlanes?: { href: string; texto: string };
 }) {
   const base = `/${municipioSlug}`;
-  const [primarios, secundarios, tNav] = await Promise.all([
+  const [primarios, secundarios, tNav, tPlanList] = await Promise.all([
     construirFiltrosTemporales(base, current.vigencia, current.extra),
     construirFiltrosSecundarios(base, current.vigencia, current.extra),
     getTranslations("Nav"),
+    getTranslations("PlanList"),
   ]);
   const imagenHero = buscarImagenHero(municipio.slug);
   const itemsResumen = eventos.map((e) => ({
@@ -91,12 +92,20 @@ export default async function EventosPageLayout({
           mensajeVacio={mensajeVacio}
           municipioNombre={municipio.nombre}
         />
-        {enlaceMasPlanes && (
+        {enlaceMasPlanes ? (
           <p className="mt-8 text-center">
             <Link href={enlaceMasPlanes.href} className="btn-primary text-base px-6 py-3">
               {enlaceMasPlanes.texto} →
             </Link>
           </p>
+        ) : (
+          current.vigencia !== "siempre" && (
+            <p className="mt-8 text-center">
+              <Link href={base} className="btn-secondary text-base px-6 py-3">
+                {tPlanList("masPlanesTodoElAno", { municipio: municipio.nombre })} →
+              </Link>
+            </p>
+          )
         )}
         <FaqSeleccion preguntas={preguntas} />
       </div>

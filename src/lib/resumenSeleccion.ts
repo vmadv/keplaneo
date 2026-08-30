@@ -225,6 +225,23 @@ export async function construirIntroNarrativa(
             : "",
         });
 
+  // "Siempre" no lleva ningún número (ni el total ni el desglose por
+  // categoría) — a diferencia de hoy/finde/semana (donde el recuento
+  // coincide con lo que de verdad se ve en la página), aquí el catálogo
+  // completo no cabe entero (destacados + "ver más" en genéricos), así que
+  // cualquier cifra concreta podía leerse como una promesa que la página no
+  // cumple del todo (ver conversación). Se listan los NOMBRES de categoría
+  // sin cantidad, no la frase con matiz que sí usan el resto de vigencias.
+  if (vigencia === "siempre") {
+    const nombresCategorias = contarCategorias(items)
+      .slice(0, TOP_CATEGORIAS_INTRO)
+      .map((c) => etiquetaParaFrase(c.categoria, t, tCategorias));
+    const frasesGenericas = new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(nombresCategorias);
+    return frasesGenericas
+      ? t("introSiempreConDesglose", { apertura, frases: frasesGenericas })
+      : t("introSiempreSinDesglose", { apertura });
+  }
+
   const top = contarCategorias(items).slice(0, TOP_CATEGORIAS_INTRO);
   const frasesCategorias = top.map((c) => construirFraseCategoria(t, tCategorias, c));
   const frases = new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(frasesCategorias);
