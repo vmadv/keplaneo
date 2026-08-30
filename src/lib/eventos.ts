@@ -55,6 +55,18 @@ function quitarMunicipio(texto: string, municipioNombre: string): string {
   return texto.replace(new RegExp(`\\s*,?\\s*(de\\s+)?${escapado}\\s*$`, "i"), "").trim();
 }
 
+// mismoEvento a secas también se deja engañar por el nombre del municipio
+// cuando aparece en el TÍTULO (no solo en la ubicación): "Visita cultural
+// al Castillo de Alcalá de Guadaíra" y "Visita cultural al Museo de Alcalá
+// de Guadaíra" comparten "visita/cultural/alcalá/guadaíra" y ya superan el
+// umbral aunque "castillo" y "museo" no coincidan en absoluto — ver
+// conversación (detectado limpiando duplicados). Quitar el nombre del
+// municipio del título antes de comparar es la misma idea que ya se
+// aplica a la ubicación en mismoLugarGenerico.
+function mismoTitulo(a: string, b: string, municipioNombre: string): boolean {
+  return mismoEvento(quitarMunicipio(a, municipioNombre), quitarMunicipio(b, municipioNombre));
+}
+
 function mismoLugarGenerico(
   a: { esGenerico: boolean; ubicacion: string | null | undefined },
   b: { esGenerico: boolean; ubicacion: string | null | undefined },
@@ -126,7 +138,7 @@ export async function upsertEventosDelLote(
   for (let i = 0; i < planes.length; i++) {
     const grupo = grupos.find(
       (g) =>
-        mismoEvento(planes[g[0]].titulo, planes[i].titulo) ||
+        mismoTitulo(planes[g[0]].titulo, planes[i].titulo, municipioNombre) ||
         mismoLugarGenerico(
           { esGenerico: planes[g[0]].tipo === "generico", ubicacion: planes[g[0]].ubicacion },
           { esGenerico: planes[i].tipo === "generico", ubicacion: planes[i].ubicacion },
@@ -168,7 +180,7 @@ export async function upsertEventosDelLote(
 
     const idxExistente = disponibles.findIndex(
       (e) =>
-        mismoEvento(e.titulo, p.titulo) ||
+        mismoTitulo(e.titulo, p.titulo, municipioNombre) ||
         mismoLugarGenerico(
           { esGenerico: e.fecha_inicio === null, ubicacion: e.ubicacion },
           { esGenerico: p.tipo === "generico", ubicacion: p.ubicacion },
