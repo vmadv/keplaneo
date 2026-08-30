@@ -44,7 +44,7 @@ export default function TituloHeroAnimado({
 
   return (
     <LazyMotion features={domAnimation}>
-      <h1 className="flex flex-col items-start gap-3 text-5xl font-extrabold mb-3 text-balance">
+      <h1 className="flex flex-col items-start gap-3 text-5xl font-extrabold mb-6 text-balance">
         <span className="relative inline-block">
           <span
             className="bg-clip-text text-transparent"
