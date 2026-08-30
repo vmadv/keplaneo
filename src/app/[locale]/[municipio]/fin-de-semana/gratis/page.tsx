@@ -5,6 +5,7 @@ import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesGratisPorVigencia } from "@/lib/queries";
 import { rangoFinDeSemanaLegible } from "@/lib/dates";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { hrefFiltro } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
@@ -40,6 +41,7 @@ export default async function FindeGratisPage({
     getTranslations("Filtros"),
     getLocale(),
   ]);
+  const hrefFinde = hrefFiltro(locale, `/${municipioSlug}`, "finde");
 
   return (
     <PlanesPageLayout
@@ -50,11 +52,11 @@ export default async function FindeGratisPage({
       planes={planes}
       current={{ vigencia: "finde", extra: "gratis" }}
       enlaceMasPlanes={{
-        href: `/${municipioSlug}/fin-de-semana`,
+        href: hrefFinde,
         texto: tFinde("masPlanes", { municipio: municipio.nombre }),
       }}
       breadcrumbExtra={[
-        { label: tFiltros("finde"), href: `/${municipioSlug}/fin-de-semana` },
+        { label: tFiltros("finde"), href: hrefFinde },
         { label: tFiltros("gratis") },
       ]}
     />

@@ -92,6 +92,25 @@ function pathsDelMunicipio(base: string): string[] {
   ];
 }
 
+// Mismas páginas, en inglés — ver generate-daily/route.ts.
+function pathsDelMunicipioEn(base: string): string[] {
+  const baseEn = `/en${base}`;
+  return [
+    baseEn,
+    `${baseEn}/today`,
+    `${baseEn}/today/couple`,
+    `${baseEn}/today/with-kids`,
+    `${baseEn}/this-weekend`,
+    `${baseEn}/this-weekend/couple`,
+    `${baseEn}/this-weekend/with-kids`,
+    `${baseEn}/this-week`,
+    `${baseEn}/this-week/couple`,
+    `${baseEn}/this-week/with-kids`,
+    `${baseEn}/this-week/free`,
+    `${baseEn}/free`,
+  ];
+}
+
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -209,9 +228,11 @@ export async function GET(request: NextRequest) {
       });
 
       const base = `/${municipio.slug}`;
-      [...pathsDelMunicipio(base), ...Array.from(vinculos.values()).map((v) => `${base}/eventos/${v.slug}`)].forEach(
-        (path) => revalidatePath(path)
-      );
+      [
+        ...pathsDelMunicipio(base),
+        ...pathsDelMunicipioEn(base),
+        ...Array.from(vinculos.values()).flatMap((v) => [`${base}/eventos/${v.slug}`, `/en${base}/eventos/${v.slug}`]),
+      ].forEach((path) => revalidatePath(path));
 
       return { municipio: municipio.slug, estado: "ok", planes: planes.length, filas: filas.length };
     } catch (err) {

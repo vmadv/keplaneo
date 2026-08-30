@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generarPlanesDelMes, traducirPlanesAIngles, estimarCoste, estimarCosteTraduccion } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
-import { hoyISO, proximosMesesSlugs, fechaDeHoyLegible, numeroSemanaDesde2020 } from "@/lib/dates";
+import { hoyISO, proximosMesesSlugs, fechaDeHoyLegible, numeroSemanaDesde2020, mesSlugParaLocale } from "@/lib/dates";
 
 export const maxDuration = 300;
 
@@ -148,7 +148,11 @@ export async function GET(request: NextRequest) {
 
       const base = `/${municipio.slug}`;
       revalidatePath(`${base}/${mes}`);
-      Array.from(vinculos.values()).forEach((v) => revalidatePath(`${base}/eventos/${v.slug}`));
+      revalidatePath(`/en${base}/${mesSlugParaLocale(mes, "en")}`);
+      Array.from(vinculos.values()).forEach((v) => {
+        revalidatePath(`${base}/eventos/${v.slug}`);
+        revalidatePath(`/en${base}/eventos/${v.slug}`);
+      });
 
       return { municipio: municipio.slug, mes, estado: "ok", planes: planes.length };
     } catch (err) {

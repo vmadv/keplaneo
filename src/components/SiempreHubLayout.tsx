@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import Breadcrumb, { type BreadcrumbItem } from "./Breadcrumb";
 import FiltrosPagina from "./FiltrosPagina";
@@ -10,7 +10,7 @@ import { IntroSeleccion, FaqSeleccion } from "./ResumenSeleccion";
 import { getEventosActivos, getEventosGratisActivos, getPlanesDestacadosDeMunicipio } from "@/lib/queries";
 import { construirFiltrosTemporales, construirFiltrosSecundarios, hrefFiltro, type Extra } from "@/lib/filtros";
 import { buscarImagenHero } from "@/lib/heroImage";
-import { proximosMesesSlugs } from "@/lib/dates";
+import { proximosMesesSlugs, mesSlugParaLocale } from "@/lib/dates";
 import { ordenarPorRelevanciaConDiversidad } from "@/lib/ordenEventos";
 import { piezasTemporales, construirFaqSeleccion } from "@/lib/resumenSeleccion";
 import { construirFaqJsonLd } from "@/lib/structuredData";
@@ -65,7 +65,7 @@ export default async function SiempreHubLayout({
   const base = `/${municipioSlug}`;
   const imagenHero = buscarImagenHero(municipio.slug);
 
-  const [primariosSiempre, secundarios, tNav, tHome, tBadges, tPlanList, tFiltros, tMeses, destacados, eventos] =
+  const [primariosSiempre, secundarios, tNav, tHome, tBadges, tPlanList, tFiltros, tMeses, locale, destacados, eventos] =
     await Promise.all([
       construirFiltrosTemporales(base, "siempre", extra),
       construirFiltrosSecundarios(base, "siempre", extra),
@@ -75,6 +75,7 @@ export default async function SiempreHubLayout({
       getTranslations("PlanList"),
       getTranslations("Filtros"),
       getTranslations("Meses"),
+      getLocale(),
       getPlanesDestacadosDeMunicipio(
         municipio,
         4,
@@ -88,7 +89,7 @@ export default async function SiempreHubLayout({
   // Ninguna pastilla de "Cuándo" queda marcada activa por defecto — "siempre"
   // es la franja atemporal que vive aquí técnicamente, pero mostrarla
   // marcada sugiere que hay que pulsarla para que aplique (ver conversación).
-  const primarios = primariosSiempre.map((item) => (item.href === hrefFiltro(base, "siempre", extra) ? { ...item, activo: false } : item));
+  const primarios = primariosSiempre.map((item) => (item.href === hrefFiltro(locale, base, "siempre", extra) ? { ...item, activo: false } : item));
 
   const genericos = ordenarPorRelevanciaConDiversidad(eventos.filter((e) => e.fecha_inicio === null));
   const genericosVisibles = genericos.slice(0, MAX_GENERICOS_VISIBLES);
@@ -114,10 +115,10 @@ export default async function SiempreHubLayout({
 
   const mesesProximos = proximosMesesSlugs(2);
   const pastillasRapidas = [
-    { label: tFiltros("hoy"), href: hrefFiltro(base, "hoy", extra) },
-    { label: tFiltros("finde"), href: hrefFiltro(base, "finde", extra) },
-    { label: tFiltros("semana"), href: hrefFiltro(base, "semana", extra) },
-    ...mesesProximos.map((mes) => ({ label: capitalizar(tMeses(mes)), href: `${base}/${mes}` })),
+    { label: tFiltros("hoy"), href: hrefFiltro(locale, base, "hoy", extra) },
+    { label: tFiltros("finde"), href: hrefFiltro(locale, base, "finde", extra) },
+    { label: tFiltros("semana"), href: hrefFiltro(locale, base, "semana", extra) },
+    ...mesesProximos.map((mes) => ({ label: capitalizar(tMeses(mes)), href: `${base}/${mesSlugParaLocale(mes, locale)}` })),
   ];
 
   return (
@@ -154,7 +155,7 @@ export default async function SiempreHubLayout({
               ))}
             </ul>
             <p className="mt-4">
-              <Link href={hrefFiltro(base, "semana", extra)} className="btn-secondary text-sm">
+              <Link href={hrefFiltro(locale, base, "semana", extra)} className="btn-secondary text-sm">
                 {tHome("verMasEstaSemana", { municipio: municipio.nombre, calificador })} →
               </Link>
             </p>

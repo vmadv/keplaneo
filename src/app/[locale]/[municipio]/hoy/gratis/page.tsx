@@ -5,6 +5,7 @@ import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesGratisPorVigencia } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { hrefFiltro } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
@@ -40,6 +41,7 @@ export default async function HoyGratisPage({
     getTranslations("Filtros"),
     getLocale(),
   ]);
+  const hrefHoy = hrefFiltro(locale, `/${municipioSlug}`, "hoy");
 
   return (
     <PlanesPageLayout
@@ -50,11 +52,11 @@ export default async function HoyGratisPage({
       planes={planes}
       current={{ vigencia: "hoy", extra: "gratis" }}
       enlaceMasPlanes={{
-        href: `/${municipioSlug}/hoy`,
+        href: hrefHoy,
         texto: tHoy("masPlanes", { municipio: municipio.nombre }),
       }}
       breadcrumbExtra={[
-        { label: tFiltros("hoy"), href: `/${municipioSlug}/hoy` },
+        { label: tFiltros("hoy"), href: hrefHoy },
         { label: tFiltros("gratis") },
       ]}
     />

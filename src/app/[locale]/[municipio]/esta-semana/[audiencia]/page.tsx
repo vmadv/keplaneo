@@ -6,12 +6,12 @@ import { getMunicipio, getEventosActivos } from "@/lib/queries";
 import { rangoSemanaLegible } from "@/lib/dates";
 import { ordenarPorDiaDeSemana } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
-import { AUDIENCIAS_URL, esAudienciaUrlValida, audienciaDesdeUrl } from "@/lib/filtros";
+import { AUDIENCIAS_URL, normalizarAudienciaUrl, audienciaUrlParaLocale, audienciaDesdeUrl, hrefFiltro } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
-export function generateStaticParams() {
-  return AUDIENCIAS_URL.map((audiencia) => ({ audiencia }));
+export function generateStaticParams({ params }: { params: { locale: string } }) {
+  return AUDIENCIAS_URL.map((audiencia) => ({ audiencia: audienciaUrlParaLocale(audiencia, params.locale) }));
 }
 
 function minuscula(texto: string): string {
@@ -23,8 +23,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ municipio: string; audiencia: string }>;
 }): Promise<Metadata> {
-  const { municipio: municipioSlug, audiencia } = await params;
-  if (!esAudienciaUrlValida(audiencia)) return {};
+  const { municipio: municipioSlug, audiencia: audienciaUrl } = await params;
+  const audiencia = normalizarAudienciaUrl(audienciaUrl);
+  if (!audiencia) return {};
   const extra = audienciaDesdeUrl(audiencia);
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
@@ -45,9 +46,10 @@ export default async function EstaSemanaAudienciaPage({
 }: {
   params: Promise<{ locale: string; municipio: string; audiencia: string }>;
 }) {
-  const { locale, municipio: municipioSlug, audiencia } = await params;
+  const { locale, municipio: municipioSlug, audiencia: audienciaUrl } = await params;
   setRequestLocale(locale);
-  if (!esAudienciaUrlValida(audiencia)) notFound();
+  const audiencia = normalizarAudienciaUrl(audienciaUrl);
+  if (!audiencia) notFound();
   const extra = audienciaDesdeUrl(audiencia);
 
   const municipio = await getMunicipio(municipioSlug);
@@ -63,6 +65,7 @@ export default async function EstaSemanaAudienciaPage({
   ]);
   const { eventos, etiquetas } = ordenarPorDiaDeSemana(todos, locale);
   const etiquetaAudiencia = minuscula(tAudiencia(extra));
+  const hrefSemana = hrefFiltro(locale, base, "semana");
 
   return (
     <EventosPageLayout
@@ -75,9 +78,9 @@ export default async function EstaSemanaAudienciaPage({
       contexto="semana"
       obtenerEtiqueta={(evento) => etiquetas.get(evento.id) ?? null}
       mensajeVacio={tPlanList("vacioSemanaFiltro")}
-      enlaceMasPlanes={{ href: `${base}/esta-semana`, texto: tSemana("masPlanes", { municipio: municipio.nombre }) }}
+      enlaceMasPlanes={{ href: hrefSemana, texto: tSemana("masPlanes", { municipio: municipio.nombre }) }}
       breadcrumbExtra={[
-        { label: tFiltros("semana"), href: `${base}/esta-semana` },
+        { label: tFiltros("semana"), href: hrefSemana },
         { label: tAudiencia(extra) },
       ]}
     />

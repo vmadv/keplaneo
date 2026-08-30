@@ -33,6 +33,27 @@ function pathsDelMunicipio(base: string): string[] {
   ];
 }
 
+// Mismas páginas, en inglés — las URLs usan palabras distintas (ver
+// conversación) así que Next las trata como rutas de caché aparte, no
+// basta con revalidar la versión en español.
+function pathsDelMunicipioEn(base: string): string[] {
+  const baseEn = `/en${base}`;
+  return [
+    baseEn,
+    `${baseEn}/today`,
+    `${baseEn}/today/couple`,
+    `${baseEn}/today/with-kids`,
+    `${baseEn}/this-weekend`,
+    `${baseEn}/this-weekend/couple`,
+    `${baseEn}/this-weekend/with-kids`,
+    `${baseEn}/this-week`,
+    `${baseEn}/this-week/couple`,
+    `${baseEn}/this-week/with-kids`,
+    `${baseEn}/this-week/free`,
+    `${baseEn}/free`,
+  ];
+}
+
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -164,9 +185,11 @@ export async function GET(request: NextRequest) {
       });
 
       const base = `/${municipio.slug}`;
-      [...pathsDelMunicipio(base), ...vinculosNuevos.map((slug) => `${base}/eventos/${slug}`)].forEach((path) =>
-        revalidatePath(path)
-      );
+      [
+        ...pathsDelMunicipio(base),
+        ...pathsDelMunicipioEn(base),
+        ...vinculosNuevos.flatMap((slug) => [`${base}/eventos/${slug}`, `/en${base}/eventos/${slug}`]),
+      ].forEach((path) => revalidatePath(path));
 
       resultados.push({ municipio: municipio.slug, estado: "ok", novedades: planes.length, filas: filasInsertadas });
     } catch (err) {

@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { hrefFiltro, type Extra } from "@/lib/filtros";
 
 type Vigencia = "hoy" | "finde" | "semana";
@@ -35,7 +35,7 @@ export default async function MunicipioPageNav({
   // combinaciones) se muestran todas sin excluir ninguna.
   current?: { vigencia: Vigencia; audiencia?: Audiencia };
 }) {
-  const t = await getTranslations("MunicipioPageNav");
+  const [t, locale] = await Promise.all([getTranslations("MunicipioPageNav"), getLocale()]);
   const base = `/${municipioSlug}`;
   const otros = current
     ? COMBOS.filter((c) => !(c.vigencia === current.vigencia && c.audiencia === current.audiencia))
@@ -46,7 +46,7 @@ export default async function MunicipioPageNav({
       <h2 className="text-lg font-extrabold mb-3">{t("titulo", { municipio: municipioNombre })}</h2>
       <div className="flex flex-wrap gap-2">
         {otros.map((c) => (
-          <Link key={c.clave} href={hrefFiltro(base, c.vigencia, c.audiencia)} className="btn-secondary text-sm px-4 py-2">
+          <Link key={c.clave} href={hrefFiltro(locale, base, c.vigencia, c.audiencia)} className="btn-secondary text-sm px-4 py-2">
             {t(c.clave)}
           </Link>
         ))}

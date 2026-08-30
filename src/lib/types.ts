@@ -239,4 +239,24 @@ export const MESES = [
   "diciembre",
 ] as const;
 
+// Slug de mes para la URL en inglés (ver conversación: revierte la
+// decisión anterior de mantener los meses siempre en español en la URL).
+// El slug en español sigue siendo el único que entienden queries.ts y la
+// columna `vigencia` de `planes` — este mapeo es solo para lo que ve el
+// visitante en /en/..., normalizarMesSlug (en dates.ts) hace la vuelta.
+export const MESES_EN: Record<(typeof MESES)[number], string> = {
+  enero: "january",
+  febrero: "february",
+  marzo: "march",
+  abril: "april",
+  mayo: "may",
+  junio: "june",
+  julio: "july",
+  agosto: "august",
+  septiembre: "september",
+  octubre: "october",
+  noviembre: "november",
+  diciembre: "december",
+};
+
 export type MesSlug = (typeof MESES)[number];

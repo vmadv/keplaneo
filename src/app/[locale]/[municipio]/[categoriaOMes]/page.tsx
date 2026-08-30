@@ -8,7 +8,7 @@ import ListaEventos from "@/components/ListaEventos";
 import FiltroTemporal from "@/components/FiltroTemporal";
 import FiltrosPagina from "@/components/FiltrosPagina";
 import HeroPortada from "@/components/HeroPortada";
-import { esMesSlugValido, proximosMesesSlugs } from "@/lib/dates";
+import { normalizarMesSlug, mesSlugParaLocale, proximosMesesSlugs } from "@/lib/dates";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
 import { getMunicipio, getPlanesDelMes, getEventosPorCategoria } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
@@ -17,8 +17,8 @@ import { construirTituloConSufijo } from "@/lib/resumenSeleccion";
 
 export const revalidate = 86400;
 
-export function generateStaticParams() {
-  return proximosMesesSlugs(12).map((mes) => ({ categoriaOMes: mes }));
+export function generateStaticParams({ params }: { params: { locale: string } }) {
+  return proximosMesesSlugs(12).map((mes) => ({ categoriaOMes: mesSlugParaLocale(mes, params.locale) }));
 }
 
 function capitalizar(texto: string): string {
@@ -34,8 +34,9 @@ export async function generateMetadata({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
 
-  if (esMesSlugValido(categoriaOMes)) {
-    const mes = categoriaOMes;
+  const mesNormalizado = normalizarMesSlug(categoriaOMes);
+  if (mesNormalizado) {
+    const mes = mesNormalizado;
     const [tMes, tMeses] = await Promise.all([getTranslations("Mes"), getTranslations("Meses")]);
     const title = await construirTituloConSufijo(
       tMes("titulo", { municipio: municipio.nombre, mes: capitalizar(tMeses(mes)) })
@@ -77,8 +78,9 @@ export default async function CategoriaOMesPage({
   const base = `/${municipioSlug}`;
   const tNav = await getTranslations("Nav");
 
-  if (esMesSlugValido(categoriaOMes)) {
-    const mes = categoriaOMes;
+  const mesActual = normalizarMesSlug(categoriaOMes);
+  if (mesActual) {
+    const mes = mesActual;
     const [planes, primarios, secundarios, tMes, tMeses] = await Promise.all([
       getPlanesDelMes(municipio.id, mes),
       construirFiltrosTemporales(base, mes),

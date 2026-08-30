@@ -1,4 +1,4 @@
-import { MESES, type MesSlug } from "./types";
+import { MESES, MESES_EN, type MesSlug } from "./types";
 
 // Todas las fechas de "hoy"/"esta semana"/"este mes" del sitio son las del
 // calendario de España, no las del huso horario del proceso que ejecuta el
@@ -44,6 +44,24 @@ export function proximosMesesSlugs(cantidad: number): MesSlug[] {
 
 export function esMesSlugValido(valor: string): valor is MesSlug {
   return (MESES as readonly string[]).includes(valor);
+}
+
+const MESES_EN_A_ES: Record<string, MesSlug> = Object.fromEntries(
+  MESES.map((m) => [MESES_EN[m], m])
+) as Record<string, MesSlug>;
+
+// Acepta el slug de la URL en cualquiera de los dos idiomas (español
+// canónico o inglés) y siempre devuelve el español — el único que
+// entienden queries.ts, la columna `vigencia` de `planes` y la clave del
+// namespace "Meses" de las traducciones. Null si no es ninguno de los 24.
+export function normalizarMesSlug(valor: string): MesSlug | null {
+  if (esMesSlugValido(valor)) return valor;
+  return MESES_EN_A_ES[valor] ?? null;
+}
+
+// Para construir hrefs: el slug de mes que corresponde a ESTE locale.
+export function mesSlugParaLocale(mes: MesSlug, locale: string): string {
+  return locale === "en" ? MESES_EN[mes] : mes;
 }
 
 function nombreMes(fecha: Date, locale: string): string {

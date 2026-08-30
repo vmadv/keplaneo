@@ -5,7 +5,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import PlanList from "@/components/PlanList";
 import FiltrosPagina from "@/components/FiltrosPagina";
 import HeroPortada from "@/components/HeroPortada";
-import { esMesSlugValido, proximosMesesSlugs } from "@/lib/dates";
+import { normalizarMesSlug, mesSlugParaLocale, proximosMesesSlugs } from "@/lib/dates";
 import { getMunicipio, getPlanesCategoriaMes } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
@@ -14,12 +14,12 @@ import { buscarImagenHero } from "@/lib/heroImage";
 
 export const revalidate = 86400;
 
-export function generateStaticParams() {
+export function generateStaticParams({ params }: { params: { locale: string } }) {
   // No conocemos aquí la categoría del segmento padre, así que Next
   // combina esta lista con cada valor posible de [categoriaOMes] — de las
   // combinaciones resultantes, solo las que además pasan esCategoriaConPagina
   // (dentro del propio render) llegan a construirse igual.
-  return proximosMesesSlugs(12).map((mes) => ({ mes }));
+  return proximosMesesSlugs(12).map((mes) => ({ mes: mesSlugParaLocale(mes, params.locale) }));
 }
 
 function capitalizar(texto: string): string {
@@ -31,8 +31,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ municipio: string; categoriaOMes: string; mes: string }>;
 }): Promise<Metadata> {
-  const { municipio: municipioSlug, categoriaOMes, mes } = await params;
-  if (!esCategoriaConPagina(categoriaOMes) || !esMesSlugValido(mes)) return {};
+  const { municipio: municipioSlug, categoriaOMes, mes: mesUrl } = await params;
+  const mes = normalizarMesSlug(mesUrl);
+  if (!esCategoriaConPagina(categoriaOMes) || !mes) return {};
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
 
@@ -59,9 +60,10 @@ export default async function CategoriaMesPage({
 }: {
   params: Promise<{ locale: string; municipio: string; categoriaOMes: string; mes: string }>;
 }) {
-  const { locale, municipio: municipioSlug, categoriaOMes, mes } = await params;
+  const { locale, municipio: municipioSlug, categoriaOMes, mes: mesUrl } = await params;
   setRequestLocale(locale);
-  if (!esCategoriaConPagina(categoriaOMes) || !esMesSlugValido(mes)) notFound();
+  const mes = normalizarMesSlug(mesUrl);
+  if (!esCategoriaConPagina(categoriaOMes) || !mes) notFound();
 
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();

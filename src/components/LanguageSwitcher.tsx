@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { traducirRutaAOtroIdioma } from "@/lib/rutasLocale";
 
 const NOMBRES: Record<string, string> = { es: "Español", en: "English" };
 
@@ -63,7 +64,7 @@ export default function LanguageSwitcher() {
         return (
           <Link
             key={locale}
-            href={pathname}
+            href={traducirRutaAOtroIdioma(pathname, locale)}
             locale={locale}
             aria-label={NOMBRES[locale]}
             aria-current={activo ? "true" : undefined}

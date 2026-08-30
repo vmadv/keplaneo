@@ -6,6 +6,7 @@ import { getMunicipio, getEventosGratisActivos } from "@/lib/queries";
 import { rangoSemanaLegible } from "@/lib/dates";
 import { ordenarPorDiaDeSemana } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { hrefFiltro } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
@@ -43,6 +44,7 @@ export default async function EstaSemanaGratisPage({
     getLocale(),
   ]);
   const { eventos, etiquetas } = ordenarPorDiaDeSemana(todos, locale);
+  const hrefSemana = hrefFiltro(locale, base, "semana");
 
   return (
     <EventosPageLayout
@@ -56,11 +58,11 @@ export default async function EstaSemanaGratisPage({
       obtenerEtiqueta={(evento) => etiquetas.get(evento.id) ?? null}
       mensajeVacio={tPlanList("vacioSemanaGratis")}
       enlaceMasPlanes={{
-        href: `/${municipioSlug}/esta-semana`,
+        href: hrefSemana,
         texto: tSemana("masPlanes", { municipio: municipio.nombre }),
       }}
       breadcrumbExtra={[
-        { label: tFiltros("semana"), href: `${base}/esta-semana` },
+        { label: tFiltros("semana"), href: hrefSemana },
         { label: tFiltros("gratis") },
       ]}
     />

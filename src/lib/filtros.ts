@@ -1,61 +1,21 @@
 import { Music, Palette, Drama, Laugh, Trophy, Store, PartyPopper, Clapperboard, type LucideIcon } from "lucide-react";
-import { getTranslations } from "next-intl/server";
-import { esMesSlugValido, proximosMesesSlugs } from "./dates";
+import { getTranslations, getLocale } from "next-intl/server";
+import { esMesSlugValido, proximosMesesSlugs, mesSlugParaLocale } from "./dates";
 import { CATEGORIAS, esCategoriaConPagina } from "./types";
+import { hrefFiltro, segmentoVigencia, type Vigencia, type Extra } from "./rutasLocale";
+
+// hrefFiltro/Vigencia/Extra/AUDIENCIAS_URL/etc. viven en rutasLocale.ts
+// (sin imports de servidor, para que LanguageSwitcher.tsx —client— pueda
+// usar traducirRutaAOtroIdioma sin arrastrar next-intl/server) — se
+// reexportan aquí para no tener que tocar los ~15 archivos que ya
+// importaban esto de "@/lib/filtros".
+export * from "./rutasLocale";
 
 export interface FiltroTemporalItem {
   label: string;
   href: string;
   activo: boolean;
   icono?: LucideIcon;
-}
-
-// "Cuándo" (cuatro franjas, mutuamente excluyentes) y "Filtra más" (a
-// quién va dirigido / precio, también mutuamente excluyente entre sí) son
-// dos ejes independientes que SÍ se pueden combinar — ver conversación.
-// "siempre" es la franja atemporal ("qué hacer en Sevilla" a secas, sin
-// restringir por fecha): vive en las mismas rutas base que ya existían
-// (/sevilla, /sevilla/gratis) en vez de un segmento "/siempre" nuevo.
-export type Vigencia = "siempre" | "hoy" | "finde" | "semana";
-export type Extra = "pareja" | "familia" | "gratis";
-
-const SEGMENTO_VIGENCIA: Record<Exclude<Vigencia, "siempre">, string> = {
-  hoy: "hoy",
-  finde: "fin-de-semana",
-  semana: "esta-semana",
-};
-
-// El slug de "en pareja" cambia según si hay vigencia o no (/hoy/pareja vs
-// /en-pareja); el de "con niños" es el mismo en los dos casos, tal cual se
-// busca de verdad. El valor interno sigue siendo "familia" (así está
-// guardado en la base de datos y en el campo `audiencia` de Gemini) — solo
-// cambia lo que se ve en la URL, ver audienciaDesdeUrl más abajo. "gratis"
-// es igual en los dos casos.
-const SLUG_EXTRA_TEMPORAL: Record<Extra, string> = { pareja: "pareja", familia: "con-ninos", gratis: "gratis" };
-const SLUG_EXTRA_ATEMPORAL: Record<Extra, string> = { pareja: "en-pareja", familia: "con-ninos", gratis: "gratis" };
-
-// Slugs de URL para la ruta dinámica [audiencia] (hoy/finde/esta-semana) —
-// distintos del valor interno "familia" que ya usan queries.ts y la BD.
-export const AUDIENCIAS_URL = ["pareja", "con-ninos"] as const;
-export type AudienciaUrl = (typeof AUDIENCIAS_URL)[number];
-
-export function esAudienciaUrlValida(valor: string): valor is AudienciaUrl {
-  return (AUDIENCIAS_URL as readonly string[]).includes(valor);
-}
-
-export function audienciaDesdeUrl(slug: AudienciaUrl): Extract<Extra, "pareja" | "familia"> {
-  return slug === "con-ninos" ? "familia" : "pareja";
-}
-
-export function hrefFiltro(base: string, vigencia: Vigencia, extra?: Extra): string {
-  // "siempre" sin extra es el hub a secas (`base`) — es la URL corta y
-  // canónica a la que ya apunta "Qué hacer" del menú, la que de verdad
-  // puede posicionar para "qué hacer en {municipio}" (ver conversación:
-  // "no podemos crear una url que se llame siempre").
-  const segVigencia = vigencia === "siempre" ? "" : `/${SEGMENTO_VIGENCIA[vigencia]}`;
-  if (!extra) return `${base}${segVigencia}`;
-  const slugExtra = vigencia === "siempre" ? SLUG_EXTRA_ATEMPORAL[extra] : SLUG_EXTRA_TEMPORAL[extra];
-  return `${base}${segVigencia}/${slugExtra}`;
 }
 
 // Barra de filtros tipo "entradas.com": Hoy / Este fin de semana / Esta
@@ -78,12 +38,16 @@ export async function construirFiltrosTemporales(
   vigenciaActual: string,
   extraActual?: Extra
 ): Promise<FiltroTemporalItem[]> {
-  const [t, tMeses] = await Promise.all([getTranslations("Filtros"), getTranslations("Meses")]);
+  const [t, tMeses, locale] = await Promise.all([
+    getTranslations("Filtros"),
+    getTranslations("Meses"),
+    getLocale(),
+  ]);
   const meses = proximosMesesSlugs(2);
 
   const itemCuando = (vigencia: Exclude<Vigencia, "siempre">, label: string): FiltroTemporalItem => {
     const activo = vigenciaActual === vigencia;
-    return { label, href: hrefFiltro(base, activo ? "siempre" : vigencia, extraActual), activo };
+    return { label, href: hrefFiltro(locale, base, activo ? "siempre" : vigencia, extraActual), activo };
   };
 
   return [
@@ -92,14 +56,14 @@ export async function construirFiltrosTemporales(
     itemCuando("semana", t("semana")),
     {
       label: t("siempre"),
-      href: hrefFiltro(base, "siempre", extraActual),
+      href: hrefFiltro(locale, base, "siempre", extraActual),
       activo: vigenciaActual === "siempre",
     },
     ...meses.map((mes) => {
       const nombre = tMeses(mes);
       return {
         label: nombre.charAt(0).toUpperCase() + nombre.slice(1),
-        href: `${base}/${mes}`,
+        href: `${base}/${mesSlugParaLocale(mes, locale)}`,
         activo: vigenciaActual === mes,
       };
     }),
@@ -145,7 +109,11 @@ export async function construirFiltrosSecundarios(
   // ciegas dentro del desplegable.
   categoriaActual?: string
 ): Promise<FiltrosSecundariosAgrupados> {
-  const [t, tCat] = await Promise.all([getTranslations("Filtros"), getTranslations("Categorias")]);
+  const [t, tCat, locale] = await Promise.all([
+    getTranslations("Filtros"),
+    getTranslations("Categorias"),
+    getLocale(),
+  ]);
   const audiencia: FiltroTemporalItem[] = [];
   const precio: FiltroTemporalItem[] = [];
   const tematica: FiltroTemporalItem[] = [];
@@ -154,7 +122,7 @@ export async function construirFiltrosSecundarios(
     const vigencia = vigenciaActual as Vigencia;
     const itemExtra = (extra: Extra, label: string): FiltroTemporalItem => {
       const activo = extraActual === extra;
-      return { label, href: hrefFiltro(base, vigencia, activo ? undefined : extra), activo };
+      return { label, href: hrefFiltro(locale, base, vigencia, activo ? undefined : extra), activo };
     };
     audiencia.push(itemExtra("pareja", t("enPareja")), itemExtra("familia", t("enFamilia")));
     precio.push(itemExtra("gratis", t("gratis")));
@@ -172,14 +140,16 @@ export async function construirFiltrosSecundarios(
   ) {
     const sufijo =
       vigenciaActual === "hoy"
-        ? "hoy"
+        ? segmentoVigencia(locale, "hoy")
         : vigenciaActual === "finde"
-          ? "fin-de-semana"
+          ? segmentoVigencia(locale, "finde")
           : vigenciaActual === "semana"
-            ? "esta-semana"
+            ? segmentoVigencia(locale, "semana")
             : vigenciaActual === "siempre"
               ? null
-              : vigenciaActual;
+              : esMesSlugValido(vigenciaActual)
+                ? mesSlugParaLocale(vigenciaActual, locale)
+                : vigenciaActual;
     for (const cat of CATEGORIAS.filter(esCategoriaConPagina)) {
       const activo = cat === categoriaActual;
       const destinoActivo = sufijo ? `${base}/${sufijo}` : base;
