@@ -108,25 +108,31 @@ a {
     transform: translate(-1px, -1px);
   }
 
-  /* display:contents saca el <details> del flujo como caja propia para que
-     su <summary> se comporte como una pastilla más dentro de la fila de
-     filtros temporales; el panel desplegable se fuerza a su propia línea
-     con flex-basis:100% (ver .filtro-disclosure-panel en el componente). */
-  .filtro-disclosure {
-    display: contents;
+  /* Fila de pastillas en una sola línea que se desliza en horizontal en vez
+     de saltar a una segunda fila (ver FiltroTemporal.tsx) — sin barra de
+     scroll visible, y con un degradado a la derecha que insinúa que hay
+     más contenido y que se puede arrastrar. */
+  .sin-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
-  .filtro-disclosure > summary {
-    list-style: none;
-    width: fit-content;
-  }
-  .filtro-disclosure > summary::-webkit-details-marker {
+  .sin-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  .filtro-disclosure > summary svg {
-    transition: transform 0.2s ease;
+  .mascara-desvanecido {
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
   }
-  .filtro-disclosure[open] > summary svg {
-    transform: rotate(180deg);
+
+  /* Un par de rebotes cortos (no un bucle infinito, para no resultar
+     cargante) en el icono suelto que indica "aquí también puedes
+     filtrar" — ver conversación. */
+  @keyframes rebote-invitacion {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
+  }
+  .icono-invitacion {
+    animation: rebote-invitacion 0.9s ease-in-out 2;
   }
 
   .card-sticker {
@@ -162,17 +168,6 @@ a {
     border: 2px solid var(--foreground);
   }
 
-  /* Empuja la mirada hacia las pastillas de al lado — un par de rebotes
-     cortos hacia la derecha (la etiqueta va en línea con ellas, no encima)
-     en vez de un bucle infinito, para invitar a combinar los dos filtros
-     sin resultar cargante. */
-  @keyframes rebote-invitacion {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(3px); }
-  }
-  .icono-invitacion {
-    animation: rebote-invitacion 0.9s ease-in-out 2;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

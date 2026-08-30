@@ -1,28 +1,38 @@
 import type { ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { EraserAddIcon } from "./icons/EraserAddIcon";
 import type { FiltroTemporalItem } from "@/lib/filtros";
 
 export default function FiltroTemporal({
   items,
   className = "mb-8",
   extra,
-  etiqueta,
   compacto = false,
+  scrollable = false,
   invita = false,
 }: {
   items: FiltroTemporalItem[];
   className?: string;
+  // Elemento suelto al final de la fila (ej. el botón "Más filtros") — se
+  // desplaza junto con las pastillas si la fila es scrollable, en vez de
+  // tener su propia línea (ver conversación).
   extra?: ReactNode;
-  // Etiqueta en la misma fila que las pastillas (en vez de encima, en su
-  // propia línea) — ahorra una línea entera en mobile, ver conversación.
-  etiqueta?: string;
   // Pastillas más pequeñas en mobile (vuelven al tamaño normal desde `sm:`)
   // para que quepan más por fila — solo pensado para las filas Cuándo/Filtra más.
   compacto?: boolean;
-  // Un par de rebotes cortos al montar, para invitar a mirar este grupo
-  // justo después de elegir algo en el otro eje (Cuándo <-> Filtra más) —
-  // ver conversación ("cuando el usuario clica sobre hoy o en pareja").
+  // En vez de saltar a una segunda línea en mobile (4 pastillas no caben en
+  // una fila), una sola línea que se desliza horizontalmente — con
+  // degradado en el borde para que se note que hay más y que se puede
+  // arrastrar (ver conversación). Solo para la fila de Cuándo/Filtra más,
+  // no para el panel de "Más filtros" (meses/temática), que sigue
+  // prefiriendo saltar de línea porque ahí sí sobra espacio vertical.
+  scrollable?: boolean;
+  // Icono suelto al principio de la fila (sin texto, ver conversación: se
+  // quitaron las etiquetas "CUÁNDO"/"FILTRA MÁS") que rebota un par de
+  // veces al montar, para indicar "aquí también puedes filtrar" — solo en
+  // el eje que todavía no se ha tocado. Una flecha al final de la fila no
+  // señalaba hacia nada (ver conversación); un icono al principio, junto a
+  // las propias pastillas de ese grupo, sí se lee como "mira aquí".
   invita?: boolean;
 }) {
   const clasesPastilla = compacto ? "text-xs px-3 py-1.5 sm:text-sm sm:px-6 sm:py-[0.65rem]" : "text-sm";
@@ -34,22 +44,23 @@ export default function FiltroTemporal({
   const clasesInactiva = "border-[1.5px] border-[var(--border)] font-semibold text-[var(--muted-foreground)]";
 
   return (
-    <div className={`flex flex-wrap gap-2 items-center ${className}`}>
-      {etiqueta && (
-        <span
-          className="text-xs font-bold uppercase tracking-wide shrink-0 inline-flex items-center gap-1"
-          style={{ color: "var(--muted-foreground)" }}
-        >
-          {etiqueta}
-          {invita && <ChevronRight size={13} strokeWidth={3} className="icono-invitacion" aria-hidden />}
-        </span>
+    <div
+      className={`flex gap-2 items-center ${scrollable ? "flex-nowrap overflow-x-auto sin-scrollbar mascara-desvanecido py-1 pr-2" : "flex-wrap"} ${className}`}
+    >
+      {invita && (
+        <EraserAddIcon
+          size={18}
+          className="icono-invitacion shrink-0"
+          style={{ color: "var(--accent)" }}
+          aria-hidden
+        />
       )}
       {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
           scroll={false}
-          className={`${item.activo ? "btn-primary" : `btn-secondary ${clasesInactiva}`} ${clasesPastilla}`}
+          className={`${item.activo ? "btn-primary" : `btn-secondary ${clasesInactiva}`} ${clasesPastilla} ${scrollable ? "shrink-0" : ""}`}
         >
           {item.icono && <item.icono size={14} strokeWidth={2.5} />}
           {item.label}

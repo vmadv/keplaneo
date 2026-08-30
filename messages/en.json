@@ -20,8 +20,6 @@
     "ciudad": "City"
   },
   "Filtros": {
-    "cuando": "When",
-    "filtraMas": "Filter more",
     "siempre": "Anytime",
     "hoy": "Today",
     "finde": "This weekend",
