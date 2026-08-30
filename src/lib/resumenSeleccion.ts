@@ -111,9 +111,25 @@ export async function construirMetaDescripcion(
 // que cubre otra forma real de buscar lo mismo — "planes" en general, o
 // "planes románticos" cuando la página es de pareja — sin necesitar una
 // URL ni una página aparte para cada variante de búsqueda (ver conversación).
-export async function construirTituloConSufijo(tituloBase: string, extra?: Extra): Promise<string> {
+// La ficha genérica del municipio (la única que responde de verdad a una
+// búsqueda de marca tipo "keplaneo sevilla") lleva en cambio el nombre de
+// la marca + el municipio repetido ("Qué hacer en Sevilla - Keplaneo
+// Sevilla") — el resto de variantes (gratis, con niños, en pareja,
+// categorías) mantienen su propio sufijo, no compiten por esa búsqueda de
+// marca (ver conversación).
+export async function construirTituloConSufijo(
+  tituloBase: string,
+  extra?: Extra,
+  // Nombre del municipio SOLO cuando esta es la ficha genérica — su
+  // presencia decide qué sufijo se usa (ver arriba).
+  municipioGenerico?: string
+): Promise<string> {
   const t = await getTranslations("ResumenSeleccion");
-  const sufijo = extra === "pareja" ? t("sufijoTituloRomantico") : t("sufijoTituloPlanes");
+  const sufijo = municipioGenerico
+    ? t("sufijoTituloGenerico", { municipio: municipioGenerico })
+    : extra === "pareja"
+      ? t("sufijoTituloRomantico")
+      : t("sufijoTituloPlanes");
   return `${tituloBase}${sufijo}`;
 }
 

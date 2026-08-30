@@ -1,6 +1,6 @@
 {
   "Sitio": {
-    "titulo": "Keplaneo Sevilla",
+    "titulo": "Keplaneo",
     "descripcion": "Qué hacer hoy, este fin de semana o este mes en Sevilla y los municipios de su provincia."
   },
   "NotFound": {
@@ -292,6 +292,7 @@
     "calificadorFamilia": " con niños",
     "metaDescripcion": "Consulta los planes{calificador} en {municipio}{temporal}: actividades y eventos reales, actualizados automáticamente cada día.",
     "sufijoTituloPlanes": " | Planes y eventos",
+    "sufijoTituloGenerico": " - Keplaneo {municipio}",
     "calificadorElegirPareja": " en pareja",
     "calificadorElegirFamilia": " con niños",
     "calificadorElegirGratis": " gratis",

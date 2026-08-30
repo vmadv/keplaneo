@@ -1,6 +1,6 @@
 {
   "Sitio": {
-    "titulo": "Keplaneo Sevilla",
+    "titulo": "Keplaneo",
     "descripcion": "Things to do today, this weekend, or this month in Seville and the towns of its province."
   },
   "NotFound": {
@@ -292,6 +292,7 @@
     "calificadorFamilia": " with kids",
     "metaDescripcion": "Check out the plans{calificador} in {municipio}{temporal}: real activities and events, automatically updated every day.",
     "sufijoTituloPlanes": " | Plans & events",
+    "sufijoTituloGenerico": " - Keplaneo {municipio}",
     "calificadorElegirPareja": " for couples",
     "calificadorElegirFamilia": " with kids",
     "calificadorElegirGratis": " for free",

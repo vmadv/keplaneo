@@ -188,26 +188,24 @@ export default async function RankingPage({
         {resto.length > 0 && (
           <ol className="grid gap-3 mb-10">
             {resto.map((puesto) => (
-              <li key={puesto.lugar.id}>
+              <li key={puesto.lugar.id} className="min-w-0">
                 <Link href={`${base}/lugares/${puesto.lugar.slug}`} className="card-sticker flex flex-col gap-2 p-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <span
                       className="icon-chip w-9 h-9 shrink-0 font-extrabold"
                       style={{ background: "var(--muted)" }}
                     >
                       {puesto.posicion}
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold truncate">{puesto.lugar.nombre}</h3>
-                      {puesto.lugar.direccion && (
-                        <p className="text-sm truncate" style={{ color: "var(--muted-foreground)" }}>
-                          {puesto.lugar.direccion}
-                        </p>
-                      )}
-                    </div>
-                    <div className="shrink-0 text-sm text-right">
-                      <Nota rating={puesto.lugar.rating} numResenas={puesto.lugar.num_valoraciones} t={t} />
-                    </div>
+                    <h3 className="flex-1 min-w-0 font-bold leading-tight text-balance">{puesto.lugar.nombre}</h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm -mt-1 pl-12">
+                    {puesto.lugar.direccion && (
+                      <span className="min-w-0 truncate" style={{ color: "var(--muted-foreground)" }}>
+                        {puesto.lugar.direccion}
+                      </span>
+                    )}
+                    <Nota rating={puesto.lugar.rating} numResenas={puesto.lugar.num_valoraciones} t={t} />
                   </div>
                   {puesto.motivo && (
                     <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>

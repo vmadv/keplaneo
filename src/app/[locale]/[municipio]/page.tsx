@@ -23,7 +23,7 @@ export async function generateMetadata({
     getTranslations("MunicipioHome"),
     construirMetaDescripcion(municipio.nombre, "siempre"),
   ]);
-  const title = await construirTituloConSufijo(tHome("titulo", { municipio: municipio.nombre }));
+  const title = await construirTituloConSufijo(tHome("titulo", { municipio: municipio.nombre }), undefined, municipio.nombre);
   return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}`) } };
 }
 
