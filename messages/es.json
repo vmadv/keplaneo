@@ -254,7 +254,7 @@
     "sinResenasSuficientes": "Aún sin suficientes reseñas",
     "verFicha": "Ver ficha completa",
     "metodologiaTitulo": "Cómo se calcula este ranking",
-    "metodologiaTexto": "Partimos de una búsqueda real de qué sitios tienen fama específica en esto (no solo de ser populares en general) y los ordenamos por ese reconocimiento. Cada uno se verifica después con datos objetivos de Google Maps: solo entran los que tienen nota mínima de {ratingMinimo} y al menos {resenasMinimas} reseñas.",
+    "metodologiaTexto": "Partimos de una búsqueda real de qué sitios tienen fama específica en esto (no solo de ser populares en general): esa fama decide qué entra en la lista. El orden final, en cambio, lo deciden la nota media y el número de reseñas reales en Google Maps, no la fama — y solo entran los que tienen nota mínima de {ratingMinimo} y al menos {resenasMinimas} reseñas.",
     "metodologiaTextoSinRating": "Partimos de una búsqueda real de qué sitios tienen fama y reconocimiento reales en esto, y los ordenamos por ese criterio. En esta categoría el número de reseñas en Google Maps no es un indicador fiable de calidad, así que no aplicamos un mínimo de nota — Google Maps se usa solo para confirmar que cada uno existe de verdad y para su dirección y fotos.",
     "preguntasFrecuentes": "Preguntas frecuentes",
     "actualizado": "Actualizado el {fecha}"

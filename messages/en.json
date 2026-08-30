@@ -254,7 +254,7 @@
     "sinResenasSuficientes": "Not enough reviews yet",
     "verFicha": "See full profile",
     "metodologiaTitulo": "How this ranking is calculated",
-    "metodologiaTexto": "We start from a real search for places with specific reputation for this (not just general popularity) and rank them by that reputation. Each one is then verified with objective Google Maps data: only places with a minimum rating of {ratingMinimo} and at least {resenasMinimas} reviews make the list.",
+    "metodologiaTexto": "We start from a real search for places with specific reputation for this (not just general popularity): that reputation decides what makes the list. The final order, however, is decided by the average rating and number of real Google Maps reviews, not reputation — and only places with a minimum rating of {ratingMinimo} and at least {resenasMinimas} reviews make the list.",
     "metodologiaTextoSinRating": "We start from a real search for places with genuine reputation and recognition for this, and rank them by that. In this category, the number of Google Maps reviews isn't a reliable quality signal, so we don't apply a minimum rating — Google Maps is only used to confirm each place really exists, plus its address and photos.",
     "preguntasFrecuentes": "Frequently asked questions",
     "actualizado": "Updated on {fecha}"

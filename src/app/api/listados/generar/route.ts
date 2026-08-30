@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { resolverCandidatos, umbralParaTipo } from "@/lib/places";
+import { puntuarLugar, resolverCandidatos, umbralParaTipo } from "@/lib/places";
 import { buscarCandidatosPorTema, escribirFichasLugares, escribirIntroYFaqListado, estimarCoste } from "@/lib/gemini";
 import { slugify } from "@/lib/slug";
 
@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 1. Quién entra y en qué orden lo decide la fama específica en el tema
+  // 1. Quién entra en el ranking lo decide la fama específica en el tema
   // (buscada de verdad por Gemini), no el rating general de Google — un
   // sitio de moda con miles de reseñas no es lo mismo que un sitio famoso
-  // concretamente por esto.
+  // concretamente por esto. El ORDEN final es otra cosa (ver paso 2.5).
   const { nombres: candidatosGemini, usage: usageCandidatos } = await buscarCandidatosPorTema(
     municipio.nombre,
     tema
@@ -99,12 +99,13 @@ export async function POST(request: NextRequest) {
   // se puedan verificar simplemente se descartan. resolverCandidatos hace
   // esto con una sola búsqueda amplia en la mayoría de los casos, en vez
   // de una llamada a Places por cada nombre (ver src/lib/places.ts).
+  const umbral = umbralParaTipo(tipoLugar);
   const { candidatos: top, llamadasPlaces } = await resolverCandidatos(
     candidatosGemini,
     consultaAmplia,
     municipio.nombre,
     TOP_N,
-    umbralParaTipo(tipoLugar)
+    umbral
   );
 
   if (top.length === 0) {
@@ -113,6 +114,21 @@ export async function POST(request: NextRequest) {
       { status: 422 }
     );
   }
+
+  // 2.5. El ORDEN final (posición 1, 2, 3...) se decide por nota + nº de
+  // reseñas reales de Google Maps (puntuarLugar), no por la fama que
+  // propuso Gemini — regla por defecto para todos los rankings a partir de
+  // ahora. La fama de Gemini solo decidió quién entra (paso 1); esto
+  // decide el orden de salida. Categorías sin rating fiable (colegios,
+  // institutos...) puntúan todas 0 con este umbral — sort es estable, así
+  // que entre ellas se conserva el orden de fama original como desempate.
+  // Excepción prevista pero NO construida todavía: un ranking de nicho
+  // (ej. "mejores restaurantes de croquetas") donde el rating general del
+  // sitio no refleja la calidad del plato concreto — ahí type debería
+  // seguir confiando en el juicio de Gemini en vez de este sort objetivo.
+  top.sort(
+    (a, b) => puntuarLugar(b.rating, b.numValoraciones, umbral) - puntuarLugar(a.rating, a.numValoraciones, umbral)
+  );
 
   // 3. Redacción: descripción de ficha + motivo del puesto, en un solo
   // prompt para que no se repitan frases entre puestos.
