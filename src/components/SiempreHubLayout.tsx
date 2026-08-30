@@ -86,7 +86,15 @@ export default async function SiempreHubLayout({
         : getEventosActivos(municipio.id, extra === "pareja" || extra === "familia" ? extra : undefined),
     ]);
 
-  const primarios = primariosSiempre;
+  // Ninguna pastilla de "Cuándo" queda marcada activa por defecto — "siempre"
+  // es la franja atemporal que vive aquí técnicamente, pero mostrarla
+  // marcada sugiere que hay que pulsarla para que aplique (ver conversación).
+  // Se planteó distinguir "llegar por defecto" de "pinchar la pastilla
+  // Siempre a propósito", pero ambos casos llevan a la misma URL exacta
+  // (/sevilla) sin ningún dato que los diferencie — haría falta un query
+  // param dedicado (y complicar el canonical para ignorarlo), así que se
+  // descarta por ahora (ver conversación).
+  const primarios = primariosSiempre.map((item) => (item.href === hrefFiltro(locale, base, "siempre", extra) ? { ...item, activo: false } : item));
 
   const genericos = ordenarPorRelevanciaConDiversidad(eventos.filter((e) => e.fecha_inicio === null));
   const genericosVisibles = genericos.slice(0, MAX_GENERICOS_VISIBLES);
