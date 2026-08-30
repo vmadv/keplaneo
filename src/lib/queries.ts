@@ -425,9 +425,16 @@ async function getPlanesPorVigenciaMulti(
 
       // Orden en JS, no en SQL — ver getPlanesPorVigencia: el order de
       // PostgREST sobre una columna de la tabla enlazada (referencedTable)
-      // no se aplica de verdad al orden de las filas exteriores.
+      // no se aplica de verdad al orden de las filas exteriores. Un
+      // puntual de un solo día se descarta si su fecha real ya pasó,
+      // aunque la vigencia (hoy/finde) siga vigente en conjunto — mismo
+      // bug que en getPlanesDestacadosMulti (ver conversación).
+      const hoyDate = hoyEnMadrid();
       const filas = (data ?? []).filter((fila) => {
         const ev = Array.isArray(fila.eventos) ? fila.eventos[0] : fila.eventos;
+        const finTexto = ev?.fecha_fin ?? ev?.fecha_inicio;
+        const fin = finTexto ? fechaDesdeTextoEspanol(finTexto) : null;
+        if (fin && fin < hoyDate) return false;
         return pasaDiaSemana(ev?.dias_semana, vigencia);
       });
       filas.sort((a, b) => {
@@ -496,12 +503,27 @@ async function getPlanesDestacadosMulti(
 
   const { data } = await query;
 
+  // Un puntual de un solo día (ej. un partido del sábado) sigue teniendo
+  // "finde" en su vigencia mientras el fin de semana entero no haya
+  // terminado, aunque el partido en sí ya se haya jugado ayer — mismo bug
+  // que en getPlanesPorVigencia (ver conversación), aquí nunca se había
+  // aplicado el filtro por fecha real. Se descarta por fecha de verdad,
+  // no por la etiqueta de vigencia.
+  const hoyDate = hoyEnMadrid();
+  const sinFinalizados = (data ?? []).filter((fila) => {
+    const eventos = (fila as unknown as { eventos: { fecha_inicio: string | null; fecha_fin: string | null } | { fecha_inicio: string | null; fecha_fin: string | null }[] | null }).eventos;
+    const ev = Array.isArray(eventos) ? eventos[0] : eventos;
+    const finTexto = ev?.fecha_fin ?? ev?.fecha_inicio;
+    const fin = finTexto ? fechaDesdeTextoEspanol(finTexto) : null;
+    return !(fin && fin < hoyDate);
+  });
+
   // "Mejores" de verdad: por relevancia (ver conversación), no por cuándo
   // se generó. Orden en JS, no en SQL — el order de PostgREST sobre una
   // columna de la tabla enlazada (referencedTable) no se aplica de verdad
   // al orden de las filas exteriores (ver getPlanesPorVigencia). La fecha
   // de generación solo desempata cuando la relevancia coincide.
-  const filas = [...(data ?? [])];
+  const filas = [...sinFinalizados];
   filas.sort((a: any, b: any) => {
     const evA = Array.isArray(a.eventos) ? a.eventos[0] : a.eventos;
     const evB = Array.isArray(b.eventos) ? b.eventos[0] : b.eventos;
@@ -595,10 +617,17 @@ async function getPlanesPorCategoria(
   // — ver getPlanesPorVigencia: el order de PostgREST sobre una columna de
   // la tabla enlazada (referencedTable) no se aplica de verdad al orden de
   // las filas exteriores.
+  // Un puntual cuya fecha real ya pasó se descarta aunque su vigencia
+  // (hoy/finde/mes) siga técnicamente vigente en conjunto — ver
+  // conversación, mismo bug corregido en getPlanesPorVigencia.
+  const hoyDate = hoyEnMadrid();
   const filas = ((data ?? []) as unknown as (Plan & {
     eventos: EventoCategoriaJoin | EventoCategoriaJoin[] | null;
   })[]).filter((fila) => {
     const ev = Array.isArray(fila.eventos) ? fila.eventos[0] : fila.eventos;
+    const finTexto = ev?.fecha_fin ?? ev?.fecha_inicio;
+    const fin = finTexto ? fechaDesdeTextoEspanol(finTexto) : null;
+    if (fin && fin < hoyDate) return false;
     return pasaDiaSemana(ev?.dias_semana, vigencia ?? "");
   });
   filas.sort((a, b) => {
@@ -761,7 +790,7 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
   const { data } = await supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, precio, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, precio, fecha_inicio, fecha_fin, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en)"
     )
     .eq("municipio_id", municipioId)
     .contains("vigencia", [vigencia])
@@ -770,6 +799,8 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
   interface EventoGratisJoin {
     slug: string;
     precio: string | null;
+    fecha_inicio: string | null;
+    fecha_fin: string | null;
     relevancia: number | null;
     cartel_url: string | null;
     foto_lugar_nombre: string | null;
@@ -785,11 +816,18 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
   // Mismo orden de prioridad en 4 niveles que el resto de listados (ver
   // conversación), hecho en JS — ver getPlanesPorVigencia: el order de
   // PostgREST sobre una columna de la tabla enlazada (referencedTable) no
-  // se aplica de verdad al orden de las filas exteriores.
+  // se aplica de verdad al orden de las filas exteriores. Un puntual cuya
+  // fecha real ya pasó se descarta aunque su fila de hoy siga cargando
+  // "finde" en la vigencia (calcularFilasPorDia lo marca en toda la
+  // semana, no solo en los días de fin de semana — ver conversación).
+  const hoyDate = hoyEnMadrid();
   const filas = ((data ?? []) as unknown as (Plan & {
     eventos: EventoGratisJoin | EventoGratisJoin[] | null;
   })[]).filter((fila) => {
     const ev = Array.isArray(fila.eventos) ? fila.eventos[0] : fila.eventos;
+    const finTexto = ev?.fecha_fin ?? ev?.fecha_inicio;
+    const fin = finTexto ? fechaDesdeTextoEspanol(finTexto) : null;
+    if (fin && fin < hoyDate) return false;
     return pasaDiaSemana(ev?.dias_semana, vigencia);
   });
   filas.sort((a, b) => {
