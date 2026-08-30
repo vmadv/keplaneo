@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import { EraserAddIcon } from "./icons/EraserAddIcon";
+import PastillaSiempreVisual from "./PastillaSiempreVisual";
 import type { FiltroTemporalItem } from "@/lib/filtros";
 
 export default function FiltroTemporal({
@@ -59,17 +60,28 @@ export default function FiltroTemporal({
           aria-hidden
         />
       )}
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          scroll={false}
-          className={`${item.activo ? "btn-primary" : `btn-secondary ${clasesInactiva}`} ${clasesPastilla} ${scrollable ? "shrink-0" : ""}`}
-        >
-          {item.icono && <item.icono size={14} strokeWidth={2.5} />}
-          {item.label}
-        </Link>
-      ))}
+      {items.map((item) =>
+        item.siempre ? (
+          <PastillaSiempreVisual
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            clasesInactiva={clasesInactiva}
+            clasesTamano={clasesPastilla}
+            shrink={scrollable}
+          />
+        ) : (
+          <Link
+            key={item.href}
+            href={item.href}
+            scroll={false}
+            className={`${item.activo ? "btn-primary" : `btn-secondary ${clasesInactiva}`} ${clasesPastilla} ${scrollable ? "shrink-0" : ""}`}
+          >
+            {item.icono && <item.icono size={14} strokeWidth={2.5} />}
+            {item.label}
+          </Link>
+        )
+      )}
       {extra}
     </div>
   );

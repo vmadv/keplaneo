@@ -16,6 +16,12 @@ export interface FiltroTemporalItem {
   href: string;
   activo: boolean;
   icono?: LucideIcon;
+  // Marca la pastilla "Siempre" en concreto — nunca llega `activo: true`
+  // desde el servidor en su propio hub (ver SiempreHubLayout), pero se
+  // quiere un feedback visual al pincharla igualmente (ver conversación:
+  // no hay forma de distinguir "por defecto" de "recién pinchada" por URL,
+  // así que el efecto vive solo en el cliente, con sessionStorage).
+  siempre?: boolean;
 }
 
 // Barra de filtros tipo "entradas.com": Hoy / Este fin de semana / Esta
@@ -58,6 +64,7 @@ export async function construirFiltrosTemporales(
       label: t("siempre"),
       href: hrefFiltro(locale, base, "siempre", extraActual),
       activo: vigenciaActual === "siempre",
+      siempre: true,
     },
     ...meses.map((mes) => {
       const nombre = tMeses(mes);
