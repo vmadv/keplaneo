@@ -11,6 +11,29 @@ import createNextIntlPlugin from "next-intl/plugin";
 // siempre. El orden importa: las reglas con "/free" anidado van antes que
 // las de audiencia para no perder esa segunda parte de la ruta.
 const nextConfig: NextConfig = {
+  images: {
+    // Nuestro proxy de fotos (/api/fotos/[...ref]?w=N) es local, pero
+    // lleva query string — next/image exige declarar explícitamente cada
+    // combinación permitida (si no, responde 400: "using a query string
+    // which is not configured", ver conversación). Los anchos son un
+    // conjunto fijo y conocido (todos los urlDeFoto/urlFotoProxy del
+    // código), así que se listan uno a uno en vez de omitir `search` (que
+    // aceptaría cualquier query string, más laxo de lo necesario).
+    localPatterns: [
+      ...[128, 300, 400, 640, 800, 1200, 1600].map((ancho) => ({
+        pathname: "/api/fotos/**",
+        search: `?w=${ancho}`,
+      })),
+      // Fotos de portada de municipio, subidas a mano a public/municipios/
+      // (ver src/lib/heroImage.ts) — sin query string.
+      { pathname: "/municipios/**", search: "" },
+    ],
+    // Foto propia subida por un negocio (Supabase Storage, no Google
+    // Places) — dominio externo real, necesita su propia allowlist.
+    remotePatterns: process.env.NEXT_PUBLIC_SUPABASE_URL
+      ? [new URL(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/fotos-negocios/**`)]
+      : [],
+  },
   async rewrites() {
     return [
       { source: "/en/:municipio/today", destination: "/en/:municipio/hoy" },

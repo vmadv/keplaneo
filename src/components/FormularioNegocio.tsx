@@ -285,7 +285,7 @@ export default function FormularioNegocio({ token, lugar }: { token: string; lug
                   className="relative aspect-square rounded-lg overflow-hidden"
                   style={{ border: "2px solid var(--foreground)", opacity: marcada ? 0.4 : 1 }}
                 >
-                  <Image src={urlDeFoto(foto, 300)} alt="" fill unoptimized className="object-cover" />
+                  <Image src={urlDeFoto(foto, 300)} alt="" fill className="object-cover" />
                   <button
                     type="button"
                     onClick={() => alternarEliminarFoto(id)}

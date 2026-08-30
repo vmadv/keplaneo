@@ -45,7 +45,6 @@ export default function GaleriaFotos({ fotos, nombre }: { fotos: FotoLugar[]; no
           src={urlDeFoto(portada, 1200)}
           alt={nombre}
           fill
-          unoptimized
           priority
           sizes="(max-width: 768px) 100vw, 768px"
           className="object-cover"
@@ -62,7 +61,7 @@ export default function GaleriaFotos({ fotos, nombre }: { fotos: FotoLugar[]; no
               className="relative aspect-square rounded-lg overflow-hidden cursor-zoom-in"
               style={{ border: "2px solid var(--foreground)" }}
             >
-              <Image src={urlDeFoto(foto, 400)} alt={`${nombre} ${i + 2}`} fill unoptimized sizes="200px" className="object-cover" />
+              <Image src={urlDeFoto(foto, 400)} alt={`${nombre} ${i + 2}`} fill sizes="200px" className="object-cover" />
             </button>
           ))}
         </div>
@@ -121,7 +120,6 @@ export default function GaleriaFotos({ fotos, nombre }: { fotos: FotoLugar[]; no
               src={urlDeFoto(fotos[abierta], 1600)}
               alt={`${nombre} ${abierta + 1}`}
               fill
-              unoptimized
               sizes="100vw"
               className="object-contain"
             />
