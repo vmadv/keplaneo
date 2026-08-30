@@ -195,12 +195,12 @@ async function getPlanesPorVigencia(
   // municipio, puntual de zona cercana, genérico del propio municipio,
   // genérico de zona cercana — "excepcional" ordena antes que "generico"
   // alfabéticamente, y dentro de cada uno lo propio del municipio
-  // (zona_cercana null) ordena antes que lo de zona cercana. Relevancia
-  // solo desempata DENTRO de cada grupo.
+  // (zona_cercana null) ordena antes que lo de zona cercana. DENTRO de
+  // cada uno de esos 4 grupos, siempre por relevancia — nunca por
+  // "momento" ni ningún otro criterio antes que la relevancia.
   const { data } = await query
     .order("tipo")
     .order("zona_cercana", { ascending: true, nullsFirst: true, referencedTable: "eventos" })
-    .order("momento")
     .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 
   return (data ?? []).map((fila) => {
@@ -334,7 +334,7 @@ async function getPlanesPorVigenciaMulti(
       let query = supabase
         .from("planes")
         .select(
-          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos)"
+          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos)"
         )
         .eq("municipio_id", m.id)
         .contains("vigencia", [vigencia]);
@@ -346,7 +346,7 @@ async function getPlanesPorVigenciaMulti(
       const { data } = await query
         .order("tipo")
         .order("zona_cercana", { ascending: true, nullsFirst: true, referencedTable: "eventos" })
-        .order("momento")
+        .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" })
         .limit(porMunicipio);
       return (data ?? []).map((fila) => filaAPlanConMunicipio(fila as never, m));
     })
@@ -458,7 +458,7 @@ async function getPlanesPorCategoria(
   let query = supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, categoria, fecha_inicio, fecha_fin)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, categoria, fecha_inicio, fecha_fin, relevancia, zona_cercana, zona_cercana_minutos)"
     )
     .eq("municipio_id", municipioId)
     .eq("eventos.categoria", categoria);
@@ -470,13 +470,33 @@ async function getPlanesPorCategoria(
     query = query.eq("fecha_generacion", hoyISO());
   }
 
-  const { data } = await query.order("tipo").order("momento");
+  // Mismo orden de prioridad en 4 niveles que el resto de listados (ver
+  // conversación): puntual/genérico × propio del municipio/zona cercana,
+  // y dentro de cada grupo siempre por relevancia.
+  const { data } = await query
+    .order("tipo")
+    .order("zona_cercana", { ascending: true, nullsFirst: true, referencedTable: "eventos" })
+    .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 
   return (data ?? []).map((fila) => {
     const { eventos, ...plan } = fila as unknown as Plan & {
       eventos:
-        | { slug: string; categoria: string; fecha_inicio: string | null; fecha_fin: string | null }
-        | { slug: string; categoria: string; fecha_inicio: string | null; fecha_fin: string | null }[]
+        | {
+            slug: string;
+            categoria: string;
+            fecha_inicio: string | null;
+            fecha_fin: string | null;
+            zona_cercana: string | null;
+            zona_cercana_minutos: number | null;
+          }
+        | {
+            slug: string;
+            categoria: string;
+            fecha_inicio: string | null;
+            fecha_fin: string | null;
+            zona_cercana: string | null;
+            zona_cercana_minutos: number | null;
+          }[]
         | null;
     };
     const ev = Array.isArray(eventos) ? eventos[0] : eventos;
@@ -485,6 +505,8 @@ async function getPlanesPorCategoria(
       evento_slug: ev?.slug ?? null,
       evento_fecha_inicio: ev?.fecha_inicio ?? null,
       evento_fecha_fin: ev?.fecha_fin ?? null,
+      evento_zona_cercana: ev?.zona_cercana ?? null,
+      evento_zona_cercana_minutos: ev?.zona_cercana_minutos ?? null,
     };
   });
 }
@@ -628,7 +650,6 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
     .eq("fecha_generacion", hoyISO())
     .order("tipo")
     .order("zona_cercana", { ascending: true, nullsFirst: true, referencedTable: "eventos" })
-    .order("momento")
     .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 
   interface EventoGratisJoin {
