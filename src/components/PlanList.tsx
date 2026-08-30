@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Sun, Moon, Sparkles, CalendarDays } from "lucide-react";
+import { Sun, Moon, Sparkles, CalendarDays, Navigation } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
 import { etiquetaDiaFinde } from "@/lib/dates";
@@ -12,6 +12,7 @@ export default async function PlanList({
   base,
   mostrarDiaFinde = false,
   contexto,
+  municipioNombre,
 }: {
   planes: Plan[];
   base: string;
@@ -22,6 +23,10 @@ export default async function PlanList({
   // incluir varias a la vez (ej. hoy es sábado: un evento puede ser de hoy
   // Y de finde simultáneamente).
   contexto?: string;
+  // Nombre del municipio de ESTA página (no el del plan) — para la
+  // etiqueta "A X min de {municipio}" en planes de zona cercana (ver
+  // conversación, generarPlanesZonaCercana en gemini.ts).
+  municipioNombre?: string;
 }) {
   const [t, tBadges, locale] = await Promise.all([
     getTranslations("PlanList"),
@@ -83,6 +88,12 @@ export default async function PlanList({
                     <span className="badge-pill" style={{ background: "var(--quaternary)", color: "var(--quaternary-foreground)", borderColor: "var(--quaternary)" }}>
                       <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
                       {diaFinde}
+                    </span>
+                  )}
+                  {plan.evento_zona_cercana && plan.evento_zona_cercana_minutos != null && municipioNombre && (
+                    <span className="badge-pill" style={{ background: "var(--muted)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}>
+                      <Navigation size={11} strokeWidth={2.5} className="mr-1" />
+                      {t("aMinDe", { minutos: plan.evento_zona_cercana_minutos, municipio: municipioNombre })}
                     </span>
                   )}
                 </div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Sun, Moon, MapPin, Clock, Tag, CalendarRange, Link2, ArrowRight } from "lucide-react";
+import { Sun, Moon, MapPin, Clock, Tag, CalendarRange, Link2, ArrowRight, Navigation } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import TextoConNegritas from "@/components/TextoConNegritas";
 import MapaEvento from "@/components/MapaEvento";
@@ -287,6 +287,20 @@ export default async function EventoPage({
                 <MapPin size={12} strokeWidth={3} />
               </span>
               <span><span className="font-bold">{tEvento("donde")}: </span>{evento.ubicacion}</span>
+            </div>
+          )}
+          {evento.zona_cercana && evento.zona_cercana_minutos != null && (
+            <div className="flex gap-2.5 items-start">
+              <span className="icon-chip w-6 h-6 shrink-0 mt-0.5" style={{ background: "var(--muted)" }}>
+                <Navigation size={12} strokeWidth={3} />
+              </span>
+              <span>
+                {tEvento("zonaCercana", {
+                  zona: evento.zona_cercana,
+                  minutos: evento.zona_cercana_minutos,
+                  municipio: municipio.nombre,
+                })}
+              </span>
             </div>
           )}
           {evento.horario && (

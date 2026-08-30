@@ -1,4 +1,5 @@
-import { Sparkles } from "lucide-react";
+import { Sparkles, Navigation } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import TextoConNegritas from "./TextoConNegritas";
 import { urlFotoProxy } from "@/lib/places";
@@ -9,7 +10,7 @@ import type { PlanConMunicipio } from "@/lib/queries";
 // ciudades mezcladas) hace falta para saber de un vistazo de dónde es cada
 // plan; en el hub de un único municipio (ya lo dice el título de la
 // sección) es redundante repetirla en cada tarjeta, así que se omite ahí.
-export default function TarjetaPlanDestacado({
+export default async function TarjetaPlanDestacado({
   plan,
   etiquetaEventoPuntual,
   mostrarMunicipio = true,
@@ -18,6 +19,7 @@ export default function TarjetaPlanDestacado({
   etiquetaEventoPuntual: string;
   mostrarMunicipio?: boolean;
 }) {
+  const t = await getTranslations("PlanList");
   const base = `/${plan.municipio_slug}`;
   const href = plan.evento_slug ? `${base}/eventos/${plan.evento_slug}` : base;
   // Cartel real primero (poco frecuente); si no, foto del lugar vía Google
@@ -53,6 +55,15 @@ export default function TarjetaPlanDestacado({
             >
               <Sparkles size={11} strokeWidth={2.5} className="mr-1" />
               {etiquetaEventoPuntual}
+            </span>
+          )}
+          {plan.evento_zona_cercana && plan.evento_zona_cercana_minutos != null && (
+            <span
+              className="badge-pill mb-2 inline-flex"
+              style={{ background: "var(--muted)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}
+            >
+              <Navigation size={11} strokeWidth={2.5} className="mr-1" />
+              {t("aMinDe", { minutos: plan.evento_zona_cercana_minutos, municipio: plan.municipio_nombre })}
             </span>
           )}
           <h3 className="font-extrabold text-base text-balance">{plan.titulo}</h3>

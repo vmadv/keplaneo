@@ -146,6 +146,8 @@ export async function upsertEventosDelLote(
       preguntas_frecuentes: p.preguntas_frecuentes ?? [],
       categoria: p.categoria ?? "otros",
       relevancia: p.relevancia ?? null,
+      zona_cercana: p.zona_cercana ?? null,
+      zona_cercana_minutos: p.zona_cercana_minutos ?? null,
     };
 
     const idxExistente = disponibles.findIndex(

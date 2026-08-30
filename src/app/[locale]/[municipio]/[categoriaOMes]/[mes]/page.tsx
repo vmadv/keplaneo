@@ -104,7 +104,7 @@ export default async function CategoriaMesPage({
 
         <FiltrosPagina primarios={temporales} secundarios={secundarios} />
 
-        <PlanList planes={planes} base={base} contexto={mes} />
+        <PlanList planes={planes} base={base} contexto={mes} municipioNombre={municipio.nombre} />
       </div>
     </main>
   );

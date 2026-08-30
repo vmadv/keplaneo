@@ -31,6 +31,12 @@ export interface PlanGenerado {
   fecha_inicio?: string;
   fecha_fin?: string;
   fuente?: string;
+  // Solo para planes de generarPlanesZonaCercana: el plan no está en el
+  // municipio de la página, sino en un pueblo/zona cerca de él — ver
+  // conversación. zona_cercana es el nombre real de ese lugar (nunca uno
+  // de los municipios que ya tienen página propia).
+  zona_cercana?: string;
+  zona_cercana_minutos?: number;
 }
 
 interface UsoTokens {
@@ -381,6 +387,39 @@ ${CAMPOS_JSON}
 `.trim();
 
   return llamarGeminiConReintentos(prompt, "generarPlanesGenericos");
+}
+
+// Búsqueda dedicada para municipios pequeños con poca agenda propia (ej.
+// Mairena del Aljarafe): en vez de forzar contenido flojo dentro del
+// propio municipio, busca planes reales en pueblos o zonas cercanas —
+// pero NUNCA en el municipio de la página ni en ninguno de los demás
+// municipios que ya tienen página propia en el sitio (eso lo decide
+// `municipiosExcluidos`, no Gemini) — ver conversación. Cada plan que
+// devuelva esta búsqueda lleva "zona_cercana" (el pueblo/zona real) y
+// "zona_cercana_minutos" (minutos aproximados en coche desde
+// `municipioNombre`) para que la ficha dej claro que es "a X min de
+// {municipio}", no que está en el propio municipio.
+export async function generarPlanesZonaCercana(
+  municipioNombre: string,
+  municipiosExcluidos: string[]
+): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
+  const prompt = `
+Eres un editor local que conoce a fondo la zona alrededor de ${municipioNombre} (España), incluyendo los pueblos y núcleos cercanos, no solo el propio municipio.
+
+Busca planes reales y verificables (eventos puntuales con fecha o lugares genéricos disponibles siempre) en pueblos, barrios o zonas a menos de 20-25 minutos en coche de ${municipioNombre}, pero que NO estén dentro del propio ${municipioNombre}.
+
+MUY IMPORTANTE: ninguno de estos planes puede estar en ${municipiosExcluidos.join(", ")} — son municipios que ya cubrimos con su propia agenda dedicada, así que un plan de cualquiera de ellos aquí sería un duplicado. Si el único sitio interesante cerca de ${municipioNombre} resulta estar en uno de esos municipios, no lo incluyas.
+
+Para CADA plan que devuelvas, añade estos dos campos (obligatorios en esta búsqueda, a diferencia del resto):
+- "zona_cercana": el nombre real del pueblo, barrio o zona donde está (ej. "San Juan de Aznalfarache"), nunca "${municipioNombre}" ni ninguno de los municipios excluidos.
+- "zona_cercana_minutos": entero, minutos aproximados en coche desde ${municipioNombre} hasta ese lugar.
+
+Genera entre 5 y 12 planes si de verdad existen sitios o eventos genuinamente distintos y cercanos — mejor devolver menos (o un array vacío) que forzar algo lejano o de relleno. Para los "excepcional" (con fecha), sigue siendo obligatorio indicar "fecha_inicio" real y verificable; si no la tienes, no incluyas el plan.
+
+${CAMPOS_JSON}
+`.trim();
+
+  return llamarGeminiConReintentos(prompt, "generarPlanesZonaCercana");
 }
 
 // Combina los resultados de la búsqueda mixta + las dedicadas por variable:

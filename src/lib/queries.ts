@@ -174,7 +174,7 @@ async function getPlanesPorVigencia(
   let query = supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, relevancia, cartel_url, foto_lugar_nombre)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos)"
     )
     .eq("municipio_id", municipioId)
     .contains("vigencia", [vigencia]);
@@ -217,6 +217,8 @@ async function getPlanesPorVigencia(
       evento_categoria: ev?.categoria ?? null,
       evento_cartel_url: ev?.cartel_url ?? null,
       evento_foto_lugar_nombre: ev?.foto_lugar_nombre ?? null,
+      evento_zona_cercana: ev?.zona_cercana ?? null,
+      evento_zona_cercana_minutos: ev?.zona_cercana_minutos ?? null,
     };
   });
 }
@@ -229,6 +231,8 @@ interface EventosDelPlanJoin {
   relevancia: number | null;
   cartel_url: string | null;
   foto_lugar_nombre: string | null;
+  zona_cercana: string | null;
+  zona_cercana_minutos: number | null;
 }
 
 export async function getEvento(
@@ -238,7 +242,7 @@ export async function getEvento(
   const { data } = await supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, lat, lon, primera_deteccion, ultima_deteccion, activo"
     )
     .eq("municipio_id", municipioId)
     .eq("slug", slug)
@@ -285,6 +289,8 @@ interface EventosDelDestacadoJoin {
   categoria: Categoria | null;
   cartel_url: string | null;
   foto_lugar_nombre: string | null;
+  zona_cercana: string | null;
+  zona_cercana_minutos: number | null;
 }
 
 function filaAPlanConMunicipio(
@@ -303,6 +309,8 @@ function filaAPlanConMunicipio(
     evento_categoria: ev?.categoria ?? null,
     evento_cartel_url: ev?.cartel_url ?? null,
     evento_foto_lugar_nombre: ev?.foto_lugar_nombre ?? null,
+    evento_zona_cercana: ev?.zona_cercana ?? null,
+    evento_zona_cercana_minutos: ev?.zona_cercana_minutos ?? null,
     municipio_slug: municipio.slug,
     municipio_nombre: municipio.nombre,
   };
@@ -324,7 +332,7 @@ async function getPlanesPorVigenciaMulti(
       let query = supabase
         .from("planes")
         .select(
-          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, cartel_url, foto_lugar_nombre)"
+          "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, fecha_inicio, fecha_fin, categoria, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos)"
         )
         .eq("municipio_id", m.id)
         .contains("vigencia", [vigencia]);
@@ -374,7 +382,7 @@ async function getPlanesDestacadosMulti(
   let query = supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, fecha_inicio, fecha_fin, categoria, precio, relevancia, cartel_url, foto_lugar_nombre)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos!inner(slug, fecha_inicio, fecha_fin, categoria, precio, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos)"
     )
     .in(
       "municipio_id",
@@ -495,7 +503,7 @@ async function getEventosDelMunicipio(
   let query = supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, lat, lon, primera_deteccion, ultima_deteccion, activo"
     )
     .eq("municipio_id", municipioId)
     .eq("activo", true);
@@ -595,7 +603,7 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
   const { data } = await supabase
     .from("planes")
     .select(
-      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, precio, relevancia, cartel_url, foto_lugar_nombre)"
+      "id, municipio_id, fecha_generacion, titulo, descripcion, momento, vigencia, audiencia, tipo, evento_id, enlace_afiliado, fuente, eventos(slug, precio, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos)"
     )
     .eq("municipio_id", municipioId)
     .contains("vigencia", [vigencia])
@@ -604,13 +612,20 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
     .order("momento")
     .order("relevancia", { ascending: false, nullsFirst: false, referencedTable: "eventos" });
 
+  interface EventoGratisJoin {
+    slug: string;
+    precio: string | null;
+    relevancia: number | null;
+    cartel_url: string | null;
+    foto_lugar_nombre: string | null;
+    zona_cercana: string | null;
+    zona_cercana_minutos: number | null;
+  }
+
   return (data ?? [])
     .map((fila) => {
       const { eventos, ...plan } = fila as unknown as Plan & {
-        eventos:
-          | { slug: string; precio: string | null; relevancia: number | null; cartel_url: string | null; foto_lugar_nombre: string | null }
-          | { slug: string; precio: string | null; relevancia: number | null; cartel_url: string | null; foto_lugar_nombre: string | null }[]
-          | null;
+        eventos: EventoGratisJoin | EventoGratisJoin[] | null;
       };
       const ev = Array.isArray(eventos) ? eventos[0] : eventos;
       return {
@@ -619,6 +634,8 @@ export async function getPlanesGratisPorVigencia(municipioId: string, vigencia: 
           evento_slug: ev?.slug ?? null,
           evento_cartel_url: ev?.cartel_url ?? null,
           evento_foto_lugar_nombre: ev?.foto_lugar_nombre ?? null,
+          evento_zona_cercana: ev?.zona_cercana ?? null,
+          evento_zona_cercana_minutos: ev?.zona_cercana_minutos ?? null,
         },
         precio: ev?.precio ?? null,
       };

@@ -62,7 +62,8 @@
     "vacioSemanaGratis": "No free plans detected for this week yet. Check back in a few days.",
     "vacioSiempre": "No active plans right now. Check back in a few days.",
     "vacioSiempreGratis": "No active free plans right now. Check back in a few days.",
-    "reservar": "Book →"
+    "reservar": "Book →",
+    "aMinDe": "{minutos} min from {municipio}"
   },
   "ComunidadHome": {
     "titulo": "What to do in {comunidad}"
@@ -167,7 +168,8 @@
     "otrosPlanesEn": "Other plans in {municipio} {cuando}",
     "cuandoHoy": "today",
     "cuandoFinde": "this weekend",
-    "cuandoMes": "in {mes}"
+    "cuandoMes": "in {mes}",
+    "zonaCercana": "{zona} — {minutos} min from {municipio}"
   },
   "Home": {
     "titulo": "keplaneo",

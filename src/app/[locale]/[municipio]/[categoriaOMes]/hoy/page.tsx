@@ -90,7 +90,7 @@ export default async function CategoriaHoyPage({
 
         <FiltrosPagina primarios={temporales} secundarios={secundarios} />
 
-        <PlanList planes={planes} base={base} contexto="hoy" />
+        <PlanList planes={planes} base={base} contexto="hoy" municipioNombre={municipio.nombre} />
       </div>
     </main>
   );

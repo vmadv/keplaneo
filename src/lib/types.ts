@@ -50,6 +50,8 @@ export interface Plan {
   evento_categoria?: Categoria | null;
   evento_cartel_url?: string | null;
   evento_foto_lugar_nombre?: string | null;
+  evento_zona_cercana?: string | null;
+  evento_zona_cercana_minutos?: number | null;
   enlace_afiliado: string | null;
   fuente: string | null;
 }
@@ -89,6 +91,12 @@ export interface Evento {
   // reutilizable entre eventos del mismo sitio).
   cartel_url: string | null;
   foto_lugar_nombre: string | null;
+  // Plan de un pueblo/zona cercana al municipio de la página, no del
+  // propio municipio (ver conversación, generarPlanesZonaCercana en
+  // gemini.ts) — cuando está rellena, la ficha muestra "A X min de
+  // {municipio}" en vez de tratarlo como si fuera del propio municipio.
+  zona_cercana: string | null;
+  zona_cercana_minutos: number | null;
   primera_deteccion: string;
   ultima_deteccion: string;
   activo: boolean;

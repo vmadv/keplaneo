@@ -89,6 +89,7 @@ export default async function EventosPageLayout({
           contexto={contexto}
           obtenerEtiqueta={obtenerEtiqueta}
           mensajeVacio={mensajeVacio}
+          municipioNombre={municipio.nombre}
         />
         {enlaceMasPlanes && (
           <p className="mt-8 text-center">

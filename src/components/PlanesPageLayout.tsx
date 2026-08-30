@@ -80,6 +80,7 @@ export default async function PlanesPageLayout({
           base={base}
           mostrarDiaFinde={current.vigencia === "finde"}
           contexto={current.vigencia}
+          municipioNombre={municipio.nombre}
         />
         {enlaceMasPlanes && (
           <p className="mt-8 text-center">

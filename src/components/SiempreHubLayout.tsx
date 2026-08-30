@@ -139,11 +139,11 @@ export default async function SiempreHubLayout({
 
         <section className="mt-10 pt-8" style={{ borderTop: "2px dashed var(--border)" }}>
           <h2 className="text-lg font-extrabold mb-3">{tituloTodo}</h2>
-          <ListaEventos eventos={genericosVisibles} base={base} contexto="siempre" mensajeVacio={tPlanList("vacioSiempre")} />
+          <ListaEventos eventos={genericosVisibles} base={base} contexto="siempre" mensajeVacio={tPlanList("vacioSiempre")} municipioNombre={municipio.nombre} />
           {genericosResto.length > 0 && (
             <ExpandibleSeccion textoVerMas={tHome("verMasPlanes")} textoVerMenos={tHome("verMenosPlanes")}>
               <div className="mt-5">
-                <ListaEventos eventos={genericosResto} base={base} contexto="siempre" />
+                <ListaEventos eventos={genericosResto} base={base} contexto="siempre" municipioNombre={municipio.nombre} />
               </div>
             </ExpandibleSeccion>
           )}

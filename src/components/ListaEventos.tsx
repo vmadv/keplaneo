@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
-import { Sun, Moon, CalendarDays } from "lucide-react";
+import { Sun, Moon, CalendarDays, Navigation } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
 import { urlFotoProxy } from "@/lib/places";
@@ -15,12 +15,17 @@ export default async function ListaEventos({
   contexto,
   obtenerEtiqueta,
   mensajeVacio,
+  municipioNombre,
 }: {
   eventos: Evento[];
   base: string;
   contexto?: string;
   obtenerEtiqueta?: (evento: Evento) => string | null;
   mensajeVacio?: string;
+  // Nombre del municipio de ESTA página (no el del evento) — para la
+  // etiqueta "A X min de {municipio}" en planes de zona cercana (ver
+  // conversación, generarPlanesZonaCercana en gemini.ts).
+  municipioNombre?: string;
 }) {
   const t = await getTranslations("PlanList");
   const vacio = mensajeVacio ?? t("vacioCategoria");
@@ -75,6 +80,12 @@ export default async function ListaEventos({
                       >
                         <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
                         {etiquetaDia}
+                      </span>
+                    )}
+                    {evento.zona_cercana && evento.zona_cercana_minutos != null && municipioNombre && (
+                      <span className="badge-pill" style={{ background: "var(--muted)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}>
+                        <Navigation size={11} strokeWidth={2.5} className="mr-1" />
+                        {t("aMinDe", { minutos: evento.zona_cercana_minutos, municipio: municipioNombre })}
                       </span>
                     )}
                   </div>

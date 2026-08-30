@@ -62,7 +62,8 @@
     "vacioSemanaGratis": "Todavía no hay planes gratis detectados para esta semana. Vuelve a revisar en unos días.",
     "vacioSiempre": "Todavía no hay planes activos ahora mismo. Vuelve a revisar en unos días.",
     "vacioSiempreGratis": "Todavía no hay planes gratis activos ahora mismo. Vuelve a revisar en unos días.",
-    "reservar": "Reservar →"
+    "reservar": "Reservar →",
+    "aMinDe": "A {minutos} min de {municipio}"
   },
   "ComunidadHome": {
     "titulo": "Qué hacer en {comunidad}"
@@ -167,7 +168,8 @@
     "otrosPlanesEn": "Otros planes en {municipio} {cuando}",
     "cuandoHoy": "hoy",
     "cuandoFinde": "este fin de semana",
-    "cuandoMes": "en {mes}"
+    "cuandoMes": "en {mes}",
+    "zonaCercana": "{zona} — a {minutos} min de {municipio}"
   },
   "Home": {
     "titulo": "keplaneo",

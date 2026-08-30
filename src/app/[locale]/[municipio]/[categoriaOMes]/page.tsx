@@ -107,7 +107,7 @@ export default async function CategoriaOMesPage({
 
           <FiltrosPagina primarios={primarios} secundarios={secundarios} />
 
-          <PlanList planes={planes} base={base} contexto={mes} />
+          <PlanList planes={planes} base={base} contexto={mes} municipioNombre={municipio.nombre} />
         </div>
       </main>
     );

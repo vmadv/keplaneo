@@ -89,7 +89,7 @@ export default async function CategoriaFindePage({
 
         <FiltrosPagina primarios={temporales} secundarios={secundarios} />
 
-        <PlanList planes={planes} base={base} mostrarDiaFinde contexto="finde" />
+        <PlanList planes={planes} base={base} mostrarDiaFinde contexto="finde" municipioNombre={municipio.nombre} />
       </div>
     </main>
   );
