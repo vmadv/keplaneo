@@ -6,6 +6,13 @@ import TarjetaCiudad from "./TarjetaCiudad";
 
 const COLORES = ["var(--secondary)", "var(--tertiary)", "var(--quaternary)"];
 const VISIBLES_INICIAL = 6;
+// En mobile (una sola columna) 6 tarjetas de golpe es mucho scroll antes
+// de llegar al resto de la home — se enseñan solo 4 y el resto queda tras
+// "Ver más" igual que en desktop (ver conversación). Es una clase CSS por
+// tarjeta (max-sm:hidden), no un valor distinto de VISIBLES_INICIAL: así
+// el HTML que manda el servidor es el mismo en cualquier dispositivo, sin
+// depender de detectar el viewport para decidir qué renderizar.
+const VISIBLES_MOBILE = 4;
 
 interface MunicipioItem {
   id: string;
@@ -27,14 +34,14 @@ export default function ListaCiudadesHome({
   textoVerMenos: string;
 }) {
   const [expandido, setExpandido] = useState(false);
-  const hayOcultas = municipios.length > VISIBLES_INICIAL;
+  const hayOcultas = municipios.length > VISIBLES_MOBILE;
   const visibles = expandido ? municipios : municipios.slice(0, VISIBLES_INICIAL);
 
   return (
     <>
       <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {visibles.map((m, i) => (
-          <li key={m.id}>
+          <li key={m.id} className={!expandido && i >= VISIBLES_MOBILE ? "max-sm:hidden" : undefined}>
             <TarjetaCiudad
               nombre={m.nombre}
               href={`/${m.slug}`}
