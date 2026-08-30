@@ -706,17 +706,20 @@ async function getEventosDelMunicipio(
     return 3;
   }
 
-  // Dentro del mismo grupo, un evento con fecha concreta y corta (un solo
-  // día, o un rango de hasta 7 días) ordena primero por esa fecha real (el
-  // más próximo antes) — más útil que la relevancia en un listado tipo
-  // "Todos los conciertos", donde lo lógico es ver primero lo que pasa
-  // antes (ver conversación). Un rango largo (ej. una exposición de un mes)
-  // no es "lo próximo" de la misma forma que un concierto de un día
-  // concreto — se pospone, cae de vuelta a relevancia+alfabético, igual que
-  // una fecha que no se pudo interpretar.
+  // Dentro del mismo grupo, un evento con fecha concreta que lo sitúa en un
+  // mes real (un solo día, o un rango de hasta ~un mes: un festival de una
+  // semana o diez días sigue siendo "algo que pasa en septiembre", no debe
+  // perder su sitio cronológico) ordena por esa fecha real (el más próximo
+  // antes) — más útil que la relevancia en un listado tipo "Todos los
+  // conciertos" (ver conversación: un ciclo del 10 al 19 de septiembre
+  // quedaba enterrado entre contenido de relevancia sin relación, en vez de
+  // intercalado con el resto de septiembre). Solo lo que dura de verdad
+  // meses (ej. "todo el verano") no tiene un mes concreto al que pertenecer
+  // y se pospone, cayendo a relevancia+alfabético — igual que una fecha que
+  // no se pudo interpretar.
   const hoy = hoyEnMadrid();
   const UN_DIA_MS = 24 * 60 * 60 * 1000;
-  const DURACION_MAXIMA_DIAS = 7;
+  const DURACION_MAXIMA_DIAS = 31;
   function fechaOrdenable(e: Evento): number | null {
     if (!e.fecha_inicio) return null;
     const inicio = fechaDesdeTextoEspanol(e.fecha_inicio);
