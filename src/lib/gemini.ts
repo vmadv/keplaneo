@@ -456,6 +456,25 @@ function extraerTrasConector(texto: string): string | null {
   return m ? m[2].trim() : null;
 }
 
+// Preposiciones/conectores de 3+ letras que el filtro original (solo
+// longitud > 2) dejaba pasar como si fueran palabras de contenido — dos
+// títulos con la misma ESTRUCTURA genérica ("Paseo por la Plaza del
+// Arenal" / "Paseo por la Plaza de la Constitución", dos plazas distintas
+// de verdad) comparten "paseo/por/plaza/del" y ya superaban el umbral sin
+// tener nada que ver — ver conversación (detectado limpiando duplicados
+// en varios municipios). Solo las palabras de CONTENIDO real (nombres de
+// sitios, temas) deben contar para el solapamiento.
+const PALABRAS_VACIAS = new Set([
+  "por", "del", "las", "los", "una", "uno", "sus", "con", "sin", "para",
+  "este", "esta", "esto", "estos", "estas", "tras", "muy", "mas", "todo",
+  "toda", "todos", "todas", "que", "como", "sobre", "entre", "hasta",
+  "desde", "cada", "otro", "otra", "otros", "otras", "son", "hay",
+]);
+
+function esPalabraSignificativa(palabra: string): boolean {
+  return palabra.length > 2 && !PALABRAS_VACIAS.has(palabra);
+}
+
 export function mismoEvento(a: string, b: string): boolean {
   const na = normalizarTitulo(a);
   const nb = normalizarTitulo(b);
@@ -473,8 +492,8 @@ export function mismoEvento(a: string, b: string): boolean {
 
   if (na.length > 8 && nb.length > 8 && (na.includes(nb) || nb.includes(na))) return true;
 
-  const palabrasA = new Set(na.split(" ").filter((w) => w.length > 2));
-  const palabrasB = new Set(nb.split(" ").filter((w) => w.length > 2));
+  const palabrasA = new Set(na.split(" ").filter(esPalabraSignificativa));
+  const palabrasB = new Set(nb.split(" ").filter(esPalabraSignificativa));
   const menor = Math.min(palabrasA.size, palabrasB.size);
   if (menor === 0) return false;
   const interseccion = [...palabrasA].filter((w) => palabrasB.has(w)).length;
