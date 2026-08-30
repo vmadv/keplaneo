@@ -170,12 +170,12 @@
     "cuandoMes": "en {mes}"
   },
   "Home": {
-    "titulo": "Keplaneo",
+    "titulo": "keplaneo",
     "rotativoEnSevilla": "en Sevilla",
     "rotativoEsteFinde": "este finde",
     "rotativoHoy": "hoy",
     "rotativoConciertos": "conciertos",
-    "descripcion": "Los mejores planes de la provincia de Sevilla, ciudad a ciudad.",
+    "descripcion": "Los mejores planes de la provincia de Sevilla, ciudad a ciudad — para que no te pierdas nada.",
     "sinMunicipios": "Todavía no hay municipios cargados.",
     "tituloCiudades": "Ciudades disponibles",
     "verMasCiudades": "Ver más ciudades",

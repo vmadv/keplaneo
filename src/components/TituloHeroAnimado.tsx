@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "motion/react";
+import { Sparkles } from "lucide-react";
 
 export interface RotativoHero {
   texto: string;
@@ -14,13 +15,15 @@ export interface RotativoHero {
   colorTexto: string;
 }
 
-// H1 de la home: "Keplaneo" fijo + una palabra que rota (en Sevilla / este
-// finde / hoy / conciertos...) dentro de un "sticker" propio — mismo
-// lenguaje visual que el resto del sitio (borde grueso + sombra dura, como
-// .card-sticker/.btn-primary) en vez del texto suelto de antes, con icono
-// y color de fondo distintos por palabra para que el cambio se note más y
-// sin el círculo decorativo que había detrás (ver conversación). Solo esta
-// instancia lo usa, así que no lleva más props de las que hacen falta aquí.
+// H1 de la home: "keplaneo" fijo (siempre en su propia línea, para que no
+// salte de una línea a dos según lo larga que sea la palabra rotativa de
+// turno) + una palabra que rota (en Sevilla / este finde / hoy /
+// conciertos...) debajo, dentro de un "sticker" propio — mismo lenguaje
+// visual que el resto del sitio (borde grueso + sombra dura, como
+// .card-sticker/.btn-primary), con icono y color de fondo distintos por
+// palabra. El wordmark lleva degradado + un par de destellos animados
+// (ver conversación: "añádele algo de magia"). Solo esta instancia lo usa,
+// así que no lleva más props de las que hacen falta aquí.
 export default function TituloHeroAnimado({
   estatico,
   rotativos,
@@ -41,8 +44,33 @@ export default function TituloHeroAnimado({
 
   return (
     <LazyMotion features={domAnimation}>
-      <h1 className="flex flex-wrap items-center gap-x-4 gap-y-3 text-5xl font-extrabold mb-3 text-balance">
-        <span>{estatico}</span>
+      <h1 className="flex flex-col items-start gap-3 text-5xl font-extrabold mb-3 text-balance">
+        <span className="relative inline-block">
+          <span
+            className="bg-clip-text text-transparent"
+            style={{ backgroundImage: "linear-gradient(90deg, var(--accent), var(--secondary))" }}
+          >
+            {estatico}
+          </span>
+          <m.span
+            className="absolute -top-2 -right-5"
+            style={{ color: "var(--tertiary)" }}
+            animate={{ opacity: [0.3, 1, 0.3], scale: [0.7, 1.15, 0.7], rotate: [0, 20, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            aria-hidden="true"
+          >
+            <Sparkles size={22} strokeWidth={2.5} />
+          </m.span>
+          <m.span
+            className="absolute top-1/3 -right-10"
+            style={{ color: "var(--accent)" }}
+            animate={{ opacity: [0.2, 0.9, 0.2], scale: [0.6, 1, 0.6], rotate: [0, -15, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.7 }}
+            aria-hidden="true"
+          >
+            <Sparkles size={14} strokeWidth={2.5} />
+          </m.span>
+        </span>
         <AnimatePresence mode="wait">
           <m.span
             key={actual.texto}

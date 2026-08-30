@@ -170,12 +170,12 @@
     "cuandoMes": "in {mes}"
   },
   "Home": {
-    "titulo": "Keplaneo",
+    "titulo": "keplaneo",
     "rotativoEnSevilla": "in Sevilla",
     "rotativoEsteFinde": "this weekend",
     "rotativoHoy": "today",
     "rotativoConciertos": "concerts",
-    "descripcion": "The best plans in Seville's province, city by city.",
+    "descripcion": "The best plans in Seville's province, city by city — so you never miss out.",
     "sinMunicipios": "No towns loaded yet.",
     "tituloCiudades": "Available cities",
     "verMasCiudades": "See more cities",
