@@ -121,9 +121,14 @@ function extraerJSON(texto: string): unknown {
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/, "")
     .replace(/```\s*$/, "")
-    // Restos de marcadores de cita del grounding (ej. "[1]", "[1.1.1]") que
-    // a veces se cuelan en medio del texto de la descripción.
-    .replace(/\[\d+(?:\.\d+)*\]/g, "");
+    // Restos de marcadores de cita del grounding (ej. "[1]", "[1.1.1]", y
+    // citas múltiples "[1, 2, 5]" cuando un mismo dato viene respaldado por
+    // varias fuentes a la vez — mucho más frecuente en municipios grandes
+    // con mucho contenido real y citable, como Sevilla, que en un pueblo
+    // pequeño; sin cubrir esta variante, la coma suelta dentro del corchete
+    // rompía el JSON justo donde se esperaba una coma o un cierre de llave,
+    // ver conversación) que a veces se cuelan en medio del texto.
+    .replace(/\[\s*\d+(?:\.\d+)*(?:\s*,\s*\d+(?:\.\d+)*)*\s*\]/g, "");
   return JSON.parse(escaparControlesDentroDeStrings(limpio));
 }
 
