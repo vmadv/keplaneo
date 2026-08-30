@@ -44,13 +44,28 @@ function primerTramoUbicacion(ubicacion: string): string {
   return ubicacion.split(",")[0].trim();
 }
 
+// El nombre del municipio es relleno casi universal en las ubicaciones de
+// ese municipio ("Piscinas Municipales de Mairena del Aljarafe", "Ateneo
+// de Mairena del Aljarafe"...) — sin quitarlo, dos lugares completamente
+// distintos comparten esas palabras y el solapamiento de mismoEvento los
+// funde por error (ver conversación: piscinas municipales y el ateneo
+// acabaron "emparejados" solo por compartir "Mairena del Aljarafe").
+function quitarMunicipio(texto: string, municipioNombre: string): string {
+  const escapado = municipioNombre.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return texto.replace(new RegExp(`\\s*,?\\s*(de\\s+)?${escapado}\\s*$`, "i"), "").trim();
+}
+
 function mismoLugarGenerico(
   a: { esGenerico: boolean; ubicacion: string | null | undefined },
-  b: { esGenerico: boolean; ubicacion: string | null | undefined }
+  b: { esGenerico: boolean; ubicacion: string | null | undefined },
+  municipioNombre: string
 ): boolean {
   if (!a.esGenerico || !b.esGenerico) return false;
   if (!a.ubicacion || !b.ubicacion) return false;
-  return mismoEvento(primerTramoUbicacion(a.ubicacion), primerTramoUbicacion(b.ubicacion));
+  const tramoA = quitarMunicipio(primerTramoUbicacion(a.ubicacion), municipioNombre);
+  const tramoB = quitarMunicipio(primerTramoUbicacion(b.ubicacion), municipioNombre);
+  if (!tramoA || !tramoB) return false;
+  return mismoEvento(tramoA, tramoB);
 }
 
 // Da identidad estable a TODOS los planes de un lote recién generado (no
@@ -114,7 +129,8 @@ export async function upsertEventosDelLote(
         mismoEvento(planes[g[0]].titulo, planes[i].titulo) ||
         mismoLugarGenerico(
           { esGenerico: planes[g[0]].tipo === "generico", ubicacion: planes[g[0]].ubicacion },
-          { esGenerico: planes[i].tipo === "generico", ubicacion: planes[i].ubicacion }
+          { esGenerico: planes[i].tipo === "generico", ubicacion: planes[i].ubicacion },
+          municipioNombre
         )
     );
     if (grupo) grupo.push(i);
@@ -153,7 +169,11 @@ export async function upsertEventosDelLote(
     const idxExistente = disponibles.findIndex(
       (e) =>
         mismoEvento(e.titulo, p.titulo) ||
-        mismoLugarGenerico({ esGenerico: e.fecha_inicio === null, ubicacion: e.ubicacion }, { esGenerico: p.tipo === "generico", ubicacion: p.ubicacion })
+        mismoLugarGenerico(
+          { esGenerico: e.fecha_inicio === null, ubicacion: e.ubicacion },
+          { esGenerico: p.tipo === "generico", ubicacion: p.ubicacion },
+          municipioNombre
+        )
     );
     const existente = idxExistente >= 0 ? disponibles[idxExistente] : null;
 

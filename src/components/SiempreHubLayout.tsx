@@ -14,7 +14,10 @@ import { ordenarPorRelevanciaConDiversidad } from "@/lib/ordenEventos";
 import { piezasTemporales } from "@/lib/resumenSeleccion";
 import type { MunicipioConComunidad } from "@/lib/queries";
 
-const MAX_GENERICOS_VISIBLES = 15;
+// Ver conversación: se muestran 20-25 de entrada, con "ver más" para
+// desplegar el resto sin límite — ni un tope tan bajo que se sienta vacío
+// en municipios con catálogo amplio, ni tan alto que abrume de entrada.
+const MAX_GENERICOS_VISIBLES = 20;
 
 function capitalizar(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
