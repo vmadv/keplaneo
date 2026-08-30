@@ -115,7 +115,10 @@
   },
   "Categoria": {
     "titulo": "{categoria} en {municipio}",
-    "metaDescripcion": "Descubre los mejores {categoria} en {municipio}: planes reales, actualizados automáticamente cada día."
+    "metaDescripcion": "Descubre los mejores {categoria} en {municipio}: planes reales, actualizados automáticamente cada día.",
+    "tituloDestacados": "Los mejores {categoria} esta semana en {municipio}",
+    "verMasSemana": "Ver más de esta semana",
+    "tituloTodos": "Todos los {categoria} en {municipio}"
   },
   "CategoriaCombo": {
     "hoy": "{categoria} hoy en {municipio} ({fecha})",

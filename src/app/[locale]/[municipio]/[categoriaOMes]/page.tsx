@@ -10,6 +10,7 @@ import FiltrosPagina from "@/components/FiltrosPagina";
 import HeroPortada from "@/components/HeroPortada";
 import { normalizarMesSlug, mesSlugParaLocale, proximosMesesSlugs } from "@/lib/dates";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
+import { ordenarPorDiaDeSemana } from "@/lib/semana";
 import { getMunicipio, getPlanesDelMes, getEventosPorCategoria } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
 import { buscarImagenHero } from "@/lib/heroImage";
@@ -130,12 +131,13 @@ export default async function CategoriaOMesPage({
   if (esCategoriaConPagina(categoriaOMes)) {
     const categoria = categoriaOMes;
     const catBase = `${base}/${categoria}`;
-    const [eventos, temporales, tCategoria, tCategorias, tFiltros] = await Promise.all([
+    const [eventos, temporales, tCategoria, tCategorias, tFiltros, locale] = await Promise.all([
       getEventosPorCategoria(municipio.id, categoria),
       construirFiltrosTemporales(catBase, ""),
       getTranslations("Categoria"),
       getTranslations("Categorias"),
       getTranslations("Filtros"),
+      getLocale(),
     ]);
     const etiqueta = tCategorias(categoria);
     // "Todos" (esta misma página) va primero y activo; el resto son enlaces
@@ -147,6 +149,14 @@ export default async function CategoriaOMesPage({
       { label: tFiltros("todos"), href: catBase, activo: true },
       ...temporales.filter((item) => item.href !== catBase),
     ];
+
+    // Destacados de esta semana, mismo criterio de orden que ya usa la
+    // combinación categoría+esta-semana (puntual concreto de esta semana
+    // primero, ver ordenarPorDiaDeSemana) — un bloque aparte arriba, igual
+    // que ya tiene el hub "siempre" del municipio, en vez de un único listón
+    // plano con todo mezclado (ver conversación).
+    const { eventos: eventosSemana, etiquetas } = ordenarPorDiaDeSemana(eventos, locale);
+    const destacados = eventosSemana.slice(0, 4);
 
     return (
       <main className="flex-1 bg-dots">
@@ -165,7 +175,31 @@ export default async function CategoriaOMesPage({
 
           <FiltroTemporal items={filtros} />
 
-          <ListaEventos eventos={eventos} base={base} />
+          {destacados.length > 0 && (
+            <section className="mb-10">
+              <h2 className="text-lg font-extrabold mb-3">
+                {tCategoria("tituloDestacados", { categoria: etiqueta, municipio: municipio.nombre })}
+              </h2>
+              <ListaEventos
+                eventos={destacados}
+                base={base}
+                contexto="semana"
+                obtenerEtiqueta={(evento) => etiquetas.get(evento.id) ?? null}
+              />
+              <p className="mt-4">
+                <Link href={`${catBase}/esta-semana`} className="btn-secondary text-sm">
+                  {tCategoria("verMasSemana")} →
+                </Link>
+              </p>
+            </section>
+          )}
+
+          <section className="mt-10 pt-8" style={{ borderTop: "2px dashed var(--border)" }}>
+            <h2 className="text-lg font-extrabold mb-3">
+              {tCategoria("tituloTodos", { categoria: etiqueta, municipio: municipio.nombre })}
+            </h2>
+            <ListaEventos eventos={eventos} base={base} />
+          </section>
 
           <p className="mt-10 pt-8" style={{ borderTop: "2px dashed var(--border)" }}>
             <Link href={base} className="btn-primary">
