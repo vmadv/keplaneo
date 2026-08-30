@@ -1,7 +1,8 @@
 {
   "Sitio": {
     "titulo": "Keplaneo",
-    "descripcion": "Things to do today, this weekend, or this month in Seville and the towns of its province."
+    "descripcion": "Things to do today, this weekend, or this month in Seville and the towns of its province.",
+    "descripcionMarca": "A portal for plans and activities: what to do today, this weekend, or this month, updated every day."
   },
   "NotFound": {
     "titulo": "This page missed its own plan",

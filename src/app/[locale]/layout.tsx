@@ -74,7 +74,7 @@ export default async function LocaleLayout({
   // component.
   const comunidad = await getComunidadBySlug("andalucia");
   const municipios = comunidad ? await getMunicipiosByComunidad(comunidad.id) : [];
-  const jsonLdOrganizacion = construirOrganizacionYSitioJsonLd();
+  const jsonLdOrganizacion = await construirOrganizacionYSitioJsonLd();
 
   return (
     <html lang={locale} className={`${outfit.variable} ${jakarta.variable} h-full antialiased`}>

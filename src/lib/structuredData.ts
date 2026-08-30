@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { fechaDesdeTextoEspanol, formatearFechaISO, hoyEnMadrid } from "./dates";
 import { SITE_URL } from "./rutasLocale";
 import { urlDeFoto } from "./places";
@@ -174,8 +175,13 @@ export function construirItemListJsonLd(
 
 // Organization + WebSite, una sola vez en el layout raíz — identidad de
 // marca básica que Google puede usar para el Knowledge Panel / sitelinks,
-// no ligada a ninguna página en concreto.
-export function construirOrganizacionYSitioJsonLd(): Record<string, unknown> {
+// no ligada a ninguna página en concreto. Descripción sin ciudad a
+// propósito (la marca es "Keplaneo" a secas, escalable a más ciudades —
+// ver conversación); sin `logo` ni `sameAs` todavía porque no existe un
+// logo real ni redes sociales — mejor omitirlos que rellenarlos con algo
+// falso.
+export async function construirOrganizacionYSitioJsonLd(): Promise<Record<string, unknown>> {
+  const t = await getTranslations("Sitio");
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -183,6 +189,7 @@ export function construirOrganizacionYSitioJsonLd(): Record<string, unknown> {
         "@type": "Organization",
         name: "Keplaneo",
         url: SITE_URL,
+        description: t("descripcionMarca"),
       },
       {
         "@type": "WebSite",

@@ -1,7 +1,8 @@
 {
   "Sitio": {
     "titulo": "Keplaneo",
-    "descripcion": "Qué hacer hoy, este fin de semana o este mes en Sevilla y los municipios de su provincia."
+    "descripcion": "Qué hacer hoy, este fin de semana o este mes en Sevilla y los municipios de su provincia.",
+    "descripcionMarca": "Portal de planes y actividades: qué hacer hoy, este fin de semana o este mes, con información actualizada cada día."
   },
   "NotFound": {
     "titulo": "Esta página se ha perdido el plan",
