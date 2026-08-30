@@ -7,6 +7,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import MunicipioPageNav from "@/components/MunicipioPageNav";
 import { getListadosDelMunicipio, getMunicipioConProvincia } from "@/lib/queries";
 import { agruparPorSeccion, slugDeSeccion, type SeccionListado } from "@/lib/categoriasListados";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -37,7 +38,11 @@ export async function generateMetadata({
   const municipio = await cargar(ccaa, provincia, municipioSlug);
   if (!municipio) return {};
   const t = await getTranslations("Listados");
-  return { title: `${t("seccionTitulo", { municipio: municipio.nombre })} | Planes España` };
+  return {
+    title: `${t("seccionTitulo", { municipio: municipio.nombre })} | Keplaneo`,
+    description: t("metaDescripcionMunicipio", { municipio: municipio.nombre }),
+    alternates: { languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipioSlug}`) },
+  };
 }
 
 export default async function RankingsIndexPage({

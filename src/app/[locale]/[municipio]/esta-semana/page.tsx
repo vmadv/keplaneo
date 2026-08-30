@@ -6,6 +6,7 @@ import { getMunicipio, getEventosActivos } from "@/lib/queries";
 import { rangoSemanaLegible } from "@/lib/dates";
 import { ordenarPorDiaDeSemana } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -22,7 +23,7 @@ export async function generateMetadata({
     construirMetaDescripcion(municipio.nombre, "semana"),
   ]);
   const title = await construirTituloConSufijo(tSemana("titulo", { municipio: municipio.nombre }));
-  return { title, description };
+  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/esta-semana`) } };
 }
 
 // No genera contenido nuevo: se apoya en `eventos` (la ficha estable que ya

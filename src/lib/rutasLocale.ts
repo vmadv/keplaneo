@@ -6,6 +6,12 @@
 // tenga que cambiar sus imports.
 import { esMesSlugValido, normalizarMesSlug, mesSlugParaLocale } from "./dates";
 
+// Fuente única para el dominio real del sitio — antes cada archivo repetía
+// `process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"` por su
+// cuenta; con metadataBase/hreflang tocando ahora casi todas las páginas,
+// mejor un solo sitio donde cambiarlo.
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 // "Cuándo" (cuatro franjas, mutuamente excluyentes) y "Filtra más" (a
 // quién va dirigido / precio, también mutuamente excluyente entre sí) son
 // dos ejes independientes que SÍ se pueden combinar — ver conversación.
@@ -129,3 +135,24 @@ export function traducirRutaAOtroIdioma(pathname: string, localeDestino: string)
 // Reexportado para que traducirRutaAOtroIdioma/quien la use pueda validar
 // un segmento de mes sin importar dates.ts aparte.
 export { esMesSlugValido };
+
+// Para el hreflang (alternates.languages en generateMetadata): a partir de
+// la ruta española canónica de ESTA página (la que ya calcula cada page.tsx
+// para sus propios enlaces internos, ej. `${base}/hoy`), calcula las dos
+// URLs absolutas equivalentes — se apoya en traducirRutaAOtroIdioma, que ya
+// sabe traducir cada segmento conocido y dejar intacto el resto (slug de
+// municipio, categoría, evento...). "es" es el idioma por defecto sin
+// prefijo (ver routing.ts, localePrefix: "as-needed").
+export function alternatesIdiomas(rutaEspanola: string): Record<string, string> {
+  const rutaIngles = traducirRutaAOtroIdioma(rutaEspanola, "en");
+  const urlEs = `${SITE_URL}${rutaEspanola}`;
+  // La home ("/") es un caso especial: "/en" + "/" daría "/en/", que Next
+  // redirige con un 308 a "/en" — nunca declarar en un sitemap/hreflang una
+  // URL que ni siquiera es la final de verdad (ver conversación).
+  const sufijoIngles = rutaIngles === "/" ? "" : rutaIngles;
+  return {
+    es: urlEs,
+    en: `${SITE_URL}/en${sufijoIngles}`,
+    "x-default": urlEs,
+  };
+}

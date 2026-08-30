@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Heart, Users, Gift, MapPin, CalendarDays, Sun, Music } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -9,8 +10,22 @@ import { ICONO_CATEGORIA } from "@/lib/filtros";
 import { buscarImagenHero } from "@/lib/heroImage";
 import { getComunidadBySlug, getMunicipiosByComunidad, getPlanesDestacadosDeMunicipio, getPlanesDestacadosSinMunicipio } from "@/lib/queries";
 import { CATEGORIAS_CON_PAGINA } from "@/lib/types";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 3600;
+
+// Antes esta página no tenía generateMetadata propio (caía en el título/
+// descripción del layout raíz) — sin uno propio no se le puede añadir el
+// hreflang correcto (el del layout se heredaría igual en cualquier otra
+// página que tampoco lo declare, apuntando siempre a "/").
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Sitio");
+  return {
+    title: t("titulo"),
+    description: t("descripcion"),
+    alternates: { languages: alternatesIdiomas("/") },
+  };
+}
 
 // MVP temporal centrado en la provincia de Sevilla (ver conversación): la
 // portada enseña primero las ciudades disponibles, luego atajos a los

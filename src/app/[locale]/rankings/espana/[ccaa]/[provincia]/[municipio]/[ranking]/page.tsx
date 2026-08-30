@@ -9,6 +9,8 @@ import MunicipioPageNav from "@/components/MunicipioPageNav";
 import TextoConNegritas from "@/components/TextoConNegritas";
 import { getListado, getMunicipioConProvincia } from "@/lib/queries";
 import { urlDeFoto, RATING_MINIMO, RESENAS_MINIMAS, tieneRatingFiable } from "@/lib/places";
+import { alternatesIdiomas, SITE_URL } from "@/lib/rutasLocale";
+import { construirItemListJsonLd, construirFaqJsonLd } from "@/lib/structuredData";
 import type { PuestoListado } from "@/lib/types";
 
 // Estructura inspirada en rankings tipo premio (numerado, top-3 destacado,
@@ -50,8 +52,11 @@ export async function generateMetadata({
       .join(", ")} y más, verificados con datos de Google Maps.`;
 
   return {
-    title: `${listado.titulo} | Planes España`,
+    title: `${listado.titulo} | Keplaneo`,
     description,
+    alternates: {
+      languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipio}/${ranking}`),
+    },
   };
 }
 
@@ -92,9 +97,10 @@ function Nota({ rating, numResenas, t }: { rating: number | null; numResenas: nu
 export default async function RankingPage({
   params,
 }: {
-  params: Promise<{ ccaa: string; provincia: string; municipio: string; ranking: string }>;
+  params: Promise<{ locale: string; ccaa: string; provincia: string; municipio: string; ranking: string }>;
 }) {
   const {
+    locale,
     ccaa: ccaaSlug,
     provincia: provinciaSlug,
     municipio: municipioSlug,
@@ -108,9 +114,19 @@ export default async function RankingPage({
   const base = `/rankings/espana/${ccaaSlug}/${provinciaSlug}/${municipioSlug}`;
   const podio = puestos.slice(0, 3);
   const resto = puestos.slice(3);
+  const prefijo = locale === "es" ? "" : `/${locale}`;
+  const urlBase = `${SITE_URL}${prefijo}${base}`;
+  const jsonLdItemList = construirItemListJsonLd(listado, puestos, urlBase);
+  const jsonLdFaq = construirFaqJsonLd(listado.preguntas_frecuentes);
 
   return (
     <main className="flex-1 bg-dots">
+      {jsonLdItemList && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdItemList) }} />
+      )}
+      {jsonLdFaq && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }} />
+      )}
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Breadcrumb
           items={[

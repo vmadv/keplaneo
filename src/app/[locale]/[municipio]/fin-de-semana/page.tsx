@@ -5,6 +5,7 @@ import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesFinde } from "@/lib/queries";
 import { rangoFinDeSemanaLegible } from "@/lib/dates";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -21,7 +22,7 @@ export async function generateMetadata({
     construirMetaDescripcion(municipio.nombre, "finde"),
   ]);
   const title = await construirTituloConSufijo(tFinde("titulo", { municipio: municipio.nombre }));
-  return { title, description };
+  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/fin-de-semana`) } };
 }
 
 export default async function FindePage({

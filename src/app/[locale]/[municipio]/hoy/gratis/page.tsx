@@ -5,7 +5,7 @@ import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesGratisPorVigencia } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
-import { hrefFiltro } from "@/lib/filtros";
+import { hrefFiltro, alternatesIdiomas } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
@@ -22,7 +22,7 @@ export async function generateMetadata({
     construirMetaDescripcion(municipio.nombre, "hoy", "gratis"),
   ]);
   const title = await construirTituloConSufijo(tGratis("titulo", { municipio: municipio.nombre }));
-  return { title, description };
+  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/hoy/gratis`) } };
 }
 
 export default async function HoyGratisPage({

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -5,6 +6,7 @@ import TarjetaCiudad from "@/components/TarjetaCiudad";
 import { buscarImagenHero } from "@/lib/heroImage";
 import { getComunidadBySlug, getMunicipiosByComunidad } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -37,6 +39,22 @@ async function tituloDelFiltro(filtro: string): Promise<string | null> {
     return t(filtro);
   }
   return null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ filtro: string }>;
+}): Promise<Metadata> {
+  const { filtro } = await params;
+  const titulo = await tituloDelFiltro(filtro);
+  if (!titulo) return {};
+  const tElegirCiudad = await getTranslations("ElegirCiudad");
+  return {
+    title: titulo,
+    description: tElegirCiudad("subtitulo"),
+    alternates: { languages: alternatesIdiomas(`/elige-ciudad/${filtro}`) },
+  };
 }
 
 export default async function ElegirCiudadPage({

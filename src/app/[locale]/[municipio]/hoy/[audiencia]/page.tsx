@@ -5,7 +5,7 @@ import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesHoy } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
-import { AUDIENCIAS_URL, normalizarAudienciaUrl, audienciaUrlParaLocale, audienciaDesdeUrl, hrefFiltro } from "@/lib/filtros";
+import { AUDIENCIAS_URL, normalizarAudienciaUrl, audienciaUrlParaLocale, audienciaDesdeUrl, hrefFiltro, alternatesIdiomas } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
@@ -40,7 +40,11 @@ export async function generateMetadata({
     tHoy("tituloAudiencia", { municipio: municipio.nombre, audiencia: minuscula(tAudiencia(extra)) }),
     extra
   );
-  return { title, description };
+  return {
+    title,
+    description,
+    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/hoy/${audiencia}`) },
+  };
 }
 
 export default async function HoyAudienciaPage({

@@ -3,6 +3,11 @@
     "titulo": "Keplaneo Sevilla",
     "descripcion": "Qué hacer hoy, este fin de semana o este mes en Sevilla y los municipios de su provincia."
   },
+  "NotFound": {
+    "titulo": "Esta página se ha perdido el plan",
+    "mensaje": "No encontramos lo que buscabas. Puede que el enlace esté desactualizado o la página ya no exista.",
+    "volver": "Volver al inicio"
+  },
   "Nav": {
     "inicio": "Inicio",
     "masFiltros": "Más filtros",
@@ -237,6 +242,8 @@
   "Listados": {
     "tituloGeneral": "Rankings",
     "subtituloGeneral": "Elige una ciudad para ver sus rankings: los mejores restaurantes, salud, educación y mucho más, elegidos por fama real y verificados con datos de Google Maps.",
+    "metaDescripcionMunicipio": "Los mejores restaurantes, alojamiento, salud, educación y mucho más en {municipio}, elegidos por fama real y verificados con datos de Google Maps.",
+    "metaDescripcionSeccion": "{seccion} en {municipio}: te enseñamos los mejores, elegidos por fama real y verificados con datos de Google Maps.",
     "sinCiudades": "Todavía no hay rankings publicados en ninguna ciudad.",
     "seccionTitulo": "Los mejores de {municipio}",
     "sinListados": "Todavía no hay listados publicados para {municipio}.",
@@ -266,6 +273,7 @@
   },
   "Lugar": {
     "breadcrumb": "Lugares",
+    "metaDescripcionGenerica": "{nombre} en {municipio}: teléfono, horario y valoración real, verificado con datos de Google Maps.",
     "rating": "{rating} · {n} reseñas",
     "direccion": "Dirección",
     "telefono": "Teléfono",

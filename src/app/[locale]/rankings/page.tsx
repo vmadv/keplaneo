@@ -4,6 +4,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import TarjetaCiudad from "@/components/TarjetaCiudad";
 import { buscarImagenHero } from "@/lib/heroImage";
 import { getMunicipiosConRankings } from "@/lib/queries";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -11,7 +12,11 @@ const COLORES = ["var(--secondary)", "var(--tertiary)", "var(--quaternary)"];
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Listados");
-  return { title: `${t("tituloGeneral")} | Planes España` };
+  return {
+    title: `${t("tituloGeneral")} | Keplaneo`,
+    description: t("subtituloGeneral"),
+    alternates: { languages: alternatesIdiomas("/rankings") },
+  };
 }
 
 // Punto de entrada genérico al vertical de rankings — "elige tu ciudad",

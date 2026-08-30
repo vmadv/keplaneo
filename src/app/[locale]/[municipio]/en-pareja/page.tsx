@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import SiempreHubLayout from "@/components/SiempreHubLayout";
 import { getMunicipio } from "@/lib/queries";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -20,7 +21,7 @@ export async function generateMetadata({
     construirMetaDescripcion(municipio.nombre, "siempre", "pareja"),
   ]);
   const title = await construirTituloConSufijo(tAudiencia("tituloSiemprePareja", { municipio: municipio.nombre }), "pareja");
-  return { title, description };
+  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/en-pareja`) } };
 }
 
 // Franja atemporal + audiencia "pareja" — ver conversación: slug propio

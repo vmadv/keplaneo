@@ -7,6 +7,7 @@ import SiempreHubLayout from "@/components/SiempreHubLayout";
 import { getMunicipio } from "@/lib/queries";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 import { buscarImagenHero } from "@/lib/heroImage";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -23,7 +24,7 @@ export async function generateMetadata({
     construirMetaDescripcion(municipio.nombre, "siempre"),
   ]);
   const title = await construirTituloConSufijo(tHome("titulo", { municipio: municipio.nombre }));
-  return { title, description };
+  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}`) } };
 }
 
 // El hub del municipio es la franja atemporal ("siempre") de Cuándo — la

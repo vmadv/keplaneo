@@ -12,6 +12,7 @@ import { ordenarPorDiaDeSemana } from "@/lib/semana";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
 import { construirTituloConSufijo, piezasTemporales } from "@/lib/resumenSeleccion";
 import { buscarImagenHero } from "@/lib/heroImage";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -37,7 +38,11 @@ export async function generateMetadata({
     municipio: municipio.nombre,
     temporal,
   });
-  return { title, description };
+  return {
+    title,
+    description,
+    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/esta-semana`) },
+  };
 }
 
 // Combinación categoría + esta semana (ej. /conciertos/esta-semana) — como

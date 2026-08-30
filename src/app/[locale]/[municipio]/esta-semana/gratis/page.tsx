@@ -6,7 +6,7 @@ import { getMunicipio, getEventosGratisActivos } from "@/lib/queries";
 import { rangoSemanaLegible } from "@/lib/dates";
 import { ordenarPorDiaDeSemana } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
-import { hrefFiltro } from "@/lib/filtros";
+import { hrefFiltro, alternatesIdiomas } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
@@ -23,7 +23,7 @@ export async function generateMetadata({
     construirMetaDescripcion(municipio.nombre, "semana", "gratis"),
   ]);
   const title = await construirTituloConSufijo(tSemana("tituloGratis", { municipio: municipio.nombre }));
-  return { title, description };
+  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/esta-semana/gratis`) } };
 }
 
 export default async function EstaSemanaGratisPage({

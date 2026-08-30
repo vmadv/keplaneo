@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { SITE_URL } from "./rutasLocale";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -7,8 +8,6 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 // creó la cuenta — para enviar a cualquier email hace falta verificar un
 // dominio propio en el dashboard de Resend.
 const FROM = "Planes España <onboarding@resend.dev>";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 function urlAbsoluta(ruta: string): string {
   return `${SITE_URL}${ruta}`;

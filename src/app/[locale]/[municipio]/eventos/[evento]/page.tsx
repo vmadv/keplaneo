@@ -30,8 +30,8 @@ import type { SolicitudTiempo } from "@/lib/weather";
 import type { Audiencia, Evento, Plan } from "@/lib/types";
 import { construirEventoJsonLd, construirFaqJsonLd, textoPlano } from "@/lib/structuredData";
 import { localizado } from "@/lib/contenidoLocalizado";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { SITE_URL, alternatesIdiomas } from "@/lib/rutasLocale";
+import { urlFotoProxy } from "@/lib/places";
 
 // Meta description/OG: nunca la descripción completa (varios párrafos, con
 // "**negritas**" de markdown sin procesar) — un extracto corto y limpio,
@@ -162,12 +162,24 @@ export async function generateMetadata({
   // /eventos/x, /eventos/x?desde=hoy y /eventos/x?desde=finde como páginas
   // casi duplicadas en vez de una sola (ver conversación).
   const prefijo = locale === "es" ? "" : `/${locale}`;
+  const rutaEspanola = `/${municipio}/eventos/${eventoSlug}`;
   const canonical = `${SITE_URL}${prefijo}/${municipio}/eventos/${eventoSlug}`;
+  // El bloque `openGraph` explícito de esta página sustituye por completo
+  // (no combina) la imagen que Next detectaría solo por convención de
+  // carpetas (municipio/opengraph-image.tsx) — hay que declararla aquí a
+  // mano. El cartel real del evento (cuando existe, verificado) es más
+  // específico que el cartel genérico del municipio; si no hay cartel, la
+  // foto del recinto; si tampoco, cae al genérico del municipio.
+  const imagenOg = encontrado.evento.cartel_url
+    ? encontrado.evento.cartel_url
+    : encontrado.evento.foto_lugar_nombre
+      ? `${SITE_URL}${urlFotoProxy(encontrado.evento.foto_lugar_nombre, 1200)}`
+      : `${SITE_URL}${prefijo}/${municipio}/opengraph-image`;
 
   return {
     title: titulo,
     description: descripcion,
-    alternates: { canonical },
+    alternates: { canonical, languages: alternatesIdiomas(rutaEspanola) },
     openGraph: {
       title: titulo,
       description: descripcion,
@@ -175,6 +187,7 @@ export async function generateMetadata({
       siteName: "Keplaneo",
       locale,
       type: "article",
+      images: [imagenOg],
     },
     // Un evento ya finalizado se mantiene accesible (no rompemos la URL),
     // pero no debe competir en el índice con contenido vigente. Para un
@@ -225,7 +238,8 @@ export default async function EventoPage({
   const jsonLdEvento = construirEventoJsonLd(
     { ...evento, titulo, descripcion, precio },
     municipio,
-    municipioSlug
+    municipioSlug,
+    locale
   );
   const jsonLdFaq = construirFaqJsonLd(preguntasFrecuentes);
 

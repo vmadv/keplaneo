@@ -11,6 +11,7 @@ import { esCategoriaConPagina } from "@/lib/types";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
 import { construirTituloConSufijo } from "@/lib/resumenSeleccion";
 import { buscarImagenHero } from "@/lib/heroImage";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -52,7 +53,11 @@ export async function generateMetadata({
     municipio: municipio.nombre,
     mes: nombreMes,
   });
-  return { title, description };
+  return {
+    title,
+    description,
+    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/${mes}`) },
+  };
 }
 
 export default async function CategoriaMesPage({

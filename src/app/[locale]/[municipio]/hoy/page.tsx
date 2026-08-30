@@ -5,6 +5,7 @@ import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesHoy } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -21,7 +22,7 @@ export async function generateMetadata({
     construirMetaDescripcion(municipio.nombre, "hoy"),
   ]);
   const title = await construirTituloConSufijo(tHoy("titulo", { municipio: municipio.nombre }));
-  return { title, description };
+  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/hoy`) } };
 }
 
 export default async function HoyPage({

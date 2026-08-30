@@ -14,6 +14,7 @@ import { getMunicipio, getPlanesDelMes, getEventosPorCategoria } from "@/lib/que
 import { esCategoriaConPagina } from "@/lib/types";
 import { buscarImagenHero } from "@/lib/heroImage";
 import { construirTituloConSufijo } from "@/lib/resumenSeleccion";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -42,7 +43,11 @@ export async function generateMetadata({
       tMes("titulo", { municipio: municipio.nombre, mes: capitalizar(tMeses(mes)) })
     );
     const description = tMes("metaDescripcion", { municipio: municipio.nombre, mes: tMeses(mes) });
-    return { title, description };
+    return {
+      title,
+      description,
+      alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${mes}`) },
+    };
   }
 
   if (esCategoriaConPagina(categoriaOMes)) {
@@ -53,7 +58,11 @@ export async function generateMetadata({
     const etiqueta = tCategorias(categoriaOMes);
     const title = await construirTituloConSufijo(tCategoria("titulo", { categoria: etiqueta, municipio: municipio.nombre }));
     const description = tCategoria("metaDescripcion", { categoria: etiqueta.toLowerCase(), municipio: municipio.nombre });
-    return { title, description };
+    return {
+      title,
+      description,
+      alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}`) },
+    };
   }
 
   return {};

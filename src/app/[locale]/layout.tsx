@@ -6,6 +6,8 @@ import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import SiteHeader from "@/components/SiteHeader";
 import { getComunidadBySlug, getMunicipiosByComunidad } from "@/lib/queries";
+import { SITE_URL } from "@/lib/rutasLocale";
+import { construirOrganizacionYSitioJsonLd } from "@/lib/structuredData";
 import "../globals.css";
 
 const outfit = Outfit({
@@ -32,8 +34,17 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Sitio" });
   return {
+    // Resuelve cualquier URL relativa/absoluta que se use en el resto de
+    // metadata (OG images, etc.) contra el dominio real en vez de asumir
+    // localhost — sin esto, una imagen con ruta relativa se resolvería mal
+    // en producción.
+    metadataBase: new URL(SITE_URL),
     title: t("titulo"),
     description: t("descripcion"),
+    // Reutiliza automáticamente la misma imagen OG (opengraph-image.tsx)
+    // que ya se detecta por convención de carpetas — Twitter/X no la
+    // mostraba sin esto, aunque ya existiera para Facebook/WhatsApp.
+    twitter: { card: "summary_large_image" },
     // Todavía en pruebas: fuera de buscadores hasta que decidamos lanzarlo
     // de verdad. Quitar este bloque (y supabase/robots.ts) para permitir
     // indexación.
@@ -67,10 +78,12 @@ export default async function LocaleLayout({
   // component.
   const comunidad = await getComunidadBySlug("andalucia");
   const municipios = comunidad ? await getMunicipiosByComunidad(comunidad.id) : [];
+  const jsonLdOrganizacion = construirOrganizacionYSitioJsonLd();
 
   return (
     <html lang={locale} className={`${outfit.variable} ${jakarta.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrganizacion) }} />
         <NextIntlClientProvider>
           <SiteHeader municipios={municipios.map((m) => ({ slug: m.slug, nombre: m.nombre }))} />
           {children}

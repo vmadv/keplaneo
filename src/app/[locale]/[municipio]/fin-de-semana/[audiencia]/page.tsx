@@ -5,7 +5,7 @@ import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesFinde } from "@/lib/queries";
 import { rangoFinDeSemanaLegible } from "@/lib/dates";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
-import { AUDIENCIAS_URL, normalizarAudienciaUrl, audienciaUrlParaLocale, audienciaDesdeUrl, hrefFiltro } from "@/lib/filtros";
+import { AUDIENCIAS_URL, normalizarAudienciaUrl, audienciaUrlParaLocale, audienciaDesdeUrl, hrefFiltro, alternatesIdiomas } from "@/lib/filtros";
 
 export const revalidate = 86400;
 
@@ -37,7 +37,11 @@ export async function generateMetadata({
     tFinde("tituloAudiencia", { municipio: municipio.nombre, audiencia: minuscula(tAudiencia(extra)) }),
     extra
   );
-  return { title, description };
+  return {
+    title,
+    description,
+    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/fin-de-semana/${audiencia}`) },
+  };
 }
 
 export default async function FindeAudienciaPage({

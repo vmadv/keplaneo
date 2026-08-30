@@ -972,3 +972,42 @@ export async function getMunicipiosConRankings(): Promise<MunicipioConRankingGeo
 
   return Array.from(vistos.values()).sort((a, b) => a.prioridad - b.prioridad);
 }
+
+export interface EventoParaSitemap {
+  municipioSlug: string;
+  slug: string;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  ultimaDeteccion: string;
+}
+
+// Todos los eventos activos de todos los municipios, con lo justo para
+// construir el sitemap (URL + lastModified) y para poder descartar los
+// puntuales ya finalizados — ver sitemap.ts: una página con `robots:
+// {index:false}` (evento finalizado) no debe aparecer en el sitemap.
+export async function getEventosActivosParaSitemap(): Promise<EventoParaSitemap[]> {
+  const { data } = await supabase
+    .from("eventos")
+    .select("slug, fecha_inicio, fecha_fin, ultima_deteccion, municipios!inner(slug)")
+    .eq("activo", true);
+
+  return ((data ?? []) as unknown as Array<{
+    slug: string;
+    fecha_inicio: string | null;
+    fecha_fin: string | null;
+    ultima_deteccion: string;
+    municipios: { slug: string } | { slug: string }[] | null;
+  }>)
+    .map((fila) => {
+      const m = Array.isArray(fila.municipios) ? fila.municipios[0] : fila.municipios;
+      if (!m) return null;
+      return {
+        municipioSlug: m.slug,
+        slug: fila.slug,
+        fechaInicio: fila.fecha_inicio,
+        fechaFin: fila.fecha_fin,
+        ultimaDeteccion: fila.ultima_deteccion,
+      };
+    })
+    .filter((e): e is EventoParaSitemap => e !== null);
+}

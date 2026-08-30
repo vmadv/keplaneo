@@ -3,6 +3,11 @@
     "titulo": "Keplaneo Sevilla",
     "descripcion": "Things to do today, this weekend, or this month in Seville and the towns of its province."
   },
+  "NotFound": {
+    "titulo": "This page missed its own plan",
+    "mensaje": "We couldn't find what you were looking for. The link might be outdated, or the page no longer exists.",
+    "volver": "Back to home"
+  },
   "Nav": {
     "inicio": "Home",
     "masFiltros": "More filters",
@@ -237,6 +242,8 @@
   "Listados": {
     "tituloGeneral": "Rankings",
     "subtituloGeneral": "Choose a city to see its rankings: the best restaurants, health, education and much more, picked by real reputation and verified with Google Maps data.",
+    "metaDescripcionMunicipio": "The best restaurants, accommodation, health, education and much more in {municipio}, picked by real reputation and verified with Google Maps data.",
+    "metaDescripcionSeccion": "{seccion} in {municipio}: we show you the best, picked by real reputation and verified with Google Maps data.",
     "sinCiudades": "No rankings published yet in any city.",
     "seccionTitulo": "The best of {municipio}",
     "sinListados": "No rankings published yet for {municipio}.",
@@ -266,6 +273,7 @@
   },
   "Lugar": {
     "breadcrumb": "Places",
+    "metaDescripcionGenerica": "{nombre} in {municipio}: phone, hours, and real ratings, verified with Google Maps data.",
     "rating": "{rating} · {n} reviews",
     "direccion": "Address",
     "telefono": "Phone",

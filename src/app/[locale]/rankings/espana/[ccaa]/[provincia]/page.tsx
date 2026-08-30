@@ -5,6 +5,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import TarjetaCiudad from "@/components/TarjetaCiudad";
 import { buscarImagenHero } from "@/lib/heroImage";
 import { getMunicipiosConRankingsPorProvincia, getProvincia } from "@/lib/queries";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -26,7 +27,11 @@ export async function generateMetadata({
   const datos = await cargar(ccaa, provinciaSlug);
   if (!datos) return {};
   const t = await getTranslations("ListadosProvincia");
-  return { title: `${t("titulo", { provincia: datos.provincia.nombre })} | Planes España` };
+  return {
+    title: `${t("titulo", { provincia: datos.provincia.nombre })} | Keplaneo`,
+    description: t("subtitulo", { provincia: datos.provincia.nombre }),
+    alternates: { languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provinciaSlug}`) },
+  };
 }
 
 // Único nivel de la jerarquía país/CCAA/provincia con contenido real hoy

@@ -11,6 +11,7 @@ import { fechaDeHoyLegible } from "@/lib/dates";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
 import { construirTituloConSufijo, piezasTemporales } from "@/lib/resumenSeleccion";
 import { buscarImagenHero } from "@/lib/heroImage";
+import { alternatesIdiomas } from "@/lib/rutasLocale";
 
 export const revalidate = 86400;
 
@@ -39,7 +40,11 @@ export async function generateMetadata({
     municipio: municipio.nombre,
     temporal,
   });
-  return { title, description };
+  return {
+    title,
+    description,
+    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/hoy`) },
+  };
 }
 
 export default async function CategoriaHoyPage({

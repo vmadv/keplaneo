@@ -10,6 +10,8 @@ import TextoConNegritas from "@/components/TextoConNegritas";
 import GaleriaFotos from "@/components/GaleriaFotos";
 import SolicitarEdicionNegocio from "@/components/SolicitarEdicionNegocio";
 import { getListadosDeLugar, getLugar, getMunicipioConProvincia } from "@/lib/queries";
+import { alternatesIdiomas, SITE_URL } from "@/lib/rutasLocale";
+import { construirLugarJsonLd } from "@/lib/structuredData";
 
 export const revalidate = 86400;
 
@@ -31,27 +33,36 @@ export async function generateMetadata({
   const { ccaa, provincia, municipio, lugar } = await params;
   const datos = await cargar(ccaa, provincia, municipio, lugar);
   if (!datos) return {};
+  const t = await getTranslations("Lugar");
   return {
-    title: `${datos.lugar.nombre} | Planes España`,
-    description: datos.lugar.descripcion ?? datos.lugar.nombre,
+    title: `${datos.lugar.nombre} | Keplaneo`,
+    description:
+      datos.lugar.descripcion ??
+      t("metaDescripcionGenerica", { nombre: datos.lugar.nombre, municipio: datos.municipio.nombre }),
+    alternates: {
+      languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipio}/lugares/${lugar}`),
+    },
   };
 }
 
 export default async function LugarPage({
   params,
 }: {
-  params: Promise<{ ccaa: string; provincia: string; municipio: string; lugar: string }>;
+  params: Promise<{ locale: string; ccaa: string; provincia: string; municipio: string; lugar: string }>;
 }) {
-  const { ccaa: ccaaSlug, provincia: provinciaSlug, municipio: municipioSlug, lugar: lugarSlug } = await params;
+  const { locale, ccaa: ccaaSlug, provincia: provinciaSlug, municipio: municipioSlug, lugar: lugarSlug } = await params;
   const datos = await cargar(ccaaSlug, provinciaSlug, municipioSlug, lugarSlug);
   if (!datos) notFound();
   const { municipio, lugar, listados } = datos;
 
   const [tNav, t] = await Promise.all([getTranslations("Nav"), getTranslations("Lugar")]);
   const base = `/rankings/espana/${ccaaSlug}/${provinciaSlug}/${municipioSlug}`;
+  const prefijo = locale === "es" ? "" : `/${locale}`;
+  const jsonLdLugar = construirLugarJsonLd(lugar, municipio, `${SITE_URL}${prefijo}${base}/lugares/${lugarSlug}`);
 
   return (
     <main className="flex-1 bg-dots">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdLugar) }} />
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Breadcrumb
           items={[

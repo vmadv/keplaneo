@@ -1,8 +1,8 @@
 import { fechaDesdeTextoEspanol, formatearFechaISO, hoyEnMadrid } from "./dates";
-import type { Evento, PreguntaFrecuente } from "./types";
+import { SITE_URL } from "./rutasLocale";
+import { urlDeFoto } from "./places";
+import type { Evento, PreguntaFrecuente, Lugar, Listado, PuestoListado } from "./types";
 import type { MunicipioConComunidad } from "./queries";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 // Los datos estructurados son texto plano para máquinas — la negrita en
 // "**texto**" (la única convención markdown que se le pide a Gemini, ver
@@ -22,7 +22,13 @@ export function textoPlano(texto: string): string {
 export function construirEventoJsonLd(
   evento: Evento,
   municipio: MunicipioConComunidad,
-  municipioSlug: string
+  municipioSlug: string,
+  // La URL declarada en el JSON-LD debe ser la de la página que Google
+  // está leyendo de verdad — antes se fijaba siempre a /es/... aunque la
+  // página real fuera /en/... (bug real, ver conversación). "es" es el
+  // idioma por defecto sin prefijo (ver routing.ts, localePrefix:
+  // "as-needed").
+  locale: string = "es"
 ): Record<string, unknown> | null {
   if (!evento.fecha_inicio) return null;
 
@@ -51,6 +57,8 @@ export function construirEventoJsonLd(
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
   const esGratis = precioNormalizado ? FRASES_GRATIS.includes(precioNormalizado) : false;
+  const prefijo = locale === "es" ? "" : `/${locale}`;
+  const urlEvento = `${SITE_URL}${prefijo}/${municipioSlug}/eventos/${evento.slug}`;
 
   return {
     "@context": "https://schema.org",
@@ -76,10 +84,10 @@ export function construirEventoJsonLd(
         price: "0",
         priceCurrency: "EUR",
         availability: "https://schema.org/InStock",
-        url: `${SITE_URL}/es/${municipioSlug}/eventos/${evento.slug}`,
+        url: urlEvento,
       },
     }),
-    url: `${SITE_URL}/es/${municipioSlug}/eventos/${evento.slug}`,
+    url: urlEvento,
   };
 }
 
@@ -93,5 +101,94 @@ export function construirFaqJsonLd(preguntas: PreguntaFrecuente[]): Record<strin
       name: textoPlano(pf.pregunta),
       acceptedAnswer: { "@type": "Answer", text: textoPlano(pf.respuesta) },
     })),
+  };
+}
+
+// Ficha de un lugar del vertical de Rankings (restaurante, alojamiento,
+// clínica...) — LocalBusiness genérico en vez de intentar adivinar un
+// subtipo más concreto (Restaurant, Hotel...) a partir de `tipo` (un valor
+// libre de Google Places, no un enum controlado): un subtipo mal elegido
+// es peor que uno genérico correcto. No se declaran horarios
+// estructurados (openingHoursSpecification) porque `horario` se guarda
+// como texto ya formateado para mostrar ("Lunes: 9:00-14:00"), no como
+// datos parseables de fiar — inventar la estructura sería peor que omitirla.
+export function construirLugarJsonLd(
+  lugar: Lugar,
+  municipio: { nombre: string },
+  url: string
+): Record<string, unknown> {
+  const primeraFoto = lugar.fotos[0];
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: lugar.nombre,
+    ...(lugar.descripcion && { description: textoPlano(lugar.descripcion) }),
+    url,
+    ...(primeraFoto && { image: `${SITE_URL}${urlDeFoto(primeraFoto)}` }),
+    ...(lugar.direccion && {
+      address: { "@type": "PostalAddress", streetAddress: lugar.direccion, addressLocality: municipio.nombre },
+    }),
+    ...(lugar.telefono && { telephone: lugar.telefono }),
+    ...(lugar.web && { sameAs: lugar.web }),
+    ...(lugar.lat !== null &&
+      lugar.lon !== null && {
+        geo: { "@type": "GeoCoordinates", latitude: lugar.lat, longitude: lugar.lon },
+      }),
+    // Google exige al menos 1 reseña para declarar aggregateRating — con 0
+    // (o sin dato) se omite del todo en vez de fingir un ratingCount falso.
+    ...(lugar.rating !== null &&
+      lugar.num_valoraciones !== null &&
+      lugar.num_valoraciones > 0 && {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: lugar.rating,
+          reviewCount: lugar.num_valoraciones,
+        },
+      }),
+  };
+}
+
+// Ranking numerado (top-N) — el propio listado como ItemList, cada puesto
+// como ListItem enlazando a la ficha real del lugar. `position` es 1-based,
+// igual que ya se muestra en pantalla.
+export function construirItemListJsonLd(
+  listado: Listado,
+  puestos: PuestoListado[],
+  urlBase: string
+): Record<string, unknown> | null {
+  if (puestos.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: listado.titulo,
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    numberOfItems: puestos.length,
+    itemListElement: puestos.map((p) => ({
+      "@type": "ListItem",
+      position: p.posicion,
+      url: `${urlBase}/lugares/${p.lugar.slug}`,
+      name: p.lugar.nombre,
+    })),
+  };
+}
+
+// Organization + WebSite, una sola vez en el layout raíz — identidad de
+// marca básica que Google puede usar para el Knowledge Panel / sitelinks,
+// no ligada a ninguna página en concreto.
+export function construirOrganizacionYSitioJsonLd(): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: "Keplaneo",
+        url: SITE_URL,
+      },
+      {
+        "@type": "WebSite",
+        name: "Keplaneo",
+        url: SITE_URL,
+      },
+    ],
   };
 }
