@@ -45,10 +45,6 @@ export async function generateMetadata({
     // que ya se detecta por convención de carpetas — Twitter/X no la
     // mostraba sin esto, aunque ya existiera para Facebook/WhatsApp.
     twitter: { card: "summary_large_image" },
-    // Todavía en pruebas: fuera de buscadores hasta que decidamos lanzarlo
-    // de verdad. Quitar este bloque (y supabase/robots.ts) para permitir
-    // indexación.
-    robots: { index: false, follow: false },
   };
 }
 
