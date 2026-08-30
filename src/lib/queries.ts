@@ -706,20 +706,14 @@ async function getEventosDelMunicipio(
     return 3;
   }
 
-  // Dentro del mismo grupo, un evento con fecha concreta que lo sitúa en un
-  // mes real (un solo día, o un rango de hasta ~un mes: un festival de una
-  // semana o diez días sigue siendo "algo que pasa en septiembre", no debe
-  // perder su sitio cronológico) ordena por esa fecha real (el más próximo
-  // antes) — más útil que la relevancia en un listado tipo "Todos los
-  // conciertos" (ver conversación: un ciclo del 10 al 19 de septiembre
-  // quedaba enterrado entre contenido de relevancia sin relación, en vez de
-  // intercalado con el resto de septiembre). Solo lo que dura de verdad
-  // meses (ej. "todo el verano") no tiene un mes concreto al que pertenecer
-  // y se pospone, cayendo a relevancia+alfabético — igual que una fecha que
-  // no se pudo interpretar.
+  // Dentro del mismo grupo, cualquier evento con fecha de inicio real (sin
+  // importar cuánto dure el rango — ver conversación: poner un límite de
+  // días para "demoverlo" a relevancia enterraba ciclos largos que sí
+  // tienen un mes concreto al que pertenecer) ordena por esa fecha, el más
+  // próximo antes. Cuando dos coinciden en el mismo día de inicio, el de
+  // fecha única (un solo día, no un rango) va primero — más concreto que
+  // "empieza ese día pero dura semanas".
   const hoy = hoyEnMadrid();
-  const UN_DIA_MS = 24 * 60 * 60 * 1000;
-  const DURACION_MAXIMA_DIAS = 31;
   function fechaOrdenable(e: Evento): number | null {
     if (!e.fecha_inicio) return null;
     const inicio = fechaDesdeTextoEspanol(e.fecha_inicio);
@@ -728,16 +722,10 @@ async function getEventosDelMunicipio(
     // pequeño (bug real encontrado en conversación: un concierto de abril
     // salía antes que uno de septiembre).
     if (!inicio || inicio < hoy) return null;
-
-    if (e.fecha_fin && e.fecha_fin !== e.fecha_inicio) {
-      const fin = fechaDesdeTextoEspanol(e.fecha_fin);
-      // Rango sin fecha de fin interpretable: no se sabe cuánto dura de
-      // verdad, mejor conservador que asumir que es corto.
-      if (!fin) return null;
-      const duracionDias = (fin.getTime() - inicio.getTime()) / UN_DIA_MS;
-      if (duracionDias > DURACION_MAXIMA_DIAS) return null;
-    }
     return inicio.getTime();
+  }
+  function esFechaUnica(e: Evento): boolean {
+    return !e.fecha_fin || e.fecha_fin === e.fecha_inicio;
   }
 
   return (data ?? []).sort((a, b) => {
@@ -746,9 +734,16 @@ async function getEventosDelMunicipio(
     if (grupoA !== grupoB) return grupoA - grupoB;
     const fechaA = fechaOrdenable(a);
     const fechaB = fechaOrdenable(b);
-    if (fechaA !== null && fechaB !== null) return fechaA - fechaB;
-    if (fechaA !== null) return -1;
-    if (fechaB !== null) return 1;
+    if (fechaA !== null && fechaB !== null) {
+      if (fechaA !== fechaB) return fechaA - fechaB;
+      const unicaA = esFechaUnica(a);
+      const unicaB = esFechaUnica(b);
+      if (unicaA !== unicaB) return unicaA ? -1 : 1;
+    } else if (fechaA !== null) {
+      return -1;
+    } else if (fechaB !== null) {
+      return 1;
+    }
     const relA = a.relevancia ?? 0;
     const relB = b.relevancia ?? 0;
     if (relA !== relB) return relB - relA;

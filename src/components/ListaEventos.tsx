@@ -40,18 +40,25 @@ export default async function ListaEventos({
     <ol className="grid gap-5">
       {eventos.map((evento) => {
         const etiquetaDia = obtenerEtiqueta?.(evento) ?? null;
-        // Fecha real (ej. "28 may"), solo cuando no hay ya una etiqueta de
-        // día de semana (esta semana/destacados) ni de patrón recurrente —
-        // es el fallback para el listado "Todos", que hasta ahora no
-        // mostraba ninguna fecha (ver conversación). Un rango de días no
-        // cuenta como fecha única.
-        const fechaUnica =
-          !etiquetaDia && evento.fecha_inicio && (!evento.fecha_fin || evento.fecha_fin === evento.fecha_inicio)
-            ? fechaDesdeTextoEspanol(evento.fecha_inicio)
-            : null;
-        const etiquetaFecha = fechaUnica
-          ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(fechaUnica)
+        // Fecha real, solo cuando no hay ya una etiqueta de día de semana
+        // (esta semana/destacados) ni de patrón recurrente — es el fallback
+        // para el listado "Todos", que hasta ahora no mostraba ninguna
+        // fecha (ver conversación). Un día concreto se muestra tal cual
+        // ("11 sept"); un rango de varios días no tiene "un" día que
+        // mostrar sin ser engañoso, así que se muestra solo el mes en el
+        // que cae su inicio ("Septiembre").
+        const tieneFecha = !etiquetaDia && evento.fecha_inicio;
+        const esRango = tieneFecha && evento.fecha_fin && evento.fecha_fin !== evento.fecha_inicio;
+        const fechaInicio = tieneFecha ? fechaDesdeTextoEspanol(evento.fecha_inicio!) : null;
+        const etiquetaFechaCruda = fechaInicio
+          ? new Intl.DateTimeFormat(locale, esRango ? { month: "long" } : { day: "numeric", month: "short" }).format(
+              fechaInicio
+            )
           : null;
+        const etiquetaFecha =
+          esRango && etiquetaFechaCruda
+            ? etiquetaFechaCruda.charAt(0).toUpperCase() + etiquetaFechaCruda.slice(1)
+            : etiquetaFechaCruda;
         const href = contexto
           ? `${base}/eventos/${evento.slug}?desde=${contexto}`
           : `${base}/eventos/${evento.slug}`;
