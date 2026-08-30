@@ -156,3 +156,15 @@ export function alternatesIdiomas(rutaEspanola: string): Record<string, string> 
     "x-default": urlEs,
   };
 }
+
+// Para casos donde la ruta que se tiene YA está en el idioma correcto (ej.
+// los href de Breadcrumb, que cada caller ya construye con hrefFiltro/
+// mesSlugParaLocale para el locale actual) y solo falta anteponer el
+// dominio + el prefijo /en — a diferencia de alternatesIdiomas, que parte
+// de la ruta española canónica y traduce.
+export function urlAbsoluta(locale: string, ruta: string): string {
+  if (locale === "es") return `${SITE_URL}${ruta}`;
+  // Mismo caso especial que la home en alternatesIdiomas: "/en" + "/" da
+  // "/en/", que Next redirige con 308 — nunca una URL que no es la final.
+  return `${SITE_URL}/en${ruta === "/" ? "" : ruta}`;
+}
