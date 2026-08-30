@@ -116,7 +116,7 @@ export default async function LugarPage({
           </a>
         )}
 
-        <GaleriaFotos fotos={lugar.fotos} nombre={lugar.nombre} />
+        <GaleriaFotos fotos={lugar.fotos} nombre={lugar.nombre} municipioNombre={datos.municipio.nombre} />
 
         {lugar.descripcion && (
           <div className="grid gap-3 mb-8">

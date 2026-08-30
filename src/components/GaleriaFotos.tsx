@@ -9,8 +9,17 @@ import type { FotoLugar } from "@/lib/types";
 // Portada grande + cuadrícula de miniaturas, todas clicables — al abrir se
 // bloquea el scroll de fondo y las flechas del teclado navegan entre fotos,
 // como cualquier visor de imágenes al uso.
-export default function GaleriaFotos({ fotos, nombre }: { fotos: FotoLugar[]; nombre: string }) {
+export default function GaleriaFotos({
+  fotos,
+  nombre,
+  municipioNombre,
+}: {
+  fotos: FotoLugar[];
+  nombre: string;
+  municipioNombre: string;
+}) {
   const [abierta, setAbierta] = useState<number | null>(null);
+  const etiqueta = `${nombre}, ${municipioNombre}`;
 
   useEffect(() => {
     if (abierta === null) return;
@@ -43,7 +52,7 @@ export default function GaleriaFotos({ fotos, nombre }: { fotos: FotoLugar[]; no
       >
         <Image
           src={urlDeFoto(portada, 1200)}
-          alt={nombre}
+          alt={etiqueta}
           fill
           priority
           sizes="(max-width: 768px) 100vw, 768px"
@@ -61,7 +70,7 @@ export default function GaleriaFotos({ fotos, nombre }: { fotos: FotoLugar[]; no
               className="relative aspect-square rounded-lg overflow-hidden cursor-zoom-in"
               style={{ border: "2px solid var(--foreground)" }}
             >
-              <Image src={urlDeFoto(foto, 400)} alt={`${nombre} ${i + 2}`} fill sizes="200px" className="object-cover" />
+              <Image src={urlDeFoto(foto, 400)} alt={`${etiqueta} ${i + 2}`} fill sizes="200px" className="object-cover" />
             </button>
           ))}
         </div>
@@ -118,7 +127,7 @@ export default function GaleriaFotos({ fotos, nombre }: { fotos: FotoLugar[]; no
           <div className="relative w-full h-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
             <Image
               src={urlDeFoto(fotos[abierta], 1600)}
-              alt={`${nombre} ${abierta + 1}`}
+              alt={`${etiqueta} ${abierta + 1}`}
               fill
               sizes="100vw"
               className="object-contain"

@@ -63,7 +63,7 @@ export async function generateMetadata({
   };
 }
 
-function FotoPuesto({ puesto }: { puesto: PuestoListado }) {
+function FotoPuesto({ puesto, municipioNombre }: { puesto: PuestoListado; municipioNombre: string }) {
   const foto = puesto.lugar.fotos[0];
   if (!foto) {
     return (
@@ -75,7 +75,7 @@ function FotoPuesto({ puesto }: { puesto: PuestoListado }) {
   return (
     <Image
       src={urlDeFoto(foto, 640)}
-      alt={puesto.lugar.nombre}
+      alt={`${puesto.lugar.nombre}, ${municipioNombre}`}
       fill
       sizes="(max-width: 768px) 100vw, 400px"
       className="object-cover"
@@ -164,7 +164,7 @@ export default async function RankingPage({
                 className="card-sticker overflow-hidden flex flex-col"
               >
                 <div className="relative h-36 w-full">
-                  <FotoPuesto puesto={puesto} />
+                  <FotoPuesto puesto={puesto} municipioNombre={municipio.nombre} />
                   <span
                     className="badge-pill absolute top-2 left-2"
                     style={{ background: "var(--tertiary)", borderColor: "var(--foreground)" }}
