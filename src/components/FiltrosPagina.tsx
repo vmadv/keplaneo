@@ -44,7 +44,7 @@ export default async function FiltrosPagina({
   if (rapidos.length === 0) {
     return (
       <MasFiltrosProvider initialOpen={hayActivoOculto}>
-        <div className="mb-6 grid gap-2">
+        <div className="mb-6 grid gap-1">
           <FiltroTemporal items={siempreVisibles} className="mb-0" compacto scrollable extra={boton} />
           {panel}
         </div>
@@ -64,7 +64,7 @@ export default async function FiltrosPagina({
 
   return (
     <MasFiltrosProvider initialOpen={hayActivoOculto}>
-      <div className="mb-6 grid gap-2">
+      <div className="mb-6 grid gap-1">
         <FiltroTemporal items={siempreVisibles} className="mb-0" compacto scrollable invita={invitaCuando} />
         <FiltroTemporal items={rapidos} className="mb-0" compacto scrollable invita={invitaFiltraMas} extra={boton} />
         {panel}

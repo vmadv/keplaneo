@@ -40,12 +40,16 @@ export default function FiltroTemporal({
   // única que debe "gritar". Las inactivas antes llevaban el mismo borde
   // grueso de .btn-secondary y competían visualmente con la seleccionada;
   // aquí se suavizan (borde fino y claro, texto no tan marcado) para que la
-  // jerarquía se note de un vistazo (ver conversación).
-  const clasesInactiva = "border-[1.5px] border-[var(--border)] font-semibold text-[var(--muted-foreground)]";
+  // jerarquía se note de un vistazo (ver conversación). Fondo sólido (no
+  // transparente como el .btn-secondary base) para que se separen del
+  // punteado de fondo en vez de fundirse con él — mismo criterio que
+  // .card-sticker en el resto del sitio.
+  const clasesInactiva =
+    "pastilla-filtro-inactiva border-[1.5px] border-[var(--border)] font-semibold text-[var(--muted-foreground)]";
 
   return (
     <div
-      className={`flex gap-2 items-center ${scrollable ? "flex-nowrap overflow-x-auto sin-scrollbar mascara-desvanecido py-1 pr-2" : "flex-wrap"} ${className}`}
+      className={`flex gap-1.5 items-center ${scrollable ? "flex-nowrap overflow-x-auto sin-scrollbar mascara-desvanecido py-1 pr-2" : "flex-wrap"} ${className}`}
     >
       {invita && (
         <EraserAddIcon

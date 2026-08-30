@@ -108,6 +108,20 @@ a {
     transform: translate(-1px, -1px);
   }
 
+  /* Pastilla de filtro inactiva (ver FiltroTemporal.tsx): fondo sólido en
+     vez del transparent de .btn-secondary, para que se separe del
+     punteado de fondo (.bg-dots) en vez de fundirse con él — mismo
+     criterio que .card-sticker. En su propia clase de @layer components
+     (no una utilidad de Tailwind) para que el :hover de abajo pueda
+     seguir ganando — una utilidad de la capa "utilities" pisaría este
+     :hover sin importar el orden, por las capas de cascada de Tailwind. */
+  .pastilla-filtro-inactiva {
+    background: var(--card);
+  }
+  .pastilla-filtro-inactiva:hover {
+    background: var(--tertiary);
+  }
+
   /* Fila de pastillas en una sola línea que se desliza en horizontal en vez
      de saltar a una segunda fila (ver FiltroTemporal.tsx) — sin barra de
      scroll visible, y con un degradado a la derecha que insinúa que hay

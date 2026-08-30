@@ -86,10 +86,7 @@ export default async function SiempreHubLayout({
         : getEventosActivos(municipio.id, extra === "pareja" || extra === "familia" ? extra : undefined),
     ]);
 
-  // Ninguna pastilla de "Cuándo" queda marcada activa por defecto — "siempre"
-  // es la franja atemporal que vive aquí técnicamente, pero mostrarla
-  // marcada sugiere que hay que pulsarla para que aplique (ver conversación).
-  const primarios = primariosSiempre.map((item) => (item.href === hrefFiltro(locale, base, "siempre", extra) ? { ...item, activo: false } : item));
+  const primarios = primariosSiempre;
 
   const genericos = ordenarPorRelevanciaConDiversidad(eventos.filter((e) => e.fecha_inicio === null));
   const genericosVisibles = genericos.slice(0, MAX_GENERICOS_VISIBLES);
