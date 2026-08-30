@@ -13,6 +13,7 @@ import {
   estimarCosteTraduccion,
 } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
+import { revalidarSitemaps } from "@/lib/sitemapData";
 import { getTitulosGenericosActivos } from "@/lib/queries";
 import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible, hoyISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
@@ -246,5 +247,6 @@ export async function GET(request: NextRequest) {
     }
   });
 
+  revalidarSitemaps();
   return NextResponse.json({ semana: fechasISOSemana, resultados });
 }

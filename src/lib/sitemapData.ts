@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { revalidatePath } from "next/cache";
 import {
   getComunidadBySlug,
   getMunicipiosByComunidad,
@@ -9,6 +10,21 @@ import {
 import { alternatesIdiomas, hrefFiltro, segmentoVigencia } from "@/lib/rutasLocale";
 import { fechaDesdeTextoEspanol, hoyEnMadrid } from "@/lib/dates";
 import { CATEGORIAS_CON_PAGINA, MESES } from "@/lib/types";
+
+// Llamado una sola vez por ejecución de cron (no por municipio) — los
+// sitemaps son globales, no específicos de un municipio. `revalidate =
+// 86400` en cada route.ts de sitemap significa hasta 24h de desfase si no
+// se fuerza aquí tras generar contenido nuevo.
+export function revalidarSitemaps(): void {
+  [
+    "/sitemap.xml",
+    "/sitemap_home.xml",
+    "/sitemap_paginas.xml",
+    "/sitemap_variables.xml",
+    "/sitemap_eventos.xml",
+    "/sitemap_rankings.xml",
+  ].forEach((path) => revalidatePath(path));
+}
 
 // Datos de los sitemaps, separados por tipo de página en varios ficheros
 // (home / genéricas / variables / eventos / rankings) en vez de uno solo

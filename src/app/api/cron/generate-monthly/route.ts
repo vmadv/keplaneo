@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generarPlanesDelMes, traducirPlanesAIngles, estimarCoste, estimarCosteTraduccion } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
+import { revalidarSitemaps } from "@/lib/sitemapData";
 import { hoyISO, proximosMesesSlugs, fechaDeHoyLegible, numeroSemanaDesde2020, mesSlugParaLocale } from "@/lib/dates";
 
 export const maxDuration = 300;
@@ -166,5 +167,6 @@ export async function GET(request: NextRequest) {
     }
   });
 
+  revalidarSitemaps();
   return NextResponse.json({ fecha: hoy, meses, resultados });
 }

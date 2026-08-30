@@ -6,6 +6,7 @@ import { upsertEventosDelLote } from "@/lib/eventos";
 import { hoyISO, hoyEnMadrid, fechaDeHoyLegible, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
 import { diasRepasoDiario } from "@/lib/nivelesMunicipio";
+import { revalidarSitemaps } from "@/lib/sitemapData";
 
 export const maxDuration = 300;
 
@@ -203,5 +204,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  revalidarSitemaps();
   return NextResponse.json({ fecha: hoy, resultados });
 }
