@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import SiempreHubLayout from "@/components/SiempreHubLayout";
 import { getMunicipio } from "@/lib/queries";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
@@ -16,12 +16,14 @@ export async function generateMetadata({
   const { municipio: municipioSlug } = await params;
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tGratis, description] = await Promise.all([
+  const [tGratis, description, locale] = await Promise.all([
     getTranslations("Gratis"),
     construirMetaDescripcion(municipio.nombre, "siempre", "gratis"),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(tGratis("tituloSiempre", { municipio: municipio.nombre }));
-  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/gratis`) } };
+  const alt = alternatesIdiomas(`/${municipioSlug}/gratis`);
+  return { title, description, alternates: { languages: alt, canonical: alt[locale] } };
 }
 
 // Franja atemporal + precio "gratis" — antes esta URL era "gratis de hoy"

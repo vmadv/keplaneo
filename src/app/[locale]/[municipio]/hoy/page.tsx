@@ -17,12 +17,14 @@ export async function generateMetadata({
   const { municipio: municipioSlug } = await params;
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tHoy, description] = await Promise.all([
+  const [tHoy, description, locale] = await Promise.all([
     getTranslations("Hoy"),
     construirMetaDescripcion(municipio.nombre, "hoy"),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(tHoy("titulo", { municipio: municipio.nombre }));
-  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/hoy`) } };
+  const alt = alternatesIdiomas(`/${municipioSlug}/hoy`);
+  return { title, description, alternates: { languages: alt, canonical: alt[locale] } };
 }
 
 export default async function HoyPage({

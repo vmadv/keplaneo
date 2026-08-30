@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import TarjetaCiudad from "@/components/TarjetaCiudad";
 import { buscarImagenHero } from "@/lib/heroImage";
@@ -49,11 +49,12 @@ export async function generateMetadata({
   const { filtro } = await params;
   const titulo = await tituloDelFiltro(filtro);
   if (!titulo) return {};
-  const tElegirCiudad = await getTranslations("ElegirCiudad");
+  const [tElegirCiudad, locale] = await Promise.all([getTranslations("ElegirCiudad"), getLocale()]);
+  const alt = alternatesIdiomas(`/elige-ciudad/${filtro}`);
   return {
     title: titulo,
     description: tElegirCiudad("subtitulo"),
-    alternates: { languages: alternatesIdiomas(`/elige-ciudad/${filtro}`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

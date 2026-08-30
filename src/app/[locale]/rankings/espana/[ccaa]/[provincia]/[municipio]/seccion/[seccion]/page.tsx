@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Trophy } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -31,14 +31,19 @@ export async function generateMetadata({
   const { ccaa, provincia, municipio: municipioSlug, seccion: seccionSlug } = await params;
   const datos = await cargar(ccaa, provincia, municipioSlug, seccionSlug);
   if (!datos) return {};
-  const tSecciones = await getTranslations("ListadosSecciones");
-  const t = await getTranslations("Listados");
+  const [tSecciones, t, locale] = await Promise.all([
+    getTranslations("ListadosSecciones"),
+    getTranslations("Listados"),
+    getLocale(),
+  ]);
   const seccionEtiqueta = tSecciones(datos.seccion);
+  const alt = alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipioSlug}/seccion/${seccionSlug}`);
   return {
     title: `${t("tituloSeccion", { seccion: seccionEtiqueta, municipio: datos.municipio.nombre })} | Keplaneo`,
     description: t("metaDescripcionSeccion", { seccion: seccionEtiqueta, municipio: datos.municipio.nombre }),
     alternates: {
-      languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipioSlug}/seccion/${seccionSlug}`),
+      languages: alt,
+      canonical: alt[locale],
     },
   };
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import PlanList from "@/components/PlanList";
 import FiltrosPagina from "@/components/FiltrosPagina";
@@ -38,10 +38,11 @@ export async function generateMetadata({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
 
-  const [tCategorias, tCombo, tMeses] = await Promise.all([
+  const [tCategorias, tCombo, tMeses, locale] = await Promise.all([
     getTranslations("Categorias"),
     getTranslations("CategoriaCombo"),
     getTranslations("Meses"),
+    getLocale(),
   ]);
   const etiqueta = tCategorias(categoriaOMes);
   const nombreMes = tMeses(mes);
@@ -53,10 +54,11 @@ export async function generateMetadata({
     municipio: municipio.nombre,
     mes: nombreMes,
   });
+  const alt = alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/${mes}`);
   return {
     title,
     description,
-    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/${mes}`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

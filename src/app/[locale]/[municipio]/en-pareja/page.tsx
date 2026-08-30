@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import SiempreHubLayout from "@/components/SiempreHubLayout";
 import { getMunicipio } from "@/lib/queries";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
@@ -16,12 +16,14 @@ export async function generateMetadata({
   const { municipio: municipioSlug } = await params;
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tAudiencia, description] = await Promise.all([
+  const [tAudiencia, description, locale] = await Promise.all([
     getTranslations("Audiencia"),
     construirMetaDescripcion(municipio.nombre, "siempre", "pareja"),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(tAudiencia("tituloSiemprePareja", { municipio: municipio.nombre }), "pareja");
-  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/en-pareja`) } };
+  const alt = alternatesIdiomas(`/${municipioSlug}/en-pareja`);
+  return { title, description, alternates: { languages: alt, canonical: alt[locale] } };
 }
 
 // Franja atemporal + audiencia "pareja" — ver conversación: slug propio

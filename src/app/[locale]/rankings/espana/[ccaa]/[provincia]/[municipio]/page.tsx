@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Utensils, Bed, HeartPulse, GraduationCap, Sparkles, Music, Briefcase, Trophy, ChevronRight } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -37,11 +37,12 @@ export async function generateMetadata({
   const { ccaa, provincia, municipio: municipioSlug } = await params;
   const municipio = await cargar(ccaa, provincia, municipioSlug);
   if (!municipio) return {};
-  const t = await getTranslations("Listados");
+  const [t, locale] = await Promise.all([getTranslations("Listados"), getLocale()]);
+  const alt = alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipioSlug}`);
   return {
     title: `${t("seccionTitulo", { municipio: municipio.nombre })} | Keplaneo`,
     description: t("metaDescripcionMunicipio", { municipio: municipio.nombre }),
-    alternates: { languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipioSlug}`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

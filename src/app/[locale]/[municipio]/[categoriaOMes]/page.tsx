@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import PlanList from "@/components/PlanList";
 import ListaEventos from "@/components/ListaEventos";
@@ -38,30 +38,33 @@ export async function generateMetadata({
   const mesNormalizado = normalizarMesSlug(categoriaOMes);
   if (mesNormalizado) {
     const mes = mesNormalizado;
-    const [tMes, tMeses] = await Promise.all([getTranslations("Mes"), getTranslations("Meses")]);
+    const [tMes, tMeses, locale] = await Promise.all([getTranslations("Mes"), getTranslations("Meses"), getLocale()]);
     const title = await construirTituloConSufijo(
       tMes("titulo", { municipio: municipio.nombre, mes: capitalizar(tMeses(mes)) })
     );
     const description = tMes("metaDescripcion", { municipio: municipio.nombre, mes: tMeses(mes) });
+    const alt = alternatesIdiomas(`/${municipioSlug}/${mes}`);
     return {
       title,
       description,
-      alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${mes}`) },
+      alternates: { languages: alt, canonical: alt[locale] },
     };
   }
 
   if (esCategoriaConPagina(categoriaOMes)) {
-    const [tCategoria, tCategorias] = await Promise.all([
+    const [tCategoria, tCategorias, locale] = await Promise.all([
       getTranslations("Categoria"),
       getTranslations("Categorias"),
+      getLocale(),
     ]);
     const etiqueta = tCategorias(categoriaOMes);
     const title = await construirTituloConSufijo(tCategoria("titulo", { categoria: etiqueta, municipio: municipio.nombre }));
     const description = tCategoria("metaDescripcion", { categoria: etiqueta.toLowerCase(), municipio: municipio.nombre });
+    const alt = alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}`);
     return {
       title,
       description,
-      alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}`) },
+      alternates: { languages: alt, canonical: alt[locale] },
     };
   }
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Star, MapPin, Trophy } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -51,11 +51,14 @@ export async function generateMetadata({
       .map((p) => p.lugar.nombre)
       .join(", ")} y más, verificados con datos de Google Maps.`;
 
+  const locale = await getLocale();
+  const alt = alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipio}/${ranking}`);
   return {
     title: `${listado.titulo} | Keplaneo`,
     description,
     alternates: {
-      languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipio}/${ranking}`),
+      languages: alt,
+      canonical: alt[locale],
     },
   };
 }

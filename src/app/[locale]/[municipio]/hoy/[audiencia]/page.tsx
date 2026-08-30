@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
 import { getMunicipio, getPlanesHoy } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
@@ -31,19 +31,21 @@ export async function generateMetadata({
   const extra = audienciaDesdeUrl(audiencia);
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tHoy, tAudiencia, description] = await Promise.all([
+  const [tHoy, tAudiencia, description, locale] = await Promise.all([
     getTranslations("Hoy"),
     getTranslations("Audiencia"),
     construirMetaDescripcion(municipio.nombre, "hoy", extra),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(
     tHoy("tituloAudiencia", { municipio: municipio.nombre, audiencia: minuscula(tAudiencia(extra)) }),
     extra
   );
+  const alt = alternatesIdiomas(`/${municipioSlug}/hoy/${audiencia}`);
   return {
     title,
     description,
-    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/hoy/${audiencia}`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

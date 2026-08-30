@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import NearbyMunicipios from "@/components/NearbyMunicipios";
 import Mapa from "@/components/Mapa";
 import SiempreHubLayout from "@/components/SiempreHubLayout";
@@ -19,12 +19,14 @@ export async function generateMetadata({
   const { municipio: municipioSlug } = await params;
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tHome, description] = await Promise.all([
+  const [tHome, description, locale] = await Promise.all([
     getTranslations("MunicipioHome"),
     construirMetaDescripcion(municipio.nombre, "siempre"),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(tHome("titulo", { municipio: municipio.nombre }), undefined, municipio.nombre);
-  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}`) } };
+  const alt = alternatesIdiomas(`/${municipioSlug}`);
+  return { title, description, alternates: { languages: alt, canonical: alt[locale] } };
 }
 
 // El hub del municipio es la franja atemporal ("siempre") de Cuándo — la

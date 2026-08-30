@@ -40,10 +40,11 @@ export async function generateMetadata({
     municipio: municipio.nombre,
     temporal,
   });
+  const alt = alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/fin-de-semana`);
   return {
     title,
     description,
-    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/fin-de-semana`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

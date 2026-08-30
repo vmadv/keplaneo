@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Heart, Users, Gift, MapPin, CalendarDays, Sun, Music } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import ListaCiudadesHome from "@/components/ListaCiudadesHome";
 import TituloHeroAnimado from "@/components/TituloHeroAnimado";
@@ -19,11 +19,12 @@ export const revalidate = 3600;
 // hreflang correcto (el del layout se heredaría igual en cualquier otra
 // página que tampoco lo declare, apuntando siempre a "/").
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("Sitio");
+  const [t, locale] = await Promise.all([getTranslations("Sitio"), getLocale()]);
+  const alt = alternatesIdiomas("/");
   return {
     title: t("titulo"),
     description: t("descripcion"),
-    alternates: { languages: alternatesIdiomas("/") },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

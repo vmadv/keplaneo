@@ -26,10 +26,11 @@ export async function generateMetadata({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
 
-  const [tCategorias, tCombo, { temporal }] = await Promise.all([
+  const [tCategorias, tCombo, { temporal }, locale] = await Promise.all([
     getTranslations("Categorias"),
     getTranslations("CategoriaCombo"),
     piezasTemporales("semana"),
+    getLocale(),
   ]);
   const etiqueta = tCategorias(categoriaOMes);
   const title = await construirTituloConSufijo(tCombo("semana", { categoria: etiqueta, municipio: municipio.nombre }));
@@ -38,10 +39,11 @@ export async function generateMetadata({
     municipio: municipio.nombre,
     temporal,
   });
+  const alt = alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/esta-semana`);
   return {
     title,
     description,
-    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/${categoriaOMes}/esta-semana`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

@@ -17,12 +17,14 @@ export async function generateMetadata({
   const { municipio: municipioSlug } = await params;
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tGratis, description] = await Promise.all([
+  const [tGratis, description, locale] = await Promise.all([
     getTranslations("Gratis"),
     construirMetaDescripcion(municipio.nombre, "finde", "gratis"),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(tGratis("tituloFinde", { municipio: municipio.nombre }));
-  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/fin-de-semana/gratis`) } };
+  const alt = alternatesIdiomas(`/${municipioSlug}/fin-de-semana/gratis`);
+  return { title, description, alternates: { languages: alt, canonical: alt[locale] } };
 }
 
 export default async function FindeGratisPage({

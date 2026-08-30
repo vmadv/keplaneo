@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Star, MapPin, Phone, Globe, Clock, Trophy, BadgeCheck, AtSign, CalendarCheck } from "lucide-react";
 import { hrefReserva } from "@/lib/places";
@@ -33,14 +33,16 @@ export async function generateMetadata({
   const { ccaa, provincia, municipio, lugar } = await params;
   const datos = await cargar(ccaa, provincia, municipio, lugar);
   if (!datos) return {};
-  const t = await getTranslations("Lugar");
+  const [t, locale] = await Promise.all([getTranslations("Lugar"), getLocale()]);
+  const alt = alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipio}/lugares/${lugar}`);
   return {
     title: `${datos.lugar.nombre} | Keplaneo`,
     description:
       datos.lugar.descripcion ??
       t("metaDescripcionGenerica", { nombre: datos.lugar.nombre, municipio: datos.municipio.nombre }),
     alternates: {
-      languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provincia}/${municipio}/lugares/${lugar}`),
+      languages: alt,
+      canonical: alt[locale],
     },
   };
 }

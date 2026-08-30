@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import EventosPageLayout from "@/components/EventosPageLayout";
 import { getMunicipio, getEventosActivos } from "@/lib/queries";
 import { rangoSemanaLegible } from "@/lib/dates";
@@ -29,19 +29,21 @@ export async function generateMetadata({
   const extra = audienciaDesdeUrl(audiencia);
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tSemana, tAudiencia, description] = await Promise.all([
+  const [tSemana, tAudiencia, description, locale] = await Promise.all([
     getTranslations("Semana"),
     getTranslations("Audiencia"),
     construirMetaDescripcion(municipio.nombre, "semana", extra),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(
     tSemana("tituloAudiencia", { municipio: municipio.nombre, audiencia: minuscula(tAudiencia(extra)) }),
     extra
   );
+  const alt = alternatesIdiomas(`/${municipioSlug}/esta-semana/${audiencia}`);
   return {
     title,
     description,
-    alternates: { languages: alternatesIdiomas(`/${municipioSlug}/esta-semana/${audiencia}`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

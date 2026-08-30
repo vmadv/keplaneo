@@ -18,12 +18,14 @@ export async function generateMetadata({
   const { municipio: municipioSlug } = await params;
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tSemana, description] = await Promise.all([
+  const [tSemana, description, locale] = await Promise.all([
     getTranslations("Semana"),
     construirMetaDescripcion(municipio.nombre, "semana"),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(tSemana("titulo", { municipio: municipio.nombre }));
-  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/esta-semana`) } };
+  const alt = alternatesIdiomas(`/${municipioSlug}/esta-semana`);
+  return { title, description, alternates: { languages: alt, canonical: alt[locale] } };
 }
 
 // No genera contenido nuevo: se apoya en `eventos` (la ficha estable que ya

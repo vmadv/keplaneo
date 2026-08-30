@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import SiempreHubLayout from "@/components/SiempreHubLayout";
 import { getMunicipio } from "@/lib/queries";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
@@ -16,12 +16,14 @@ export async function generateMetadata({
   const { municipio: municipioSlug } = await params;
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) return {};
-  const [tAudiencia, description] = await Promise.all([
+  const [tAudiencia, description, locale] = await Promise.all([
     getTranslations("Audiencia"),
     construirMetaDescripcion(municipio.nombre, "siempre", "familia"),
+    getLocale(),
   ]);
   const title = await construirTituloConSufijo(tAudiencia("tituloSiempreConNinos", { municipio: municipio.nombre }));
-  return { title, description, alternates: { languages: alternatesIdiomas(`/${municipioSlug}/con-ninos`) } };
+  const alt = alternatesIdiomas(`/${municipioSlug}/con-ninos`);
+  return { title, description, alternates: { languages: alt, canonical: alt[locale] } };
 }
 
 // Franja atemporal + audiencia "familia" — mismo dato que ya usan

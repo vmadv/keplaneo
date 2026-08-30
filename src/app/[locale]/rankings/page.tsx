@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import TarjetaCiudad from "@/components/TarjetaCiudad";
 import { buscarImagenHero } from "@/lib/heroImage";
@@ -11,11 +11,12 @@ export const revalidate = 86400;
 const COLORES = ["var(--secondary)", "var(--tertiary)", "var(--quaternary)"];
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("Listados");
+  const [t, locale] = await Promise.all([getTranslations("Listados"), getLocale()]);
+  const alt = alternatesIdiomas("/rankings");
   return {
     title: `${t("tituloGeneral")} | Keplaneo`,
     description: t("subtituloGeneral"),
-    alternates: { languages: alternatesIdiomas("/rankings") },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 

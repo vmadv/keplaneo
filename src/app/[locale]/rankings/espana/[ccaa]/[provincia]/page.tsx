@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import TarjetaCiudad from "@/components/TarjetaCiudad";
 import { buscarImagenHero } from "@/lib/heroImage";
@@ -26,11 +26,12 @@ export async function generateMetadata({
   const { ccaa, provincia: provinciaSlug } = await params;
   const datos = await cargar(ccaa, provinciaSlug);
   if (!datos) return {};
-  const t = await getTranslations("ListadosProvincia");
+  const [t, locale] = await Promise.all([getTranslations("ListadosProvincia"), getLocale()]);
+  const alt = alternatesIdiomas(`/rankings/espana/${ccaa}/${provinciaSlug}`);
   return {
     title: `${t("titulo", { provincia: datos.provincia.nombre })} | Keplaneo`,
     description: t("subtitulo", { provincia: datos.provincia.nombre }),
-    alternates: { languages: alternatesIdiomas(`/rankings/espana/${ccaa}/${provinciaSlug}`) },
+    alternates: { languages: alt, canonical: alt[locale] },
   };
 }
 
