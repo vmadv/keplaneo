@@ -6,6 +6,7 @@ import {
   getEventosActivosParaSitemap,
   getMunicipiosConRankings,
   getListadosDelMunicipio,
+  getLugaresParaSitemap,
 } from "@/lib/queries";
 import { alternatesIdiomas, hrefFiltro, segmentoVigencia } from "@/lib/rutasLocale";
 import { fechaDesdeTextoEspanol, hoyEnMadrid } from "@/lib/dates";
@@ -23,6 +24,7 @@ export function revalidarSitemaps(): void {
     "/sitemap_variables.xml",
     "/sitemap_eventos.xml",
     "/sitemap_rankings.xml",
+    "/sitemap_establecimientos.xml",
   ].forEach((path) => revalidatePath(path));
 }
 
@@ -149,11 +151,38 @@ export async function sitemapEventos(): Promise<MetadataRoute.Sitemap> {
   return entradas;
 }
 
+// Fichas de lugar individuales (/rankings/.../lugares/[lugar]) — antes
+// deliberadamente fuera del sitemap por no disparar las consultas a la BD
+// solo para esto (ver el comentario que llevaba sitemapRankings), pero el
+// usuario las quiere anunciadas: "establecimientos" un escalón por debajo
+// de las páginas genéricas con variable/rankings, y por encima de los
+// eventos puntuales (ver conversación sobre el orden de prioridades).
+export async function sitemapEstablecimientos(): Promise<MetadataRoute.Sitemap> {
+  const [lugares, municipios] = await Promise.all([getLugaresParaSitemap(), getMunicipiosConRankings()]);
+  const municipioPorId = new Map(municipios.map((m) => [m.id, m]));
+  const entradas: MetadataRoute.Sitemap = [];
+
+  for (const lugar of lugares) {
+    const municipio = municipioPorId.get(lugar.municipioId);
+    // Un lugar de un municipio sin ranking publicado no es alcanzable desde
+    // ninguna página real todavía (la ficha vive bajo la jerarquía de
+    // rankings) — se descarta, mismo criterio que sitemapRankings.
+    if (!municipio) continue;
+    const ruta = `/rankings/espana/${municipio.comunidad.slug}/${municipio.provinciaSlug}/${municipio.slug}/lugares/${lugar.slug}`;
+    entradas.push(
+      ...entradasBilingues(ruta, {
+        changeFrequency: "weekly",
+        priority: 0.6,
+        lastModified: new Date(lugar.ultimaActualizacion),
+      })
+    );
+  }
+  return entradas;
+}
+
 // Vertical de Rankings: el índice de cada municipio con rankings
 // publicados + cada ranking numerado — no se enumeran aquí las fichas de
-// lugar/sección individuales (alcanzables igualmente por rastreo normal
-// desde esas páginas), para no disparar el número de consultas a la BD
-// solo para el sitemap.
+// lugar/sección individuales (van en sitemapEstablecimientos, más arriba).
 export async function sitemapRankings(): Promise<MetadataRoute.Sitemap> {
   const municipios = await getMunicipiosConRankings();
   const entradas: MetadataRoute.Sitemap = [

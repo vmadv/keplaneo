@@ -10,8 +10,9 @@ const FICHEROS = [
   "sitemap_home.xml",
   "sitemap_paginas.xml",
   "sitemap_variables.xml",
-  "sitemap_eventos.xml",
   "sitemap_rankings.xml",
+  "sitemap_establecimientos.xml",
+  "sitemap_eventos.xml",
 ];
 
 export async function GET() {

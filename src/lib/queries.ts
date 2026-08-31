@@ -1045,3 +1045,23 @@ export async function getEventosActivosParaSitemap(): Promise<EventoParaSitemap[
     })
     .filter((e): e is EventoParaSitemap => e !== null);
 }
+
+export interface LugarParaSitemap {
+  municipioId: string;
+  slug: string;
+  ultimaActualizacion: string;
+}
+
+// Todas las fichas de lugar activas, con lo justo para construir el
+// sitemap (URL + lastModified) — el municipio se resuelve fuera, contra
+// getMunicipiosConRankings, para no repetir aquí el join a comunidad/
+// provincia (ver sitemapEstablecimientos en sitemapData.ts).
+export async function getLugaresParaSitemap(): Promise<LugarParaSitemap[]> {
+  const { data } = await supabase.from("lugares").select("slug, municipio_id, ultima_actualizacion").eq("activo", true);
+
+  return (data ?? []).map((fila) => ({
+    municipioId: fila.municipio_id,
+    slug: fila.slug,
+    ultimaActualizacion: fila.ultima_actualizacion,
+  }));
+}
