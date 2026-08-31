@@ -46,26 +46,34 @@ export function diasRepasoDiario(slug: string): number[] {
   return []; // pequeño: sin repaso diario
 }
 
-// Fuentes especializadas de referencia por municipio, para reforzar la
-// búsqueda dedicada de una categoría — ver conversación: el recinto puede
-// estar bien cubierto (otros conciertos del mismo sitio sí aparecen) y aun
-// así faltar una fecha concreta, porque la búsqueda con grounding no
+// Fuentes especializadas de referencia por municipio y categoría, para
+// reforzar la búsqueda dedicada de cada una — ver conversación: el recinto
+// puede estar bien cubierto (otros conciertos del mismo sitio sí aparecen)
+// y aun así faltar una fecha concreta, porque la búsqueda con grounding no
 // garantiza cobertura del 100% de lo anunciado. Solo para "grande", que ya
 // paga las búsquedas enfocadas — mapeo a mano igual que NIVELES.
 //
-// Las páginas de mes concretas (más precisas que la raíz del sitio: van
-// directas al listado de ese mes) llevan el año en la URL — 2026 hoy, hay
-// que revisarlas/actualizarlas cuando cambie de año o cuando la búsqueda
-// enfocada (5 semanas por delante) empiece a rebasar noviembre.
-const FUENTES_REFERENCIA_CONCIERTOS: Record<string, string[]> = {
-  sevilla: [
-    "https://conciertosensevilla.es/",
-    "https://conciertosensevilla.es/conciertos-sevilla-septiembre-2026/",
-    "https://conciertosensevilla.es/conciertos-sevilla-octubre-2026/",
-    "https://conciertosensevilla.es/conciertos-sevilla-noviembre-2026/",
-  ],
+// Las páginas de mes concretas de conciertosensevilla.es (más precisas que
+// la raíz del sitio: van directas al listado de ese mes) llevan el año en
+// la URL — 2026 hoy, hay que revisarlas/actualizarlas cuando cambie de año
+// o cuando la búsqueda enfocada empiece a rebasar noviembre.
+type CategoriaConPagina = "conciertos" | "exposiciones" | "teatro" | "monologos";
+
+const FUENTES_REFERENCIA_CATEGORIA: Record<string, Partial<Record<CategoriaConPagina, string[]>>> = {
+  sevilla: {
+    conciertos: [
+      "https://conciertosensevilla.es/",
+      "https://conciertosensevilla.es/conciertos-sevilla-septiembre-2026/",
+      "https://conciertosensevilla.es/conciertos-sevilla-octubre-2026/",
+      "https://conciertosensevilla.es/conciertos-sevilla-noviembre-2026/",
+      "https://www.agendadesevilla.com/conciertos/",
+      "https://www.elcorteingles.es/entradas/conciertos/sevilla/",
+    ],
+    teatro: ["https://www.agendadesevilla.com/teatro/"],
+    monologos: ["https://www.agendadesevilla.com/monologos/"],
+  },
 };
 
-export function fuentesReferenciaConciertos(slug: string): string[] {
-  return FUENTES_REFERENCIA_CONCIERTOS[slug] ?? [];
+export function fuentesReferenciaCategoria(slug: string, categoria: CategoriaConPagina): string[] {
+  return FUENTES_REFERENCIA_CATEGORIA[slug]?.[categoria] ?? [];
 }

@@ -521,6 +521,36 @@ ${camposJson(municipioNombre, municipiosExcluidos)}
   return llamarGeminiConReintentos(prompt, "generarPlanesEnfocados");
 }
 
+// A diferencia de generarPlanesEnfocados (que le pide a Gemini que BUSQUE),
+// esto recibe una lista ya extraída y confirmada (ver conversación: la
+// búsqueda con grounding no lee una página entera, solo trae un puñado de
+// resultados por consulta — pedirle la URL como pista no basta cuando la
+// página tiene decenas de entradas). Aquí el título/fecha/recinto ya están
+// dados; el trabajo de Gemini es solo redactar la ficha completa de cada
+// uno (descripción, precio, audiencia...), no encontrarlos.
+export async function generarPlanesDesdeListado(
+  municipioNombre: string,
+  categoria: Foco["valor"],
+  listado: Array<{ titulo: string; fecha: string; lugar: string }>,
+  municipiosExcluidos: string[] = []
+): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
+  const listaTexto = listado.map((e) => `- "${e.titulo}" — ${e.fecha} — ${e.lugar}`).join("\n");
+  const prompt = `
+Eres un editor local que conoce a fondo ${municipioNombre} (España).
+
+Esta es la lista COMPLETA y ya verificada de planes confirmados para este periodo — no hace falta que la busques, ya está confirmada. Tu trabajo es redactar la ficha completa de CADA UNO, no encontrarlos ni descartarlos:
+${listaTexto}
+
+Usa el título, la fecha y el recinto exactamente como aparecen arriba (no los cambies ni los inventes de nuevo). Puedes buscar información adicional (precio de entradas, descripción del artista/espectáculo/obra, horario) para completar el resto de los campos, pero esos tres datos ya están confirmados. Redacta una ficha para los ${listado.length} elementos de la lista, ninguno menos.
+
+Todos estos planes llevan "tipo": "excepcional" y "categoria": "${categoria}". Es OBLIGATORIO indicar "fecha_inicio" con la fecha exacta de la lista.
+
+${camposJson(municipioNombre, municipiosExcluidos)}
+`.trim();
+
+  return llamarGeminiConReintentos(prompt, "generarPlanesDesdeListado");
+}
+
 // Búsqueda dedicada a planes "generico" (evergreen, sin fecha) — sin esto,
 // los genéricos solo salían como relleno de generarPlanesSemanales cuando
 // no había suficientes puntuales para llegar a su cupo, así que en

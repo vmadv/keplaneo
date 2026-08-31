@@ -20,7 +20,7 @@ import {
   diasDelMes,
   formatearFechaLegible,
 } from "@/lib/dates";
-import { llevaEnfocadas, fuentesReferenciaConciertos } from "@/lib/nivelesMunicipio";
+import { llevaEnfocadas, fuentesReferenciaCategoria } from "@/lib/nivelesMunicipio";
 
 export const maxDuration = 300;
 
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
               fechaHastaLegible,
               { tipo: "categoria", valor: "conciertos" },
               municipiosExcluidos,
-              fuentesReferenciaConciertos(municipio.slug)
+              fuentesReferenciaCategoria(municipio.slug, "conciertos")
             )
           : (Promise.resolve({ planes: [], usage: {} }) as ReturnType<typeof generarPlanesEnfocados>),
       ]);

@@ -76,10 +76,15 @@ export async function construirFiltrosTemporales(
     },
     ...meses.map((mes) => {
       const nombre = tMeses(mes);
+      const activo = vigenciaActual === mes;
       return {
         label: nombre.charAt(0).toUpperCase() + nombre.slice(1),
-        href: `${base}/${mesSlugParaLocale(mes, locale)}`,
-        activo: vigenciaActual === mes,
+        // Pinchar en el mes YA activo lo desactiva (vuelve a "siempre", que
+        // en una página de categoría es la categoría a secas) — mismo
+        // criterio de toggle que ya usan hoy/finde/semana, ver conversación:
+        // antes recargaba la misma página sin dar forma de quitar el mes.
+        href: activo ? hrefFiltro(locale, base, "siempre", extraActual) : `${base}/${mesSlugParaLocale(mes, locale)}`,
+        activo,
       };
     }),
   ];

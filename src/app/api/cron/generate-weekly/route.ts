@@ -17,7 +17,7 @@ import { revalidarSitemaps } from "@/lib/sitemapData";
 import { getTitulosGenericosActivos } from "@/lib/queries";
 import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible, hoyISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
-import { llevaEnfocadas, fuentesReferenciaConciertos } from "@/lib/nivelesMunicipio";
+import { llevaEnfocadas, fuentesReferenciaCategoria } from "@/lib/nivelesMunicipio";
 
 export const maxDuration = 300;
 
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
             foco.tipo === "categoria" ? fechaHastaAmpliadaLegible : fechaDomingoLegible,
             foco,
             municipiosExcluidos,
-            foco.tipo === "categoria" && foco.valor === "conciertos" ? fuentesReferenciaConciertos(municipio.slug) : []
+            foco.tipo === "categoria" ? fuentesReferenciaCategoria(municipio.slug, foco.valor) : []
           )
         ),
       ]);
