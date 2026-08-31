@@ -722,7 +722,7 @@ Esta semana ya hemos encontrado y publicado estos planes — NO los repitas ni l
 ${listaConocidos}
 
 Busca EXCLUSIVAMENTE planes NUEVOS que no estén en esa lista: eventos de última hora, cambios de programación, o cosas que se nos pasaron. Si no encuentras nada realmente nuevo, devuelve un array vacío — no rellenes con planes genéricos ni repitas nada de la lista de arriba solo por devolver algo.
-${enfoqueFinde ? "\nHoy es viernes: presta atención especial a la agenda de este sábado y domingo, que suele confirmarse o ampliarse a última hora." : ""}
+${enfoqueFinde ? "\nHoy toca prestar atención especial a la agenda del próximo fin de semana (sábado y domingo), que suele confirmarse o ampliarse con poca antelación." : ""}
 
 Para cada plan con "tipo": "excepcional", indica "fecha_inicio" (y "fecha_fin" si aplica) con una fecha real — si no la encuentras, mejor omite el plan.
 

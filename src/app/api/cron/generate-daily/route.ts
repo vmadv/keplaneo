@@ -71,7 +71,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ fecha: hoy, resultados: [], nota: "Lunes: cubierto por generate-weekly" });
   }
 
-  const enfoqueFinde = diaSemana === 5; // viernes: prestar atención especial al finde
+  // Domingo (para el fin de semana siguiente, con la máxima antelación
+  // posible) y miércoles (repaso a mitad de semana) — dos pasadas en vez de
+  // solo el viernes, para no depender de una única oportunidad si esa
+  // semana el viernes no encuentra nada nuevo (ver conversación).
+  const enfoqueFinde = diaSemana === 0 || diaSemana === 3;
   const diasRestantesSemana = fechasDeLaSemana(lunesDeLaSemanaActual()).filter(
     (d) => formatearFechaISO(d) >= hoy
   );
