@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { generarPlanesDelMes, traducirPlanesAIngles, estimarCoste, estimarCosteTraduccion } from "@/lib/gemini";
+import {
+  generarPlanesDelMes,
+  generarPlanesEnfocados,
+  fusionarPlanesDuplicados,
+  traducirPlanesAIngles,
+  estimarCoste,
+  estimarCosteTraduccion,
+} from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { revalidarSitemaps } from "@/lib/sitemapData";
-import { hoyISO, proximosMesesSlugs, fechaDeHoyLegible, numeroSemanaDesde2020, mesSlugParaLocale } from "@/lib/dates";
+import {
+  hoyISO,
+  proximosMesesSlugs,
+  fechaDeHoyLegible,
+  numeroSemanaDesde2020,
+  mesSlugParaLocale,
+  diasDelMes,
+  formatearFechaLegible,
+} from "@/lib/dates";
+import { llevaEnfocadas, fuentesReferenciaConciertos } from "@/lib/nivelesMunicipio";
 
 export const maxDuration = 300;
 
@@ -72,12 +88,43 @@ export async function GET(request: NextRequest) {
       const municipiosExcluidos = municipios
         .filter((m) => m.id !== municipio.id)
         .map((m) => m.nombre);
-      const { planes, usage: usageGeneracion } = await generarPlanesDelMes(
-        municipio.nombre,
-        mes,
-        fechaDeHoyLegible(),
-        municipiosExcluidos
-      );
+      // Búsqueda dedicada de conciertos para ESTE mes concreto, además de
+      // la mixta — ver conversación (Silvio Rodríguez): la mixta reparte
+      // 10-20 planes entre TODAS las categorías del mes entero, así que un
+      // concierto real puede quedarse fuera del cupo. Solo para "grande"
+      // (ya paga las enfocadas semanales) — mismo criterio de coste que
+      // generate-weekly, y en paralelo con la mixta por la misma razón.
+      const diasMes = diasDelMes(mes);
+      const fechaDesdeLegible = formatearFechaLegible(diasMes[0]);
+      const fechaHastaLegible = formatearFechaLegible(diasMes[diasMes.length - 1]);
+      const [{ planes: planesMixtos, usage: usageMixta }, conciertos] = await Promise.all([
+        generarPlanesDelMes(municipio.nombre, mes, fechaDeHoyLegible(), municipiosExcluidos),
+        llevaEnfocadas(municipio.slug)
+          ? generarPlanesEnfocados(
+              municipio.nombre,
+              fechaDesdeLegible,
+              fechaHastaLegible,
+              { tipo: "categoria", valor: "conciertos" },
+              municipiosExcluidos,
+              fuentesReferenciaConciertos(municipio.slug)
+            )
+          : (Promise.resolve({ planes: [], usage: {} }) as ReturnType<typeof generarPlanesEnfocados>),
+      ]);
+      const planesConciertos = conciertos.planes;
+      const usageConciertos = conciertos.usage;
+
+      // El mismo concierto real puede salir tanto en la mixta como en la
+      // dedicada (con otra redacción) — se fusiona aquí, antes de que la
+      // fila repetida llegue a `planes.insert`.
+      const planes = fusionarPlanesDuplicados([...planesMixtos, ...planesConciertos]);
+      // thoughtsTokenCount también se suma (ver UsoTokens en gemini.ts):
+      // se factura como output y sin esto estimarCoste subestima el gasto
+      // real de las dos llamadas combinadas.
+      const usageGeneracion = {
+        promptTokenCount: (usageMixta.promptTokenCount ?? 0) + (usageConciertos.promptTokenCount ?? 0),
+        candidatesTokenCount: (usageMixta.candidatesTokenCount ?? 0) + (usageConciertos.candidatesTokenCount ?? 0),
+        thoughtsTokenCount: (usageMixta.thoughtsTokenCount ?? 0) + (usageConciertos.thoughtsTokenCount ?? 0),
+      };
 
       // Traducción al inglés en una llamada aparte, sin grounding (ver
       // conversación). En su propio try/catch: un fallo aquí no debe tirar
