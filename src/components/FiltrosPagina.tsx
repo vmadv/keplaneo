@@ -56,23 +56,28 @@ export default async function FiltrosPagina({
   // TODAVÍA no se ha tocado: si ya elegiste un "cuándo" pero no un "filtra
   // más" (o al revés), es ahí donde tiene sentido llamar la atención — si
   // ya combinaste los dos, o si no has tocado ninguno todavía, no invita a
-  // ningún lado en concreto (ver conversación).
+  // ningún lado en concreto (ver conversación). Solo estos dos `activo`
+  // reales — "Siempre" marcada solo en cliente (sessionStorage) se suma
+  // dentro de IconoInvitacion, que es quien decide qué icono se ve.
   const cuandoElegido = siempreVisibles.some((item) => item.activo) || meses.some((item) => item.activo);
   const filtraMasElegido = rapidos.some((item) => item.activo);
-  const invitaFiltraMas = cuandoElegido && !filtraMasElegido;
-  const invitaCuando = filtraMasElegido && !cuandoElegido;
 
   return (
     <MasFiltrosProvider initialOpen={hayActivoOculto}>
       <div className="mb-6 grid gap-1">
-        <FiltroTemporal items={siempreVisibles} className="mb-0" compacto scrollable invita={invitaCuando} />
+        <FiltroTemporal
+          items={siempreVisibles}
+          className="mb-0"
+          compacto
+          scrollable
+          invitacion={{ eje: "cuando", cuandoElegido, filtraMasElegido }}
+        />
         <FiltroTemporal
           items={rapidos}
           className="mb-0"
           compacto
           scrollable
-          invita={invitaFiltraMas}
-          invitaReaccionaASiempre
+          invitacion={{ eje: "filtraMas", cuandoElegido, filtraMasElegido }}
           extra={boton}
         />
         {panel}

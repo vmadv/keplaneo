@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
-import { EraserAddIcon } from "./icons/EraserAddIcon";
 import PastillaSiempreVisual from "./PastillaSiempreVisual";
 import IconoInvitacion from "./IconoInvitacion";
 import type { FiltroTemporalItem } from "@/lib/filtros";
@@ -11,8 +10,7 @@ export default function FiltroTemporal({
   extra,
   compacto = false,
   scrollable = false,
-  invita = false,
-  invitaReaccionaASiempre = false,
+  invitacion,
 }: {
   items: FiltroTemporalItem[];
   className?: string;
@@ -35,13 +33,11 @@ export default function FiltroTemporal({
   // veces al montar, para indicar "aquí también puedes filtrar" — solo en
   // el eje que todavía no se ha tocado. Una flecha al final de la fila no
   // señalaba hacia nada (ver conversación); un icono al principio, junto a
-  // las propias pastillas de ese grupo, sí se lee como "mira aquí".
-  invita?: boolean;
-  // Solo la fila de "Filtra más" debe reaccionar a un clic en "Siempre" (ver
-  // conversación: pinchar Siempre no navega si ya se estaba en esa página,
-  // así que necesita su propio evento para saltar sin recarga). La fila de
-  // Cuándo no debe reaccionar a su propia pastilla "Siempre".
-  invitaReaccionaASiempre?: boolean;
+  // las propias pastillas de ese grupo, sí se lee como "mira aquí". Ambas
+  // filas necesitan los dos ejes (no solo el propio) porque el icono se
+  // decide reactivamente en cliente (ver IconoInvitacion): "Siempre"
+  // marcada solo visualmente también cuenta como el eje Cuándo elegido.
+  invitacion?: { eje: "cuando" | "filtraMas"; cuandoElegido: boolean; filtraMasElegido: boolean };
 }) {
   const clasesPastilla = compacto ? "text-xs px-3 py-1.5 sm:text-sm sm:px-6 sm:py-[0.65rem]" : "text-sm";
   // La pastilla activa (btn-primary) ya lleva borde grueso + sombra — es la
@@ -59,18 +55,7 @@ export default function FiltroTemporal({
     <div
       className={`flex gap-1.5 items-center ${scrollable ? "flex-nowrap overflow-x-auto sin-scrollbar mascara-desvanecido py-1 pr-2" : "flex-wrap"} ${className}`}
     >
-      {invitaReaccionaASiempre ? (
-        <IconoInvitacion invitaServidor={invita} />
-      ) : (
-        invita && (
-          <EraserAddIcon
-            size={18}
-            className="icono-invitacion shrink-0"
-            style={{ color: "var(--accent)" }}
-            aria-hidden
-          />
-        )
-      )}
+      {invitacion && <IconoInvitacion {...invitacion} />}
       {items.map((item) =>
         item.siempre ? (
           <PastillaSiempreVisual
