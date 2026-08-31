@@ -17,7 +17,7 @@ import { revalidarSitemaps } from "@/lib/sitemapData";
 import { getTitulosGenericosActivos } from "@/lib/queries";
 import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible, hoyISO } from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
-import { llevaEnfocadas } from "@/lib/nivelesMunicipio";
+import { llevaEnfocadas, fuentesReferenciaConciertos } from "@/lib/nivelesMunicipio";
 
 export const maxDuration = 300;
 
@@ -141,6 +141,16 @@ export async function GET(request: NextRequest) {
 
   const fechaLunesLegible = formatearFechaLegible(diasSemana[0]);
   const fechaDomingoLegible = formatearFechaLegible(diasSemana[6]);
+  // Las categorías con página propia (conciertos, teatro...) buscan varias
+  // semanas por delante, no solo la actual — ver conversación (Silvio
+  // Rodríguez): un concierto anunciado con antelación no se detectaba hasta
+  // la semana en que ya tocaba. Las de audiencia (pareja/familia) se quedan
+  // con la semana en curso, que es lo que tiene sentido para ese tipo de
+  // recomendación.
+  const SEMANAS_ADELANTE_CATEGORIAS = 5;
+  const fechaHastaAmpliada = new Date(diasSemana[6]);
+  fechaHastaAmpliada.setDate(fechaHastaAmpliada.getDate() + 7 * (SEMANAS_ADELANTE_CATEGORIAS - 1));
+  const fechaHastaAmpliadaLegible = formatearFechaLegible(fechaHastaAmpliada);
 
   const resultados = await enLotes(municipios, 3, async (municipio) => {
     try {
@@ -157,7 +167,14 @@ export async function GET(request: NextRequest) {
         generarPlanesGenericos(municipio.nombre, conocidos, municipiosExcluidos),
         generarPlanesGenericosNinos(municipio.nombre, conocidos, municipiosExcluidos),
         ...focos.map((foco) =>
-          generarPlanesEnfocados(municipio.nombre, fechaLunesLegible, fechaDomingoLegible, foco, municipiosExcluidos)
+          generarPlanesEnfocados(
+            municipio.nombre,
+            fechaLunesLegible,
+            foco.tipo === "categoria" ? fechaHastaAmpliadaLegible : fechaDomingoLegible,
+            foco,
+            municipiosExcluidos,
+            foco.tipo === "categoria" && foco.valor === "conciertos" ? fuentesReferenciaConciertos(municipio.slug) : []
+          )
         ),
       ]);
       const planesCrudos = [mixta, generico, ninos, ...enfocadas].flatMap((r) => r.planes);

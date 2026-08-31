@@ -476,19 +476,39 @@ function etiquetaCampoFoco(foco: Foco): string {
 // directamente "qué hacer con niños este finde" encontraba bastante más que
 // lo que salía de esa búsqueda mixta. Sin límite de cantidad fijo: mejor 2
 // reales que 8 con relleno, pero tampoco recortar a 5 si hay 8 reales.
+//
+// fechaHastaLegible es más amplio que "esta semana" para las categorías con
+// agenda propia (conciertos, teatro...) — ver conversación (Silvio
+// Rodríguez): un concierto anunciado con un mes de antelación no se
+// detectaba hasta la semana en que ya tocaba, porque esta búsqueda solo
+// miraba la semana en curso. Un plan con fecha fuera de la semana no genera
+// fila en `planes` (ver calcularFilasPorDia), pero sí crea/actualiza ya su
+// ficha real en `eventos` — que es lo que hace falta para que aparezca en
+// cuanto se acerque la fecha, vía el relleno de PlanesPageLayout/
+// SiempreHubLayout o el listado completo de la categoría.
 export async function generarPlanesEnfocados(
   municipioNombre: string,
-  fechaLunesLegible: string,
-  fechaDomingoLegible: string,
+  fechaDesdeLegible: string,
+  fechaHastaLegible: string,
   foco: Foco,
-  municipiosExcluidos: string[] = []
+  municipiosExcluidos: string[] = [],
+  // Fuentes especializadas a consultar además de la búsqueda habitual (ver
+  // conversación: el recinto puede estar bien cubierto en general y aun
+  // así faltar una fecha concreta) — solo se usa hoy para "conciertos" en
+  // municipios grande (ver fuentesReferenciaConciertos en nivelesMunicipio.ts).
+  fuentesReferencia: string[] = []
 ): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
   const prompt = `
-Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España) para la semana del ${fechaLunesLegible} al ${fechaDomingoLegible}.
+Eres un editor local que conoce a fondo la agenda de ${municipioNombre} (España) entre el ${fechaDesdeLegible} y el ${fechaHastaLegible}.
 
-Busca específicamente ${DESCRIPCION_FOCO[foco.valor]}. Devuelve TODOS los planes reales y verificables que encuentres para esto en concreto dentro de esa semana — no te limites a una cifra fija: si hay 2 buenos, devuelve 2; si hay 8, devuelve los 8. Mejor pocos reales y bien verificados que muchos con relleno o inventados, y no fuerces algo que no encaje de verdad solo por rellenar.
+Busca específicamente ${DESCRIPCION_FOCO[foco.valor]}. Devuelve TODOS los planes reales y verificables que encuentres para esto en concreto dentro de ese periodo — no te limites a una cifra fija: si hay 2 buenos, devuelve 2; si hay 20, devuelve los 20. Mejor pocos reales y bien verificados que muchos con relleno o inventados, y no fuerces algo que no encaje de verdad solo por rellenar.
+${
+  fuentesReferencia.length > 0
+    ? `\nAdemás de tu búsqueda habitual, consulta específicamente estas fuentes especializadas para no perderte nada de su cartelera: ${fuentesReferencia.join(", ")}`
+    : ""
+}
 
-Todos los planes que devuelvas aquí llevan "tipo": "excepcional" (son eventos con fecha concreta, no genéricos) y ${etiquetaCampoFoco(foco)} Es OBLIGATORIO indicar "fecha_inicio" (y "fecha_fin" si dura más de un día) con una fecha real dentro de esta semana o que se solape con ella — si no encuentras una fecha real y verificable, no incluyas el plan. Si de verdad no encuentras ninguno real para esto esta semana, devuelve un array vacío — no inventes ni fuerces nada.
+Todos los planes que devuelvas aquí llevan "tipo": "excepcional" (son eventos con fecha concreta, no genéricos) y ${etiquetaCampoFoco(foco)} Es OBLIGATORIO indicar "fecha_inicio" (y "fecha_fin" si dura más de un día) con una fecha real dentro de ese periodo o que se solape con él — si no encuentras una fecha real y verificable, no incluyas el plan. Si de verdad no encuentras ninguno real para esto en ese periodo, devuelve un array vacío — no inventes ni fuerces nada.
 ${
   foco.tipo === "categoria"
     ? `\nAunque el foco de esta búsqueda sea la categoría, no dejes de evaluar bien el campo "audiencia" de cada plan (ver más abajo) — no le pongas "generico" por inercia solo porque estás concentrado en encontrar ${DESCRIPCION_FOCO[foco.valor]}. Si alguno de estos planes es claramente mejor en pareja o con niños, márcalo así: también alimenta esos otros filtros del sitio.`

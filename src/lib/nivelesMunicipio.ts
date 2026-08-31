@@ -45,3 +45,17 @@ export function diasRepasoDiario(slug: string): number[] {
   if (nivel === "mediano") return [2, 5]; // martes y viernes
   return []; // pequeño: sin repaso diario
 }
+
+// Fuentes especializadas de referencia por municipio, para reforzar la
+// búsqueda dedicada de una categoría — ver conversación: el recinto puede
+// estar bien cubierto (otros conciertos del mismo sitio sí aparecen) y aun
+// así faltar una fecha concreta, porque la búsqueda con grounding no
+// garantiza cobertura del 100% de lo anunciado. Solo para "grande", que ya
+// paga las búsquedas enfocadas — mapeo a mano igual que NIVELES.
+const FUENTES_REFERENCIA_CONCIERTOS: Record<string, string[]> = {
+  sevilla: ["https://conciertosensevilla.es/"],
+};
+
+export function fuentesReferenciaConciertos(slug: string): string[] {
+  return FUENTES_REFERENCIA_CONCIERTOS[slug] ?? [];
+}
