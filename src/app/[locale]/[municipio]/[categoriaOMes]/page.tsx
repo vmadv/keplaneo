@@ -10,8 +10,8 @@ import FiltrosPagina from "@/components/FiltrosPagina";
 import HeroPortada from "@/components/HeroPortada";
 import { normalizarMesSlug, mesSlugParaLocale, proximosMesesSlugs } from "@/lib/dates";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
-import { ordenarPorDiaDeSemana } from "@/lib/semana";
-import { getMunicipio, getPlanesDelMes, getEventosPorCategoria } from "@/lib/queries";
+import { ordenarPorDiaDeSemana, ordenarParaMes, idsEventoDePlanes } from "@/lib/semana";
+import { getMunicipio, getPlanesDelMes, getEventosPorCategoria, getEventosActivos } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
 import { buscarImagenHero } from "@/lib/heroImage";
 import { construirTituloConSufijo } from "@/lib/resumenSeleccion";
@@ -94,14 +94,18 @@ export default async function CategoriaOMesPage({
   const mesActual = normalizarMesSlug(categoriaOMes);
   if (mesActual) {
     const mes = mesActual;
-    const [planes, primarios, secundarios, tMes, tMeses] = await Promise.all([
+    const [planes, eventosActivos, primarios, secundarios, tMes, tMeses, tPlanList] = await Promise.all([
       getPlanesDelMes(municipio.id, mes),
+      getEventosActivos(municipio.id),
       construirFiltrosTemporales(base, mes),
       construirFiltrosSecundarios(base, mes),
       getTranslations("Mes"),
       getTranslations("Meses"),
+      getTranslations("PlanList"),
     ]);
     const nombreMes = capitalizar(tMeses(mes));
+    const idsCurados = idsEventoDePlanes(planes);
+    const relleno = ordenarParaMes(eventosActivos, mes).filter((e) => !idsCurados.has(e.id));
 
     return (
       <main className="flex-1 bg-dots">
@@ -122,7 +126,15 @@ export default async function CategoriaOMesPage({
 
           <FiltrosPagina primarios={primarios} secundarios={secundarios} />
 
-          <PlanList planes={planes} base={base} contexto={mes} municipioNombre={municipio.nombre} />
+          {planes.length > 0 && <PlanList planes={planes} base={base} contexto={mes} municipioNombre={municipio.nombre} />}
+          {relleno.length > 0 && (
+            <div className={planes.length > 0 ? "mt-5" : undefined}>
+              <ListaEventos eventos={relleno} base={base} contexto={mes} municipioNombre={municipio.nombre} />
+            </div>
+          )}
+          {planes.length === 0 && relleno.length === 0 && (
+            <p style={{ color: "var(--muted-foreground)" }}>{tPlanList("vacioGeneral")}</p>
+          )}
         </div>
       </main>
     );

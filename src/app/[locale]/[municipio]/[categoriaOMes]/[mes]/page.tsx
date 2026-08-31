@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import PlanList from "@/components/PlanList";
+import ListaEventos from "@/components/ListaEventos";
 import FiltrosPagina from "@/components/FiltrosPagina";
 import HeroPortada from "@/components/HeroPortada";
 import { normalizarMesSlug, mesSlugParaLocale, proximosMesesSlugs } from "@/lib/dates";
-import { getMunicipio, getPlanesCategoriaMes } from "@/lib/queries";
+import { ordenarParaMes, idsEventoDePlanes } from "@/lib/semana";
+import { getMunicipio, getPlanesCategoriaMes, getEventosPorCategoria } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
 import { construirTituloConSufijo } from "@/lib/resumenSeleccion";
@@ -77,21 +79,26 @@ export default async function CategoriaMesPage({
 
   const base = `/${municipioSlug}`;
   const catBase = `${base}/${categoriaOMes}`;
-  const [planes, temporales, secundarios, tNav, tCategorias, tCombo, tMeses] = await Promise.all([
-    getPlanesCategoriaMes(municipio.id, categoriaOMes, mes),
-    construirFiltrosTemporales(catBase, mes),
-    // `base` (no `catBase`): las pastillas de temática deben cambiar de
-    // categoría manteniendo el mes (/exposiciones/agosto), no anidarse
-    // dentro de la categoría actual — mismo criterio que ya usa la página
-    // de mes a secas para enlazar a estas combinaciones.
-    construirFiltrosSecundarios(base, mes, undefined, categoriaOMes),
-    getTranslations("Nav"),
-    getTranslations("Categorias"),
-    getTranslations("CategoriaCombo"),
-    getTranslations("Meses"),
-  ]);
+  const [planes, eventosActivos, temporales, secundarios, tNav, tCategorias, tCombo, tMeses, tPlanList] =
+    await Promise.all([
+      getPlanesCategoriaMes(municipio.id, categoriaOMes, mes),
+      getEventosPorCategoria(municipio.id, categoriaOMes),
+      construirFiltrosTemporales(catBase, mes),
+      // `base` (no `catBase`): las pastillas de temática deben cambiar de
+      // categoría manteniendo el mes (/exposiciones/agosto), no anidarse
+      // dentro de la categoría actual — mismo criterio que ya usa la página
+      // de mes a secas para enlazar a estas combinaciones.
+      construirFiltrosSecundarios(base, mes, undefined, categoriaOMes),
+      getTranslations("Nav"),
+      getTranslations("Categorias"),
+      getTranslations("CategoriaCombo"),
+      getTranslations("Meses"),
+      getTranslations("PlanList"),
+    ]);
   const etiqueta = tCategorias(categoriaOMes);
   const nombreMes = capitalizar(tMeses(mes));
+  const idsCurados = idsEventoDePlanes(planes);
+  const relleno = ordenarParaMes(eventosActivos, mes).filter((e) => !idsCurados.has(e.id));
 
   return (
     <main className="flex-1 bg-dots">
@@ -113,7 +120,15 @@ export default async function CategoriaMesPage({
 
         <FiltrosPagina primarios={temporales} secundarios={secundarios} />
 
-        <PlanList planes={planes} base={base} contexto={mes} municipioNombre={municipio.nombre} />
+        {planes.length > 0 && <PlanList planes={planes} base={base} contexto={mes} municipioNombre={municipio.nombre} />}
+        {relleno.length > 0 && (
+          <div className={planes.length > 0 ? "mt-5" : undefined}>
+            <ListaEventos eventos={relleno} base={base} contexto={mes} municipioNombre={municipio.nombre} />
+          </div>
+        )}
+        {planes.length === 0 && relleno.length === 0 && (
+          <p style={{ color: "var(--muted-foreground)" }}>{tPlanList("vacioGeneral")}</p>
+        )}
       </div>
     </main>
   );

@@ -1,5 +1,5 @@
-import { diasIncluidosEnRango, diasRelevantesEstaSemana, diasFinDeSemana, etiquetaDiaSemana, etiquetaDiaFinde, hoyEnMadrid } from "./dates";
-import type { Evento, Plan } from "./types";
+import { diasIncluidosEnRango, diasRelevantesEstaSemana, diasFinDeSemana, diasDelMes, etiquetaDiaSemana, etiquetaDiaFinde, hoyEnMadrid } from "./dates";
+import type { Evento, Plan, MesSlug } from "./types";
 
 // Para no repetir el mismo evento real en el relleno de ordenarParaHoy/
 // ordenarParaFinde cuando el lote curado (planes) ya lo trae — ver
@@ -47,9 +47,12 @@ function relevantesOrdenados(
     // cronológico, para que lo realmente concreto no quede por detrás de
     // algo disponible cualquier día solo porque cae antes en el calendario
     // (ver conversación). Los genéricos (sin fecha, `dias` null) siempre
-    // van last, con una duración "infinita" que ningún puntual real alcanza.
-    const duracionA = a.dias ? a.dias.filter(Boolean).length : 8;
-    const duracionB = b.dias ? b.dias.filter(Boolean).length : 8;
+    // van last, con una duración "infinita" que ningún puntual real
+    // alcanza — el +1 sobre el tamaño de la ventana (7 en una semana, hasta
+    // 31 en un mes) es lo que garantiza eso sea cual sea diasObjetivo.
+    const sentinelaGenerico = diasObjetivo.length + 1;
+    const duracionA = a.dias ? a.dias.filter(Boolean).length : sentinelaGenerico;
+    const duracionB = b.dias ? b.dias.filter(Boolean).length : sentinelaGenerico;
     if (duracionA !== duracionB) return duracionA - duracionB;
     const indiceA = a.dias ? a.dias.indexOf(true) : 99;
     const indiceB = b.dias ? b.dias.indexOf(true) : 99;
@@ -113,4 +116,16 @@ export function ordenarParaFinde(
     relevantes.map(({ evento }) => [evento.id, etiquetaDiaFinde(evento.fecha_inicio, evento.fecha_fin, locale)])
   );
   return { eventos: relevantes.map((r) => r.evento), etiquetas };
+}
+
+// Igual que ordenarParaHoy/ordenarParaFinde, pero para las páginas de mes
+// (a secas o categoría+mes) — el mismo hueco: getPlanesDelMes lee solo el
+// lote curado, que compite por un cupo de 10-20 planes mezclando TODAS las
+// categorías del mes entero, así que un concierto real puede quedarse
+// fuera aunque ya conste en `eventos` (ver conversación). Sin etiquetas
+// propias — ListaEventos ya calcula su propia etiqueta de fecha por
+// evento cuando no se le pasa `obtenerEtiqueta` (día suelto, mes, o "desde
+// {mes}" si está en curso), que es justo lo que hace falta aquí.
+export function ordenarParaMes(eventos: Evento[], mesSlug: MesSlug): Evento[] {
+  return relevantesOrdenados(eventos, diasDelMes(mesSlug), { incluirSinFecha: false }).map((r) => r.evento);
 }

@@ -42,6 +42,21 @@ export function proximosMesesSlugs(cantidad: number): MesSlug[] {
   return Array.from({ length: cantidad }, (_, i) => MESES[(mesActual + i) % 12]);
 }
 
+// Todos los días de la ocurrencia PRÓXIMA de este mes (como
+// diasRelevantesEstaSemana/diasFinDeSemana, pero para acotar
+// ordenarParaMes en semana.ts) — si ya estamos en ese mes, empieza en hoy
+// (no en el día 1, mismo criterio que generarPlanesDelMes: "lo que queda
+// del mes desde hoy"); si no, es un mes futuro y empieza en su día 1.
+export function diasDelMes(mesSlug: MesSlug): Date[] {
+  const hoy = hoyEnMadrid();
+  const mesIndex = MESES.indexOf(mesSlug);
+  const esMesActual = mesIndex === hoy.getMonth();
+  const anio = mesIndex >= hoy.getMonth() ? hoy.getFullYear() : hoy.getFullYear() + 1;
+  const ultimoDia = new Date(anio, mesIndex + 1, 0).getDate();
+  const diaInicio = esMesActual ? hoy.getDate() : 1;
+  return Array.from({ length: ultimoDia - diaInicio + 1 }, (_, i) => new Date(anio, mesIndex, diaInicio + i));
+}
+
 export function esMesSlugValido(valor: string): valor is MesSlug {
   return (MESES as readonly string[]).includes(valor);
 }

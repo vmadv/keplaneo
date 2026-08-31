@@ -52,8 +52,18 @@ export function diasRepasoDiario(slug: string): number[] {
 // así faltar una fecha concreta, porque la búsqueda con grounding no
 // garantiza cobertura del 100% de lo anunciado. Solo para "grande", que ya
 // paga las búsquedas enfocadas — mapeo a mano igual que NIVELES.
+//
+// Las páginas de mes concretas (más precisas que la raíz del sitio: van
+// directas al listado de ese mes) llevan el año en la URL — 2026 hoy, hay
+// que revisarlas/actualizarlas cuando cambie de año o cuando la búsqueda
+// enfocada (5 semanas por delante) empiece a rebasar noviembre.
 const FUENTES_REFERENCIA_CONCIERTOS: Record<string, string[]> = {
-  sevilla: ["https://conciertosensevilla.es/"],
+  sevilla: [
+    "https://conciertosensevilla.es/",
+    "https://conciertosensevilla.es/conciertos-sevilla-septiembre-2026/",
+    "https://conciertosensevilla.es/conciertos-sevilla-octubre-2026/",
+    "https://conciertosensevilla.es/conciertos-sevilla-noviembre-2026/",
+  ],
 };
 
 export function fuentesReferenciaConciertos(slug: string): string[] {
