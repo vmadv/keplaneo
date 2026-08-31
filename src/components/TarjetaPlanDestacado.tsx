@@ -1,9 +1,10 @@
-import { Sparkles, Navigation } from "lucide-react";
+import { Sparkles, Navigation, CalendarDays } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import TextoConNegritas from "./TextoConNegritas";
 import { urlFotoProxy } from "@/lib/places";
 import { localizado } from "@/lib/contenidoLocalizado";
+import { fechaDesdeTextoEspanol, hoyEnMadrid } from "@/lib/dates";
 import type { PlanConMunicipio } from "@/lib/queries";
 
 // Tarjeta de la portada MVP (ver conversación): igual que las de PlanList,
@@ -29,6 +30,27 @@ export default async function TarjetaPlanDestacado({
   const esCartel = Boolean(plan.evento_cartel_url);
   const titulo = localizado(plan.titulo, plan.evento_titulo_en, locale);
   const descripcion = localizado(plan.descripcion, plan.evento_descripcion_en, locale);
+
+  // Misma fecha de respaldo que PlanList.tsx/ListaEventos.tsx (ver
+  // conversación: esta tarjeta —la de "destacados"— era la única de las
+  // tres que nunca mostraba fecha).
+  const hoy = hoyEnMadrid();
+  const tieneFecha = plan.tipo === "excepcional" && plan.evento_fecha_inicio;
+  const esRango = tieneFecha && plan.evento_fecha_fin && plan.evento_fecha_fin !== plan.evento_fecha_inicio;
+  const fechaInicio = tieneFecha ? fechaDesdeTextoEspanol(plan.evento_fecha_inicio!) : null;
+  const fechaFinRango = esRango ? fechaDesdeTextoEspanol(plan.evento_fecha_fin!) : null;
+  const rangoEnCurso = esRango && fechaInicio && fechaInicio <= hoy && (!fechaFinRango || fechaFinRango >= hoy);
+  const etiquetaFechaCruda = fechaInicio
+    ? new Intl.DateTimeFormat(locale, esRango ? { month: "long" } : { day: "numeric", month: "short" }).format(
+        fechaInicio
+      )
+    : null;
+  const etiquetaFecha = (() => {
+    if (!etiquetaFechaCruda) return null;
+    if (!esRango) return etiquetaFechaCruda;
+    const mes = etiquetaFechaCruda.charAt(0).toUpperCase() + etiquetaFechaCruda.slice(1);
+    return rangoEnCurso ? t("desdeMes", { mes }) : mes;
+  })();
 
   return (
     <Link href={href} className="card-sticker relative block p-4 pt-6">
@@ -67,6 +89,15 @@ export default async function TarjetaPlanDestacado({
             >
               <Navigation size={11} strokeWidth={2.5} className="mr-1" />
               {t("aMinDe", { minutos: plan.evento_zona_cercana_minutos, municipio: plan.municipio_nombre })}
+            </span>
+          )}
+          {etiquetaFecha && (
+            <span
+              className="badge-pill mb-2 inline-flex"
+              style={{ background: "var(--quaternary)", color: "var(--quaternary-foreground)", borderColor: "var(--quaternary)" }}
+            >
+              <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
+              {etiquetaFecha}
             </span>
           )}
           <h3 className="font-extrabold text-base text-balance">{titulo}</h3>

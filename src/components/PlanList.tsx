@@ -4,7 +4,7 @@ import { Sparkles, CalendarDays, Navigation } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
 import FotoTarjeta from "./FotoTarjeta";
-import { etiquetaDiaFinde, etiquetaDiasSemanaGenerico } from "@/lib/dates";
+import { etiquetaDiaFinde, etiquetaDiasSemanaGenerico, fechaDesdeTextoEspanol, hoyEnMadrid } from "@/lib/dates";
 import { localizado } from "@/lib/contenidoLocalizado";
 import type { Plan } from "@/lib/types";
 
@@ -34,6 +34,7 @@ export default async function PlanList({
     getTranslations("Badges"),
     getLocale(),
   ]);
+  const hoy = hoyEnMadrid();
 
   if (planes.length === 0) {
     return <p style={{ color: "var(--muted-foreground)" }}>{t("vacioGeneral")}</p>;
@@ -46,6 +47,27 @@ export default async function PlanList({
           mostrarDiaFinde && plan.tipo === "excepcional"
             ? etiquetaDiaFinde(plan.evento_fecha_inicio ?? null, plan.evento_fecha_fin ?? null, locale)
             : null;
+        // Fecha real, solo cuando no hay ya una etiqueta de día de finde ni
+        // de patrón recurrente — mismo criterio que ListaEventos.tsx (ver
+        // conversación: esta tarjeta nunca mostraba fecha fuera de "Este
+        // finde", así que un evento puntual real de cualquier otra página
+        // de categoría/mes se veía sin ninguna pista de cuándo es).
+        const tieneFecha = !diaFinde && plan.tipo === "excepcional" && plan.evento_fecha_inicio;
+        const esRango = tieneFecha && plan.evento_fecha_fin && plan.evento_fecha_fin !== plan.evento_fecha_inicio;
+        const fechaInicio = tieneFecha ? fechaDesdeTextoEspanol(plan.evento_fecha_inicio!) : null;
+        const fechaFinRango = esRango ? fechaDesdeTextoEspanol(plan.evento_fecha_fin!) : null;
+        const rangoEnCurso = esRango && fechaInicio && fechaInicio <= hoy && (!fechaFinRango || fechaFinRango >= hoy);
+        const etiquetaFechaCruda = fechaInicio
+          ? new Intl.DateTimeFormat(locale, esRango ? { month: "long" } : { day: "numeric", month: "short" }).format(
+              fechaInicio
+            )
+          : null;
+        const etiquetaFecha = (() => {
+          if (!etiquetaFechaCruda) return null;
+          if (!esRango) return etiquetaFechaCruda;
+          const mes = etiquetaFechaCruda.charAt(0).toUpperCase() + etiquetaFechaCruda.slice(1);
+          return rangoEnCurso ? t("desdeMes", { mes }) : mes;
+        })();
         const titulo = localizado(plan.titulo, plan.evento_titulo_en, locale);
         const descripcion = localizado(plan.descripcion, plan.evento_descripcion_en, locale);
 
@@ -77,6 +99,12 @@ export default async function PlanList({
                     <span className="badge-pill" style={{ background: "var(--quaternary)", color: "var(--quaternary-foreground)", borderColor: "var(--quaternary)" }}>
                       <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
                       {etiquetaDiasSemanaGenerico(plan.evento_dias_semana, locale)}
+                    </span>
+                  )}
+                  {!diaFinde && !(plan.evento_dias_semana && plan.evento_dias_semana.length > 0) && etiquetaFecha && (
+                    <span className="badge-pill" style={{ background: "var(--quaternary)", color: "var(--quaternary-foreground)", borderColor: "var(--quaternary)" }}>
+                      <CalendarDays size={11} strokeWidth={2.5} className="mr-1" />
+                      {etiquetaFecha}
                     </span>
                   )}
                   {plan.evento_zona_cercana && plan.evento_zona_cercana_minutos != null && municipioNombre && (
