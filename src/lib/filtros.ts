@@ -22,6 +22,13 @@ export interface FiltroTemporalItem {
   // no hay forma de distinguir "por defecto" de "recién pinchada" por URL,
   // así que el efecto vive solo en el cliente, con sessionStorage).
   siempre?: boolean;
+  // Igual que `activo` para la pastilla "siempre", pero SiempreHubLayout
+  // nunca lo toca (a diferencia de `activo`, que fuerza a false para no
+  // mostrarse marcada por defecto) — así el cliente sabe si de verdad
+  // sigue en la vigencia "siempre" (con cualquier extra: gratis/con-niños/
+  // en-pareja) para no perder la marca visual al combinar con esos, sin
+  // tener que comparar la URL exacta (que cambia con cada extra).
+  vigenciaEsSiempre?: boolean;
 }
 
 // Barra de filtros tipo "entradas.com": Hoy / Este fin de semana / Esta
@@ -65,6 +72,7 @@ export async function construirFiltrosTemporales(
       href: hrefFiltro(locale, base, "siempre", extraActual),
       activo: vigenciaActual === "siempre",
       siempre: true,
+      vigenciaEsSiempre: vigenciaActual === "siempre",
     },
     ...meses.map((mes) => {
       const nombre = tMeses(mes);

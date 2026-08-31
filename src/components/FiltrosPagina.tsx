@@ -66,7 +66,15 @@ export default async function FiltrosPagina({
     <MasFiltrosProvider initialOpen={hayActivoOculto}>
       <div className="mb-6 grid gap-1">
         <FiltroTemporal items={siempreVisibles} className="mb-0" compacto scrollable invita={invitaCuando} />
-        <FiltroTemporal items={rapidos} className="mb-0" compacto scrollable invita={invitaFiltraMas} extra={boton} />
+        <FiltroTemporal
+          items={rapidos}
+          className="mb-0"
+          compacto
+          scrollable
+          invita={invitaFiltraMas}
+          invitaReaccionaASiempre
+          extra={boton}
+        />
         {panel}
       </div>
     </MasFiltrosProvider>
