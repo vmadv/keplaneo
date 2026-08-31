@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
-import { getMunicipio, getPlanesGratisPorVigencia } from "@/lib/queries";
+import { getMunicipio, getPlanesGratisPorVigencia, getEventosGratisActivos } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
+import { ordenarParaHoy, idsEventoDePlanes } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 import { hrefFiltro, alternatesIdiomas } from "@/lib/filtros";
 
@@ -36,13 +37,16 @@ export default async function HoyGratisPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tGratis, tHoy, tFiltros, locale] = await Promise.all([
+  const [planes, eventosActivos, tGratis, tHoy, tFiltros, locale] = await Promise.all([
     getPlanesGratisPorVigencia(municipio.id, "hoy"),
+    getEventosGratisActivos(municipio.id),
     getTranslations("Gratis"),
     getTranslations("Hoy"),
     getTranslations("Filtros"),
     getLocale(),
   ]);
+  const idsCurados = idsEventoDePlanes(planes);
+  const relleno = ordenarParaHoy(eventosActivos).filter((e) => !idsCurados.has(e.id));
   const hrefHoy = hrefFiltro(locale, `/${municipioSlug}`, "hoy");
 
   return (
@@ -52,6 +56,7 @@ export default async function HoyGratisPage({
       titulo={tGratis("titulo", { municipio: municipio.nombre })}
       fecha={fechaDeHoyLegible(locale)}
       planes={planes}
+      relleno={relleno}
       current={{ vigencia: "hoy", extra: "gratis" }}
       enlaceMasPlanes={{
         href: hrefHoy,

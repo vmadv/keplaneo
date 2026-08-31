@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
-import { getMunicipio, getPlanesFinde } from "@/lib/queries";
+import { getMunicipio, getPlanesFinde, getEventosActivos } from "@/lib/queries";
 import { rangoFinDeSemanaLegible } from "@/lib/dates";
+import { ordenarParaFinde, idsEventoDePlanes } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 import { alternatesIdiomas } from "@/lib/rutasLocale";
 
@@ -36,12 +37,16 @@ export default async function FindePage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tFinde, tFiltros, locale] = await Promise.all([
+  const [planes, eventosActivos, tFinde, tFiltros, locale] = await Promise.all([
     getPlanesFinde(municipio.id),
+    getEventosActivos(municipio.id),
     getTranslations("Finde"),
     getTranslations("Filtros"),
     getLocale(),
   ]);
+  const idsCurados = idsEventoDePlanes(planes);
+  const { eventos: eventosFinde, etiquetas: etiquetasFinde } = ordenarParaFinde(eventosActivos, locale);
+  const relleno = eventosFinde.filter((e) => !idsCurados.has(e.id));
 
   return (
     <PlanesPageLayout
@@ -50,6 +55,8 @@ export default async function FindePage({
       titulo={tFinde("titulo", { municipio: municipio.nombre })}
       fecha={rangoFinDeSemanaLegible(locale)}
       planes={planes}
+      relleno={relleno}
+      obtenerEtiquetaRelleno={(evento) => etiquetasFinde.get(evento.id) ?? null}
       current={{ vigencia: "finde" }}
       breadcrumbExtra={[{ label: tFiltros("finde") }]}
     />

@@ -107,6 +107,14 @@ export function numeroSemanaDesde2020(): number {
   return Math.floor(dias / 7);
 }
 
+// Como diasRelevantesEstaSemana, pero solo el sábado y domingo del próximo
+// fin de semana — para acotar ordenarPorDiaDeSemana (ver semana.ts) a una
+// ventana de "este finde" en vez de toda la semana.
+export function diasFinDeSemana(): Date[] {
+  const { sabado, domingo } = proximoFinDeSemana(hoyEnMadrid());
+  return [sabado, domingo];
+}
+
 // El sábado y domingo de "este fin de semana": si hoy ya es sábado o
 // domingo, ese es el fin de semana en curso, no el siguiente.
 function proximoFinDeSemana(hoy: Date): { sabado: Date; domingo: Date } {

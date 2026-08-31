@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
-import { getMunicipio, getPlanesFinde } from "@/lib/queries";
+import { getMunicipio, getPlanesFinde, getEventosActivos } from "@/lib/queries";
 import { rangoFinDeSemanaLegible } from "@/lib/dates";
+import { ordenarParaFinde, idsEventoDePlanes } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 import { AUDIENCIAS_URL, normalizarAudienciaUrl, audienciaUrlParaLocale, audienciaDesdeUrl, hrefFiltro, alternatesIdiomas } from "@/lib/filtros";
 
@@ -60,12 +61,16 @@ export default async function FindeAudienciaPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tFinde, tAudiencia, tFiltros] = await Promise.all([
+  const [planes, eventosActivos, tFinde, tAudiencia, tFiltros] = await Promise.all([
     getPlanesFinde(municipio.id, extra),
+    getEventosActivos(municipio.id, extra),
     getTranslations("Finde"),
     getTranslations("Audiencia"),
     getTranslations("Filtros"),
   ]);
+  const idsCurados = idsEventoDePlanes(planes);
+  const { eventos: eventosFinde, etiquetas: etiquetasFinde } = ordenarParaFinde(eventosActivos, locale);
+  const relleno = eventosFinde.filter((e) => !idsCurados.has(e.id));
   const etiquetaAudiencia = minuscula(tAudiencia(extra));
   const hrefFinde = hrefFiltro(locale, `/${municipioSlug}`, "finde");
 
@@ -76,6 +81,8 @@ export default async function FindeAudienciaPage({
       titulo={tFinde("tituloAudiencia", { municipio: municipio.nombre, audiencia: etiquetaAudiencia })}
       fecha={rangoFinDeSemanaLegible(locale)}
       planes={planes}
+      relleno={relleno}
+      obtenerEtiquetaRelleno={(evento) => etiquetasFinde.get(evento.id) ?? null}
       current={{ vigencia: "finde", extra }}
       enlaceMasPlanes={{
         href: hrefFinde,

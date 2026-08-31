@@ -12,6 +12,7 @@ import { construirFiltrosTemporales, construirFiltrosSecundarios, hrefFiltro, ty
 import { buscarImagenHero } from "@/lib/heroImage";
 import { proximosMesesSlugs, mesSlugParaLocale } from "@/lib/dates";
 import { ordenarPorRelevanciaConDiversidad } from "@/lib/ordenEventos";
+import { ordenarPorDiaDeSemana } from "@/lib/semana";
 import { piezasTemporales, construirFaqSeleccion } from "@/lib/resumenSeleccion";
 import { construirFaqJsonLd } from "@/lib/structuredData";
 import type { MunicipioConComunidad } from "@/lib/queries";
@@ -100,6 +101,20 @@ export default async function SiempreHubLayout({
   const genericosVisibles = genericos.slice(0, MAX_GENERICOS_VISIBLES);
   const genericosResto = genericos.slice(MAX_GENERICOS_VISIBLES);
 
+  // El pool curado (planes "excepcional" de esta audiencia) no siempre
+  // llega a 4 — se completa con el catálogo general de eventos de esta
+  // misma semana, mismo criterio que ya usan Conciertos/Exposiciones/
+  // Teatro (ordenarPorDiaDeSemana). `eventoIdsDestacados` evita mostrar dos
+  // veces el mismo evento real si ya salió como destacado curado (ver
+  // conversación: "Dinosaurios de la Patagonia" apareció duplicado en
+  // esta-semana por dos fichas de evento distintas para lo mismo — aquí
+  // solo se evita el duplicado propio de este bloque, vía evento_id).
+  const eventoIdsDestacados = new Set(destacados.map((plan) => plan.evento_id).filter((id): id is string => id !== null));
+  const { eventos: eventosSemana, etiquetas: etiquetasSemana } = ordenarPorDiaDeSemana(eventos, locale);
+  const rellenoDestacados = eventosSemana
+    .filter((e) => !eventoIdsDestacados.has(e.id))
+    .slice(0, Math.max(0, 4 - destacados.length));
+
   // Mismo resumen narrativo + FAQ que ya llevan hoy/finde/esta semana (ver
   // ResumenSeleccion/resumenSeleccion.ts) — el sistema ya soporta la
   // vigencia "siempre" (aperturaSiempre existe desde el principio), solo
@@ -149,16 +164,29 @@ export default async function SiempreHubLayout({
 
         <IntroSeleccion items={itemsResumen} municipio={municipio.nombre} vigencia="siempre" extra={extra} />
 
-        {destacados.length > 0 && (
+        {(destacados.length > 0 || rellenoDestacados.length > 0) && (
           <section className="mb-10">
             <h2 className="text-lg font-extrabold mb-3">{tituloDestacados}</h2>
-            <ul className="grid sm:grid-cols-2 gap-5">
-              {destacados.map((plan) => (
-                <li key={plan.id}>
-                  <TarjetaPlanDestacado plan={plan} etiquetaEventoPuntual={tBadges("eventoPuntual")} mostrarMunicipio={false} />
-                </li>
-              ))}
-            </ul>
+            {destacados.length > 0 && (
+              <ul className="grid sm:grid-cols-2 gap-5">
+                {destacados.map((plan) => (
+                  <li key={plan.id}>
+                    <TarjetaPlanDestacado plan={plan} etiquetaEventoPuntual={tBadges("eventoPuntual")} mostrarMunicipio={false} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {rellenoDestacados.length > 0 && (
+              <div className={destacados.length > 0 ? "mt-5" : undefined}>
+                <ListaEventos
+                  eventos={rellenoDestacados}
+                  base={base}
+                  contexto="semana"
+                  obtenerEtiqueta={(evento) => etiquetasSemana.get(evento.id) ?? null}
+                  municipioNombre={municipio.nombre}
+                />
+              </div>
+            )}
             <p className="mt-4">
               <Link href={hrefFiltro(locale, base, "semana", extra)} className="btn-secondary text-sm">
                 {tHome("verMasEstaSemana", { municipio: municipio.nombre, calificador })} →

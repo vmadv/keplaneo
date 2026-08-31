@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
-import { getMunicipio, getPlanesGratisPorVigencia } from "@/lib/queries";
+import { getMunicipio, getPlanesGratisPorVigencia, getEventosGratisActivos } from "@/lib/queries";
 import { rangoFinDeSemanaLegible } from "@/lib/dates";
+import { ordenarParaFinde, idsEventoDePlanes } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 import { hrefFiltro, alternatesIdiomas } from "@/lib/filtros";
 
@@ -36,13 +37,17 @@ export default async function FindeGratisPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tGratis, tFinde, tFiltros, locale] = await Promise.all([
+  const [planes, eventosActivos, tGratis, tFinde, tFiltros, locale] = await Promise.all([
     getPlanesGratisPorVigencia(municipio.id, "finde"),
+    getEventosGratisActivos(municipio.id),
     getTranslations("Gratis"),
     getTranslations("Finde"),
     getTranslations("Filtros"),
     getLocale(),
   ]);
+  const idsCurados = idsEventoDePlanes(planes);
+  const { eventos: eventosFinde, etiquetas: etiquetasFinde } = ordenarParaFinde(eventosActivos, locale);
+  const relleno = eventosFinde.filter((e) => !idsCurados.has(e.id));
   const hrefFinde = hrefFiltro(locale, `/${municipioSlug}`, "finde");
 
   return (
@@ -52,6 +57,8 @@ export default async function FindeGratisPage({
       titulo={tGratis("tituloFinde", { municipio: municipio.nombre })}
       fecha={rangoFinDeSemanaLegible(locale)}
       planes={planes}
+      relleno={relleno}
+      obtenerEtiquetaRelleno={(evento) => etiquetasFinde.get(evento.id) ?? null}
       current={{ vigencia: "finde", extra: "gratis" }}
       enlaceMasPlanes={{
         href: hrefFinde,

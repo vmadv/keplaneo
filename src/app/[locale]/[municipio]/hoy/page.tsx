@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import PlanesPageLayout from "@/components/PlanesPageLayout";
-import { getMunicipio, getPlanesHoy } from "@/lib/queries";
+import { getMunicipio, getPlanesHoy, getEventosActivos } from "@/lib/queries";
 import { fechaDeHoyLegible } from "@/lib/dates";
+import { ordenarParaHoy, idsEventoDePlanes } from "@/lib/semana";
 import { construirMetaDescripcion, construirTituloConSufijo } from "@/lib/resumenSeleccion";
 import { alternatesIdiomas } from "@/lib/rutasLocale";
 
@@ -36,12 +37,15 @@ export default async function HoyPage({
   const municipio = await getMunicipio(municipioSlug);
   if (!municipio) notFound();
 
-  const [planes, tHoy, tFiltros, locale] = await Promise.all([
+  const [planes, eventosActivos, tHoy, tFiltros, locale] = await Promise.all([
     getPlanesHoy(municipio.id),
+    getEventosActivos(municipio.id),
     getTranslations("Hoy"),
     getTranslations("Filtros"),
     getLocale(),
   ]);
+  const idsCurados = idsEventoDePlanes(planes);
+  const relleno = ordenarParaHoy(eventosActivos).filter((e) => !idsCurados.has(e.id));
 
   return (
     <PlanesPageLayout
@@ -50,6 +54,7 @@ export default async function HoyPage({
       titulo={tHoy("titulo", { municipio: municipio.nombre })}
       fecha={fechaDeHoyLegible(locale)}
       planes={planes}
+      relleno={relleno}
       current={{ vigencia: "hoy" }}
       breadcrumbExtra={[{ label: tFiltros("hoy") }]}
     />

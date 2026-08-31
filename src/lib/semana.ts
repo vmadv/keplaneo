@@ -1,21 +1,31 @@
-import { diasSemanaIncluidos, etiquetaDiaSemana } from "./dates";
-import type { Evento } from "./types";
+import { diasIncluidosEnRango, diasRelevantesEstaSemana, diasFinDeSemana, etiquetaDiaSemana, etiquetaDiaFinde, hoyEnMadrid } from "./dates";
+import type { Evento, Plan } from "./types";
 
-// Compartido por /esta-semana y sus variantes (audiencia, gratis): filtra y
-// ordena por el rango fecha_inicio–fecha_fin de cada evento. Un evento sin
-// fechas conocidas (exposición larga, "horario habitual"...) se incluye
-// igual pero al final y sin etiqueta de día — solo se EXCLUYE cuando sí
-// conocemos sus fechas y no caen esta semana.
-export function ordenarPorDiaDeSemana(
+// Para no repetir el mismo evento real en el relleno de ordenarParaHoy/
+// ordenarParaFinde cuando el lote curado (planes) ya lo trae — ver
+// conversación sobre el duplicado "Dinosaurios de la Patagonia".
+export function idsEventoDePlanes(planes: Plan[]): Set<string> {
+  return new Set(planes.map((p) => p.evento_id).filter((id): id is string => id !== null));
+}
+
+// Núcleo compartido por ordenarPorDiaDeSemana/ordenarParaHoy/ordenarParaFinde:
+// filtra a los eventos relevantes para una ventana de días concreta y los
+// ordena por "cuán puntual" es cada uno dentro de esa ventana (ver criterio
+// completo más abajo). `incluirSinFecha` decide si un genérico sin fecha
+// alguna se cuela al final (así se comporta "esta semana", que sí quiere
+// mostrar genéricos de relleno) o se descarta (así se comportan
+// ordenarParaHoy/ordenarParaFinde, pensadas solo para tapar el hueco de
+// eventos puntuales que el lote curado del día no llegó a cubrir — los
+// genéricos de esas páginas ya vienen del lote curado, no hace falta
+// duplicarlos aquí).
+function relevantesOrdenados(
   eventos: Evento[],
-  locale: string = "es"
-): {
-  eventos: Evento[];
-  etiquetas: Map<string, string | null>;
-} {
+  diasObjetivo: Date[],
+  { incluirSinFecha }: { incluirSinFecha: boolean }
+): Array<{ evento: Evento; dias: boolean[] | null }> {
   const conDias = eventos.map((evento) => ({
     evento,
-    dias: diasSemanaIncluidos(evento.fecha_inicio, evento.fecha_fin),
+    dias: diasIncluidosEnRango(evento.fecha_inicio, evento.fecha_fin, diasObjetivo),
   }));
 
   // dias === null puede significar dos cosas muy distintas: el evento no
@@ -27,12 +37,12 @@ export function ordenarPorDiaDeSemana(
   // se excluye en vez de asumir que aplica siempre.
   const relevantes = conDias.filter(({ evento, dias }) => {
     if (dias !== null) return dias.some(Boolean);
-    return evento.fecha_inicio === null && evento.fecha_fin === null;
+    return incluirSinFecha && evento.fecha_inicio === null && evento.fecha_fin === null;
   });
 
   relevantes.sort((a, b) => {
-    // Cuántos días de esta semana ocupa: un puntual de un solo día (o dos)
-    // es más "puntual" de verdad que uno que dura toda la semana (ej. la
+    // Cuántos días de la ventana ocupa: un puntual de un solo día (o dos)
+    // es más "puntual" de verdad que uno que dura toda la ventana (ej. la
     // temporada completa de un recinto) — este manda antes que el orden
     // cronológico, para que lo realmente concreto no quede por detrás de
     // algo disponible cualquier día solo porque cae antes en el calendario
@@ -56,12 +66,51 @@ export function ordenarPorDiaDeSemana(
     const relA = a.evento.relevancia ?? 0;
     const relB = b.evento.relevancia ?? 0;
     if (relA !== relB) return relB - relA;
-    return a.evento.titulo.localeCompare(b.evento.titulo, locale);
+    return a.evento.titulo.localeCompare(b.evento.titulo);
   });
 
+  return relevantes;
+}
+
+// Compartido por /esta-semana y sus variantes (audiencia, gratis): filtra y
+// ordena por el rango fecha_inicio–fecha_fin de cada evento. Un evento sin
+// fechas conocidas (exposición larga, "horario habitual"...) se incluye
+// igual pero al final y sin etiqueta de día — solo se EXCLUYE cuando sí
+// conocemos sus fechas y no caen esta semana.
+export function ordenarPorDiaDeSemana(
+  eventos: Evento[],
+  locale: string = "es"
+): {
+  eventos: Evento[];
+  etiquetas: Map<string, string | null>;
+} {
+  const relevantes = relevantesOrdenados(eventos, diasRelevantesEstaSemana(), { incluirSinFecha: true });
   const etiquetas = new Map(
     relevantes.map(({ evento, dias }) => [evento.id, dias ? etiquetaDiaSemana(dias, locale) : null])
   );
+  return { eventos: relevantes.map((r) => r.evento), etiquetas };
+}
 
+// Para tapar el hueco de "hoy"/"finde" cuando el lote curado del día
+// (planes) no llegó a cubrir un evento puntual real que sí conocemos (ver
+// conversación: fin-de-semana/con-ninos en Sevilla solo mostraba genéricos
+// porque el lote de hoy no traía nada puntual para esa audiencia). Solo
+// puntuales de verdad — los genéricos de relleno ya los aporta el lote
+// curado, no hace falta duplicarlos desde aquí.
+export function ordenarParaHoy(eventos: Evento[]): Evento[] {
+  return relevantesOrdenados(eventos, [hoyEnMadrid()], { incluirSinFecha: false }).map((r) => r.evento);
+}
+
+export function ordenarParaFinde(
+  eventos: Evento[],
+  locale: string = "es"
+): {
+  eventos: Evento[];
+  etiquetas: Map<string, string | null>;
+} {
+  const relevantes = relevantesOrdenados(eventos, diasFinDeSemana(), { incluirSinFecha: false });
+  const etiquetas = new Map(
+    relevantes.map(({ evento }) => [evento.id, etiquetaDiaFinde(evento.fecha_inicio, evento.fecha_fin, locale)])
+  );
   return { eventos: relevantes.map((r) => r.evento), etiquetas };
 }
