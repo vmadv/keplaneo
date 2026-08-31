@@ -114,7 +114,7 @@ export async function sitemapVariables(): Promise<MetadataRoute.Sitemap> {
     }
 
     for (const ruta of rutas) {
-      entradas.push(...entradasBilingues(ruta, { changeFrequency: "weekly", priority: 0.6 }));
+      entradas.push(...entradasBilingues(ruta, { changeFrequency: "weekly", priority: 0.7 }));
     }
   }
   return entradas;
@@ -141,7 +141,7 @@ export async function sitemapEventos(): Promise<MetadataRoute.Sitemap> {
     entradas.push(
       ...entradasBilingues(ruta, {
         changeFrequency: "weekly",
-        priority: e.fechaInicio ? 0.7 : 0.5,
+        priority: e.fechaInicio ? 0.4 : 0.5,
         lastModified: new Date(e.ultimaDeteccion),
       })
     );
@@ -162,14 +162,14 @@ export async function sitemapRankings(): Promise<MetadataRoute.Sitemap> {
 
   for (const m of municipios) {
     const base = `/rankings/espana/${m.comunidad.slug}/${m.provinciaSlug}/${m.slug}`;
-    entradas.push(...entradasBilingues(base, { changeFrequency: "weekly", priority: 0.6 }));
+    entradas.push(...entradasBilingues(base, { changeFrequency: "weekly", priority: 0.7 }));
 
     const listados = await getListadosDelMunicipio(m.id);
     for (const listado of listados) {
       entradas.push(
         ...entradasBilingues(`${base}/${listado.slug}`, {
           changeFrequency: "weekly",
-          priority: 0.5,
+          priority: 0.7,
           lastModified: new Date(listado.actualizado_en),
         })
       );
