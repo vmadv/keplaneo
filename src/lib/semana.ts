@@ -40,38 +40,15 @@ function relevantesOrdenados(
     return incluirSinFecha && evento.fecha_inicio === null && evento.fecha_fin === null;
   });
 
-  relevantes.sort((a, b) => {
-    // Cuántos días de la ventana ocupa: un puntual de un solo día (o dos)
-    // es más "puntual" de verdad que uno que dura toda la ventana (ej. la
-    // temporada completa de un recinto) — este manda antes que el orden
-    // cronológico, para que lo realmente concreto no quede por detrás de
-    // algo disponible cualquier día solo porque cae antes en el calendario
-    // (ver conversación). Los genéricos (sin fecha, `dias` null) siempre
-    // van last, con una duración "infinita" que ningún puntual real
-    // alcanza — el +1 sobre el tamaño de la ventana (7 en una semana, hasta
-    // 31 en un mes) es lo que garantiza eso sea cual sea diasObjetivo.
-    const sentinelaGenerico = diasObjetivo.length + 1;
-    const duracionA = a.dias ? a.dias.filter(Boolean).length : sentinelaGenerico;
-    const duracionB = b.dias ? b.dias.filter(Boolean).length : sentinelaGenerico;
-    if (duracionA !== duracionB) return duracionA - duracionB;
-    const indiceA = a.dias ? a.dias.indexOf(true) : 99;
-    const indiceB = b.dias ? b.dias.indexOf(true) : 99;
-    if (indiceA !== indiceB) return indiceA - indiceB;
-    // Dentro del mismo día (o de los genéricos sin fecha, todos con índice
-    // 99), lo propio del municipio ordena antes que lo de zona cercana —
-    // ver conversación sobre prioridad en 4 niveles.
-    const cercanoA = a.evento.zona_cercana !== null ? 1 : 0;
-    const cercanoB = b.evento.zona_cercana !== null ? 1 : 0;
-    if (cercanoA !== cercanoB) return cercanoA - cercanoB;
-    // Y dentro de eso, relevancia decide antes que el alfabeto — ver
-    // conversación (un genérico de toda la vida no debe adelantar a algo
-    // más singular solo por el nombre).
-    const relA = a.evento.relevancia ?? 0;
-    const relB = b.evento.relevancia ?? 0;
-    if (relA !== relB) return relB - relA;
-    return a.evento.titulo.localeCompare(b.evento.titulo);
-  });
-
+  // Sin reordenar aquí: `eventos` ya llega con el orden de 4 niveles de
+  // getEventosDelMunicipio (puntual propio > puntual zona cercana >
+  // genérico propio > genérico zona cercana, con fecha real próxima como
+  // desempate) — Array.filter conserva ese orden. Antes esta función volvía
+  // a ordenar desde cero por "cuántos días de la ventana ocupa cada
+  // evento", que enterraba exposiciones largas detrás de conciertos de un
+  // solo día en cuanto había muchos conciertos reales (ver conversación:
+  // "esta semana" con 89 conciertos importados vs 54 exposiciones —
+  // ninguna exposición aparecía en los primeros puestos).
   return relevantes;
 }
 

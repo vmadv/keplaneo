@@ -69,6 +69,7 @@ const FUENTES_REFERENCIA_CATEGORIA: Record<string, Partial<Record<CategoriaConPa
       "https://www.agendadesevilla.com/conciertos/",
       "https://www.elcorteingles.es/entradas/conciertos/sevilla/",
     ],
+    exposiciones: ["https://onsevilla.com/exposiciones-en-sevilla"],
     teatro: ["https://www.agendadesevilla.com/teatro/"],
     monologos: ["https://www.agendadesevilla.com/monologos/"],
   },
