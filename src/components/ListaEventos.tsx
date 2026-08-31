@@ -4,7 +4,7 @@ import { Sparkles, CalendarDays, Navigation } from "lucide-react";
 import TextoConNegritas from "./TextoConNegritas";
 import BadgeCategoria from "./BadgeCategoria";
 import FotoTarjeta from "./FotoTarjeta";
-import { etiquetaDiasSemanaGenerico, fechaDesdeTextoEspanol } from "@/lib/dates";
+import { etiquetaDiasSemanaGenerico, fechaDesdeTextoEspanol, hoyEnMadrid } from "@/lib/dates";
 import { localizado } from "@/lib/contenidoLocalizado";
 import type { Evento } from "@/lib/types";
 
@@ -31,6 +31,7 @@ export default async function ListaEventos({
 }) {
   const [t, tBadges, locale] = await Promise.all([getTranslations("PlanList"), getTranslations("Badges"), getLocale()]);
   const vacio = mensajeVacio ?? t("vacioCategoria");
+  const hoy = hoyEnMadrid();
 
   if (eventos.length === 0) {
     return <p style={{ color: "var(--muted-foreground)" }}>{vacio}</p>;
@@ -46,19 +47,27 @@ export default async function ListaEventos({
         // fecha (ver conversación). Un día concreto se muestra tal cual
         // ("11 sept"); un rango de varios días no tiene "un" día que
         // mostrar sin ser engañoso, así que se muestra solo el mes en el
-        // que cae su inicio ("Septiembre").
+        // que cae su inicio ("Septiembre") — salvo que ese rango ya esté en
+        // marcha hoy (ej. una exposición de abril a octubre): ahí "Abril" a
+        // secas confunde (parece que es EN abril), así que se antepone
+        // "Desde" (bug real encontrado en conversación: salía "Abril" en el
+        // bloque de destacados de ESTA SEMANA para algo que sigue abierto).
         const tieneFecha = !etiquetaDia && evento.fecha_inicio;
         const esRango = tieneFecha && evento.fecha_fin && evento.fecha_fin !== evento.fecha_inicio;
         const fechaInicio = tieneFecha ? fechaDesdeTextoEspanol(evento.fecha_inicio!) : null;
+        const fechaFinRango = esRango ? fechaDesdeTextoEspanol(evento.fecha_fin!) : null;
+        const rangoEnCurso = esRango && fechaInicio && fechaInicio <= hoy && (!fechaFinRango || fechaFinRango >= hoy);
         const etiquetaFechaCruda = fechaInicio
           ? new Intl.DateTimeFormat(locale, esRango ? { month: "long" } : { day: "numeric", month: "short" }).format(
               fechaInicio
             )
           : null;
-        const etiquetaFecha =
-          esRango && etiquetaFechaCruda
-            ? etiquetaFechaCruda.charAt(0).toUpperCase() + etiquetaFechaCruda.slice(1)
-            : etiquetaFechaCruda;
+        const etiquetaFecha = (() => {
+          if (!etiquetaFechaCruda) return null;
+          if (!esRango) return etiquetaFechaCruda;
+          const mes = etiquetaFechaCruda.charAt(0).toUpperCase() + etiquetaFechaCruda.slice(1);
+          return rangoEnCurso ? t("desdeMes", { mes }) : mes;
+        })();
         const href = contexto
           ? `${base}/eventos/${evento.slug}?desde=${contexto}`
           : `${base}/eventos/${evento.slug}`;

@@ -59,6 +59,7 @@
     "diciembre": "December"
   },
   "PlanList": {
+    "desdeMes": "Since {mes}",
     "vacioGeneral": "No specific plans for this combination yet. Check back in a few hours, or browse the other options below.",
     "vacioCategoria": "No plans detected in this category yet. Check back in a few days.",
     "vacioSemana": "No plans detected for this week yet. Check back in a few days.",

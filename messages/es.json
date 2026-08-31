@@ -59,6 +59,7 @@
     "diciembre": "diciembre"
   },
   "PlanList": {
+    "desdeMes": "Desde {mes}",
     "vacioGeneral": "Todavía no hay planes específicos para esta combinación. Vuelve a revisar en unas horas, o consulta las otras variantes más abajo.",
     "vacioCategoria": "Todavía no hay planes detectados en esta categoría. Vuelve a revisar en unos días.",
     "vacioSemana": "Todavía no hay planes detectados para esta semana. Vuelve a revisar en unos días.",
