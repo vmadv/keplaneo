@@ -531,24 +531,60 @@ ${camposJson(municipioNombre, municipiosExcluidos)}
 export async function generarPlanesDesdeListado(
   municipioNombre: string,
   categoria: Foco["valor"],
-  listado: Array<{ titulo: string; fecha: string; lugar: string }>,
-  municipiosExcluidos: string[] = []
+  listado: Array<{ titulo: string; fecha?: string; lugar: string }>,
+  municipiosExcluidos: string[] = [],
+  // "excepcional" (por defecto): cada elemento lleva fecha_inicio real,
+  // obligatoria. "generico": para actividades reales pero recurrentes sin
+  // una fecha propia que ponerles sin ser engañosa (ver conversación: las
+  // rutas teatralizadas de Pantalunáticos se repiten en días sueltos y
+  // variables cada mes, sin patrón semanal fijo — ponerles una fecha
+  // concreta las haría "caducar" en la web aunque la ruta siga haciéndose).
+  tipo: "excepcional" | "generico" = "excepcional"
 ): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
-  const listaTexto = listado.map((e) => `- "${e.titulo}" — ${e.fecha} — ${e.lugar}`).join("\n");
+  const listaTexto = listado
+    .map((e) => `- "${e.titulo}"${e.fecha ? ` — ${e.fecha}` : ""} — ${e.lugar}`)
+    .join("\n");
   const prompt = `
 Eres un editor local que conoce a fondo ${municipioNombre} (España).
 
-Esta es la lista COMPLETA y ya verificada de planes confirmados para este periodo — no hace falta que la busques, ya está confirmada. Tu trabajo es redactar la ficha completa de CADA UNO, no encontrarlos ni descartarlos:
+Esta es la lista COMPLETA y ya verificada de planes confirmados${tipo === "excepcional" ? " para este periodo" : ""} — no hace falta que la busques, ya está confirmada. Tu trabajo es redactar la ficha completa de CADA UNO, no encontrarlos ni descartarlos:
 ${listaTexto}
 
-Usa el título, la fecha y el recinto exactamente como aparecen arriba (no los cambies ni los inventes de nuevo). Puedes buscar información adicional (precio de entradas, descripción del artista/espectáculo/obra, horario) para completar el resto de los campos, pero esos tres datos ya están confirmados. Redacta una ficha para los ${listado.length} elementos de la lista, ninguno menos.
+Usa el título${tipo === "excepcional" ? ", la fecha" : ""} y el recinto exactamente como aparecen arriba (no los cambies ni los inventes de nuevo). Puedes buscar información adicional (precio de entradas, descripción${tipo === "excepcional" ? " del artista/espectáculo/obra" : ""}, horario) para completar el resto de los campos, pero esos datos ya están confirmados. Redacta una ficha para los ${listado.length} elementos de la lista, ninguno menos.
 
-Todos estos planes llevan "tipo": "excepcional" y "categoria": "${categoria}". Es OBLIGATORIO indicar "fecha_inicio" con la fecha exacta de la lista.
+Todos estos planes llevan "tipo": "${tipo}" y "categoria": "${categoria}".${
+    tipo === "excepcional"
+      ? ' Es OBLIGATORIO indicar "fecha_inicio" con la fecha exacta de la lista.'
+      : " Son actividades reales pero recurrentes, sin una fecha de inicio/fin propia — NO les pongas fecha_inicio ni fecha_fin, y dilo así en la descripción (que se repite regularmente, sin fecha fija, consultar la fuente para el día exacto)."
+  }
 
 ${camposJson(municipioNombre, municipiosExcluidos)}
 `.trim();
 
   return llamarGeminiConReintentos(prompt, "generarPlanesDesdeListado");
+}
+
+// Un único plan real y ya identificado, para recuperar una ficha que se
+// haya corrompido o para crear una nueva sin pasar por el resto de
+// mecanismos de lote — ver conversación: recuperación tras el bug de
+// mismoEvento fusionando "Gigante" con una bolera real sin relación.
+// Categoría abierta (no restringida a Foco) porque el sitio real puede ser
+// de cualquier tipo, no solo las 4 categorías con página propia.
+export async function generarPlanUnico(
+  municipioNombre: string,
+  descripcionBusqueda: string,
+  municipiosExcluidos: string[] = []
+): Promise<{ planes: PlanGenerado[]; usage: UsoTokens }> {
+  const prompt = `
+Eres un editor local que conoce a fondo ${municipioNombre} (España).
+
+Necesito la ficha de UN SOLO plan real y concreto: ${descripcionBusqueda}
+
+Investiga y redacta su ficha completa. Si es un evento puntual con fecha real, indícala como "excepcional"; si es un lugar o actividad disponible todo el año sin una fecha propia, márcalo como "generico" sin fecha_inicio ni fecha_fin.
+
+${camposJson(municipioNombre, municipiosExcluidos)}
+`.trim();
+  return llamarGeminiConReintentos(prompt, "generarPlanUnico");
 }
 
 // Búsqueda dedicada a planes "generico" (evergreen, sin fecha) — sin esto,
@@ -728,7 +764,14 @@ export function mismoEvento(a: string, b: string): boolean {
   const palabrasA = new Set(na.split(" ").filter(esPalabraSignificativa));
   const palabrasB = new Set(nb.split(" ").filter(esPalabraSignificativa));
   const menor = Math.min(palabrasA.size, palabrasB.size);
-  if (menor === 0) return false;
+  // Con una sola palabra significativa en el lado menor, cualquier
+  // coincidencia trivial da 100% de solape sin que sean lo mismo — bug
+  // real encontrado en conversación: "Gigante" (obra de teatro) se fusionó
+  // con "Bolera gigante y karting eléctrico en Mega Ozone Aleste Plaza"
+  // (bolera real, nada que ver) solo por compartir esa palabra, y le
+  // sobrescribió la descripción/fecha/categoría reales. Hace falta más de
+  // una palabra en común para que el solape signifique algo.
+  if (menor < 2) return false;
   const interseccion = [...palabrasA].filter((w) => palabrasB.has(w)).length;
   return interseccion / menor >= 0.7;
 }
