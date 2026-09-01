@@ -224,7 +224,18 @@
       "const SHELL_ENTRE=" + JSON.stringify(SHELL_ENTRE) + ";" +
       "const SHELL_FINAL=" + JSON.stringify(SHELL_FINAL) + ";" +
       "</scr" + "ipt>";
-    return SHELL_ANTES + JSON.stringify(datos) + SHELL_MEDIO + JSON.stringify(marcas) + SHELL_ENTRE + constantes + SHELL_FINAL;
+    // Sin doctype propio: la plataforma ya envuelve el contenido publicado
+    // en su propio <!doctype html>...<body> — incluir uno aquí solo añade
+    // una etiqueta inerte de sobra dentro del body (ver conversación).
+    return (
+      SHELL_ANTES +
+      JSON.stringify(datos) +
+      SHELL_MEDIO +
+      JSON.stringify(marcas) +
+      SHELL_ENTRE +
+      constantes +
+      SHELL_FINAL
+    );
   }
 
   let artifactNs = null;
