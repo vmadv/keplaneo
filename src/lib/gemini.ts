@@ -62,6 +62,13 @@ export interface PlanGenerado {
   descripcion_en?: string;
   precio_en?: string;
   preguntas_frecuentes_en?: PreguntaFrecuente[];
+  // Procedencia real del contenido — no la decide Gemini, se estampa en
+  // código tras recibir la respuesta (ver generarPlanesDesdeListado).
+  // undefined en el resto de generadores equivale a "gemini" (ver
+  // upsertEventosDelLote). Ver conversación: distingue en el artifact de
+  // revisión qué llegó por búsqueda de Gemini y qué por importación manual
+  // de un listado externo verificado.
+  origen?: "gemini" | "externo";
 }
 
 interface UsoTokens {
@@ -561,7 +568,8 @@ Todos estos planes llevan "tipo": "${tipo}" y "categoria": "${categoria}".${
 ${camposJson(municipioNombre, municipiosExcluidos)}
 `.trim();
 
-  return llamarGeminiConReintentos(prompt, "generarPlanesDesdeListado");
+  const { planes, usage } = await llamarGeminiConReintentos(prompt, "generarPlanesDesdeListado");
+  return { planes: planes.map((p) => ({ ...p, origen: "externo" as const })), usage };
 }
 
 // Un único plan real y ya identificado, para recuperar una ficha que se

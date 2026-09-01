@@ -61,6 +61,10 @@ create table eventos (
   primera_deteccion date not null,
   ultima_deteccion date not null,
   activo boolean not null default true,
+  -- procedencia real: "gemini" (búsqueda normal con grounding) o "externo"
+  -- (importado desde un listado ya extraído de una fuente externa
+  -- verificada) — ver migración 0021.
+  origen text not null default 'gemini',
   created_at timestamptz not null default now(),
   unique (municipio_id, slug)
 );

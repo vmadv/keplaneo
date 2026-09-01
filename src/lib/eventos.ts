@@ -265,6 +265,11 @@ export async function upsertEventosDelLote(
           primera_deteccion: hoy,
           ultima_deteccion: hoy,
           activo: true,
+          // Solo se estampa al crear la fila — la procedencia real de un
+          // evento no cambia porque una pasada posterior (búsqueda normal
+          // de Gemini) lo vuelva a detectar y actualizar (ver `datos`,
+          // arriba, que sí se reutiliza en el update).
+          origen: p.origen ?? "gemini",
         })
         .select("id")
         .single();

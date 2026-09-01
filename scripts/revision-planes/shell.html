@@ -1,0 +1,416 @@
+<title>Revisión Sevilla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --background: #fffdf5;
+    --foreground: #1e293b;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #8b5cf6;
+    --accent-foreground: #ffffff;
+    --secondary: #f472b6;
+    --secondary-foreground: #ffffff;
+    --tertiary: #fbbf24;
+    --tertiary-foreground: #1e293b;
+    --quaternary: #34d399;
+    --quaternary-foreground: #1e293b;
+    --rojo: #ef4444;
+    --rojo-foreground: #ffffff;
+    --border: #e2e8f0;
+    --card: #ffffff;
+    --font-heading: "Outfit", system-ui, sans-serif;
+    --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: #14121f; --foreground: #f1f0f7; --muted: #201d30;
+      --muted-foreground: #9d97b8; --card: #1c1930; --border: #322c4a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --background: #14121f; --foreground: #f1f0f7; --muted: #201d30;
+    --muted-foreground: #9d97b8; --card: #1c1930; --border: #322c4a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--background); color: var(--foreground); font-family: var(--font-sans);
+    padding: 2rem 1.5rem 4rem; max-width: 1220px; margin: 0 auto;
+    background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 18px 18px;
+  }
+  h1, h2, h3 { font-family: var(--font-heading); font-weight: 800; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); }
+
+  header {
+    display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: flex-end; justify-content: space-between;
+    padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2.5px solid var(--foreground);
+  }
+  .subtitulo { color: var(--muted-foreground); font-size: .95rem; max-width: 62ch; }
+
+  .stats { display: flex; gap: .75rem; flex-wrap: wrap; }
+  .stat {
+    background: var(--card); border: 2px solid var(--foreground); border-radius: .85rem;
+    padding: .6rem 1rem; box-shadow: 3px 3px 0 var(--foreground); text-align: center; min-width: 88px;
+  }
+  .stat b { font-family: var(--font-heading); font-size: 1.4rem; display: block; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .72rem; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .04em; }
+
+  #nota-guardado {
+    font-size: .82rem; padding: .5rem .9rem; border-radius: .6rem; margin-bottom: 1rem;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--muted-foreground); display: none;
+  }
+  #nota-guardado.visible { display: block; }
+  #nota-guardado.error { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+  .tabs { display: flex; gap: .5rem; margin: 1.75rem 0 1.25rem; }
+  .tab-btn {
+    font-family: var(--font-heading); font-weight: 700; font-size: .9rem;
+    border: 2px solid var(--foreground); background: var(--card); color: var(--foreground);
+    border-radius: 999px; padding: .5rem 1.15rem; cursor: pointer;
+  }
+  .tab-btn.activo { background: var(--accent); color: var(--accent-foreground); box-shadow: 2px 2px 0 var(--foreground); }
+  .panel { display: none; }
+  .panel.activo { display: block; }
+
+  .filtros {
+    display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.1rem;
+    background: var(--card); border: 1.5px solid var(--border); border-radius: .85rem; padding: .85rem 1rem;
+  }
+  .filtros input, .filtros select {
+    font-family: var(--font-sans); font-size: .88rem; padding: .5rem .7rem;
+    border: 1.5px solid var(--border); border-radius: .55rem; background: var(--background); color: var(--foreground);
+  }
+  .filtros input { flex: 1 1 220px; }
+  .conteo-filtro { font-size: .8rem; color: var(--muted-foreground); align-self: center; margin-left: auto; white-space: nowrap; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+  thead th {
+    text-align: left; font-family: var(--font-heading); font-size: .72rem; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--muted-foreground); padding: 0 .6rem .5rem; border-bottom: 2px solid var(--foreground);
+    position: sticky; top: 0; background: var(--background);
+  }
+  tbody td { padding: .65rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:hover { background: var(--muted); }
+  tbody tr.marcada-quitar { opacity: .5; }
+  .titulo-celda { font-weight: 600; max-width: 250px; }
+  .meta { color: var(--muted-foreground); font-size: .8rem; font-weight: 400; }
+  .fechas { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: .82rem; }
+
+  .chip {
+    display: inline-block; font-size: .72rem; font-weight: 600; padding: .18rem .55rem;
+    border-radius: 999px; border: 1.5px solid var(--border); background: var(--muted); color: var(--foreground);
+    margin: 0 .25rem .25rem 0; white-space: nowrap;
+  }
+  .chip-cat { background: var(--accent); color: var(--accent-foreground); border-color: var(--accent); }
+  .chip-mes { background: var(--tertiary); color: var(--tertiary-foreground); border-color: var(--tertiary); }
+  .chip-aud { background: var(--quaternary); color: var(--quaternary-foreground); border-color: var(--quaternary); }
+  .chip-hub { background: var(--secondary); color: var(--secondary-foreground); border-color: var(--secondary); }
+
+  .badge-estado { font-size: .7rem; font-weight: 700; padding: .15rem .5rem; border-radius: .4rem; }
+  .badge-curso { background: var(--quaternary); color: var(--quaternary-foreground); }
+  .badge-futuro { background: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border); }
+
+  .marca-grupo { display: flex; gap: .3rem; white-space: nowrap; }
+  .marca-btn {
+    font-family: var(--font-sans); font-size: .74rem; font-weight: 600; padding: .3rem .55rem;
+    border: 1.5px solid var(--border); border-radius: .5rem; background: var(--background); color: var(--muted-foreground);
+    cursor: pointer;
+  }
+  .marca-btn:hover { border-color: var(--foreground); }
+  .marca-btn[data-valor="quitar"].activo { background: var(--rojo); color: var(--rojo-foreground); border-color: var(--rojo); }
+  .marca-btn[data-valor="potenciar"].activo { background: var(--tertiary); color: var(--tertiary-foreground); border-color: var(--tertiary); }
+  .marca-btn[data-valor="mantener"].activo { background: var(--quaternary); color: var(--quaternary-foreground); border-color: var(--quaternary); }
+
+  .badge-aplicado {
+    display: inline-block; font-size: .74rem; font-weight: 700; padding: .3rem .6rem;
+    border-radius: .5rem; background: var(--quaternary); color: var(--quaternary-foreground); white-space: nowrap;
+  }
+
+  .chip-origen {
+    font-size: .64rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+    padding: .12rem .4rem; border-radius: .35rem; margin-left: .35rem; vertical-align: middle;
+  }
+  .chip-origen-gemini { background: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border); }
+  .chip-origen-externo { background: var(--secondary); color: var(--secondary-foreground); }
+
+  .overflow-wrap { overflow-x: auto; border: 1.5px solid var(--border); border-radius: .85rem; background: var(--card); }
+  table { min-width: 820px; }
+  .sin-resultados { padding: 2rem; text-align: center; color: var(--muted-foreground); display: none; }
+  footer { margin-top: 2.5rem; font-size: .78rem; color: var(--muted-foreground); text-align: center; }
+</style>
+
+<header>
+  <div>
+    <h1>Revisión de planes — Sevilla</h1>
+    <p class="subtitulo">Marca cada plan como <b>Quitar</b>, <b>Potenciar</b> o <b>Mantener</b> — se guarda solo, y al día siguiente se aplica de verdad en la web (Quitar desactiva el evento, Potenciar sube su prioridad). Las filas con ✓ ya están aplicadas.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="stat-puntuales">–</b><span>Puntuales</span></div>
+    <div class="stat"><b id="stat-genericos">–</b><span>Genéricos</span></div>
+    <div class="stat"><b id="stat-marcados">–</b><span>Marcados</span></div>
+  </div>
+</header>
+
+<p id="nota-guardado"></p>
+
+<div class="tabs">
+  <button class="tab-btn activo" data-tab="puntuales">Puntuales (con fecha)</button>
+  <button class="tab-btn" data-tab="genericos">Genéricos (siempre)</button>
+</div>
+
+<div class="panel activo" id="panel-puntuales">
+  <div class="filtros">
+    <input type="text" id="buscar-puntuales" placeholder="Buscar por título o recinto…">
+    <select id="filtro-categoria"><option value="">Todas las categorías</option></select>
+    <select id="filtro-mes"><option value="">Todos los meses</option></select>
+    <select id="filtro-marca-p">
+      <option value="">Cualquier marca</option>
+      <option value="sin-marcar">Sin marcar</option>
+      <option value="quitar">Quitar</option>
+      <option value="potenciar">Potenciar</option>
+      <option value="mantener">Mantener</option>
+      <option value="aplicado">Ya aplicado</option>
+    </select>
+    <span class="conteo-filtro" id="conteo-puntuales"></span>
+  </div>
+  <div class="overflow-wrap">
+    <table>
+      <thead><tr><th>Plan</th><th>Fechas</th><th>Aparece en</th><th>Marca</th></tr></thead>
+      <tbody id="cuerpo-puntuales"></tbody>
+    </table>
+    <p class="sin-resultados" id="sin-resultados-puntuales">Nada coincide con ese filtro.</p>
+  </div>
+</div>
+
+<div class="panel" id="panel-genericos">
+  <div class="filtros">
+    <input type="text" id="buscar-genericos" placeholder="Buscar por título o recinto…">
+    <select id="filtro-categoria-generico"><option value="">Todas las categorías</option></select>
+    <select id="filtro-marca-g">
+      <option value="">Cualquier marca</option>
+      <option value="sin-marcar">Sin marcar</option>
+      <option value="quitar">Quitar</option>
+      <option value="potenciar">Potenciar</option>
+      <option value="mantener">Mantener</option>
+      <option value="aplicado">Ya aplicado</option>
+    </select>
+    <span class="conteo-filtro" id="conteo-genericos"></span>
+  </div>
+  <div class="overflow-wrap">
+    <table>
+      <thead><tr><th>Plan</th><th>Recinto / precio</th><th>Aparece en</th><th>Marca</th></tr></thead>
+      <tbody id="cuerpo-genericos"></tbody>
+    </table>
+    <p class="sin-resultados" id="sin-resultados-genericos">Nada coincide con ese filtro.</p>
+  </div>
+</div>
+
+<footer>Datos reales de Keplaneo — última actualización <span id="fecha-informe"></span>. Las marcas se guardan en esta misma página y se aplican de verdad en la web al día siguiente.</footer>
+
+<script id="datos-informe" type="application/json">__DATOS_JSON__</script>
+<script id="datos-marcas" type="application/json">__MARCAS_JSON__</script>
+<!--INSERTAR_CONSTANTES_AQUI-->
+<script>
+  const DATOS = JSON.parse(document.getElementById("datos-informe").textContent);
+  let MARCAS = JSON.parse(document.getElementById("datos-marcas").textContent);
+
+  function plantilla(datos, marcas) {
+    const constantes = "<scr" + "ipt>" +
+      "const SHELL_ANTES=" + JSON.stringify(SHELL_ANTES) + ";" +
+      "const SHELL_MEDIO=" + JSON.stringify(SHELL_MEDIO) + ";" +
+      "const SHELL_ENTRE=" + JSON.stringify(SHELL_ENTRE) + ";" +
+      "const SHELL_FINAL=" + JSON.stringify(SHELL_FINAL) + ";" +
+      "</scr" + "ipt>";
+    return SHELL_ANTES + JSON.stringify(datos) + SHELL_MEDIO + JSON.stringify(marcas) + SHELL_ENTRE + constantes + SHELL_FINAL;
+  }
+
+  let artifactNs = null;
+  let guardando = false;
+  let pendiente = false;
+
+  function nota(texto, esError) {
+    const el = document.getElementById("nota-guardado");
+    el.textContent = texto;
+    el.className = "visible" + (esError ? " error" : "");
+  }
+
+  async function guardarCambios() {
+    if (!artifactNs) return;
+    if (guardando) { pendiente = true; return; }
+    guardando = true;
+    nota("Guardando…", false);
+    try {
+      await artifactNs.publish(plantilla(DATOS, MARCAS));
+      // Un publish con éxito recarga esta misma vista a la nueva versión.
+    } catch (err) {
+      guardando = false;
+      if (err && err.code === "conflict") return; // se recarga sola
+      if (err && (err.code === "not_writer" || err.code === "not_granted")) {
+        nota("Solo lectura: no se pueden guardar marcas desde esta vista.", true);
+        return;
+      }
+      nota("No se pudo guardar (" + (err && err.code || "error") + "). Vuelve a intentarlo.", true);
+      if (pendiente) { pendiente = false; guardarCambios(); }
+    }
+  }
+
+  // Una marca "X:aplicado" significa que la tarea programada diaria ya la
+  // llevó de verdad a la base de datos (ver conversación) — a partir de ahí
+  // la fila deja de ser clicable, para no reaplicarla ni confundir "lo que
+  // pediste" con "lo que ya está hecho".
+  function estaAplicada(slug) {
+    const v = MARCAS[slug];
+    return typeof v === "string" && v.endsWith(":aplicado");
+  }
+
+  function marcarFila(slug, valor) {
+    if (estaAplicada(slug)) return;
+    if (MARCAS[slug] === valor) delete MARCAS[slug];
+    else MARCAS[slug] = valor;
+    actualizarBotonesFila(slug);
+    actualizarContadorMarcados();
+    guardarCambios();
+  }
+
+  function actualizarBotonesFila(slug) {
+    document.querySelectorAll('.marca-grupo[data-slug="' + CSS.escape(slug) + '"] .marca-btn').forEach((btn) => {
+      btn.classList.toggle("activo", MARCAS[slug] === btn.dataset.valor);
+    });
+    const fila = document.querySelector('tr[data-fila-slug="' + CSS.escape(slug) + '"]');
+    if (fila) fila.classList.toggle("marcada-quitar", MARCAS[slug] === "quitar");
+  }
+
+  function actualizarContadorMarcados() {
+    document.getElementById("stat-marcados").textContent = Object.keys(MARCAS).length;
+  }
+
+  function grupoMarca(slug) {
+    if (estaAplicada(slug)) {
+      const etiqueta = MARCAS[slug] === "quitar:aplicado" ? "Quitado" : "Potenciado";
+      return `<span class="badge-aplicado">✓ ${etiqueta}</span>`;
+    }
+    const valores = ["quitar", "potenciar", "mantener"];
+    const botones = valores.map((v) =>
+      `<button class="marca-btn${MARCAS[slug] === v ? " activo" : ""}" data-valor="${v}" onclick="marcarFila('${slug.replace(/'/g, "\\'")}','${v}')">${v.charAt(0).toUpperCase() + v.slice(1)}</button>`
+    ).join("");
+    return `<div class="marca-grupo" data-slug="${slug}">${botones}</div>`;
+  }
+
+  function chip(texto, clase) { return `<span class="chip ${clase || ""}">${texto}</span>`; }
+
+  function origenTag(origen) {
+    const externo = origen === "externo";
+    return `<span class="chip-origen chip-origen-${externo ? "externo" : "gemini"}">${externo ? "Externo" : "Gemini"}</span>`;
+  }
+
+  function paginasHtml(item) {
+    const partes = [];
+    for (const p of item.paginasEstaticas || []) {
+      const clase = p.includes("hub") ? "chip-hub" : (p.includes("con-ninos") || p.includes("en-pareja") || p.includes("gratis")) ? "chip-aud" : "chip-cat";
+      partes.push(chip(p, clase));
+    }
+    for (const p of item.paginasPorMes || []) partes.push(chip(p, "chip-mes"));
+    return partes.join(" ");
+  }
+
+  function normaliza(s) { return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+
+  const catsPuntuales = [...new Set(DATOS.puntuales.map((d) => d.categoria).filter(Boolean))].sort();
+  const selCat = document.getElementById("filtro-categoria");
+  for (const c of catsPuntuales) selCat.insertAdjacentHTML("beforeend", `<option value="${c}">${c}</option>`);
+
+  const ordenMes = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const mesesTodos = [...new Set(DATOS.puntuales.flatMap((d) => d.meses))];
+  mesesTodos.sort((a, b) => {
+    const [ma, ya] = a.split(" "); const [mb, yb] = b.split(" ");
+    if (ya !== yb) return ya - yb;
+    return ordenMes.indexOf(ma) - ordenMes.indexOf(mb);
+  });
+  const selMes = document.getElementById("filtro-mes");
+  for (const m of mesesTodos) selMes.insertAdjacentHTML("beforeend", `<option value="${m}">${m}</option>`);
+
+  function pasaFiltroMarca(slug, filtro) {
+    if (!filtro) return true;
+    if (filtro === "sin-marcar") return !MARCAS[slug];
+    if (filtro === "aplicado") return estaAplicada(slug);
+    return MARCAS[slug] === filtro;
+  }
+
+  function renderPuntuales() {
+    const q = normaliza(document.getElementById("buscar-puntuales").value);
+    const cat = selCat.value;
+    const mes = selMes.value;
+    const filtroMarca = document.getElementById("filtro-marca-p").value;
+    const filtrados = DATOS.puntuales.filter((d) => {
+      if (cat && d.categoria !== cat) return false;
+      if (mes && !d.meses.includes(mes)) return false;
+      if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
+      if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
+      return true;
+    });
+    document.getElementById("conteo-puntuales").textContent = `${filtrados.length} de ${DATOS.puntuales.length}`;
+    document.getElementById("sin-resultados-puntuales").style.display = filtrados.length ? "none" : "block";
+    document.getElementById("cuerpo-puntuales").innerHTML = filtrados.map((d) => `
+      <tr data-fila-slug="${d.slug}" class="${MARCAS[d.slug] === "quitar" || MARCAS[d.slug] === "quitar:aplicado" ? "marcada-quitar" : ""}">
+        <td class="titulo-celda">${d.titulo}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">${d.ubicacion || ""}</span></td>
+        <td class="fechas">${d.fecha_inicio}${d.fecha_fin && d.fecha_fin !== d.fecha_inicio ? " – " + d.fecha_fin : ""}<br>${d.enCurso ? '<span class="badge-estado badge-curso">En curso</span>' : '<span class="badge-estado badge-futuro">Futuro</span>'}</td>
+        <td>${paginasHtml(d)}</td>
+        <td>${grupoMarca(d.slug)}</td>
+      </tr>
+    `).join("");
+  }
+  ["buscar-puntuales"].forEach((id) => document.getElementById(id).addEventListener("input", renderPuntuales));
+  ["filtro-categoria", "filtro-mes", "filtro-marca-p"].forEach((id) => document.getElementById(id).addEventListener("change", renderPuntuales));
+
+  const catsGenericos = [...new Set(DATOS.genericos.map((d) => d.categoria).filter(Boolean))].sort();
+  const selCatG = document.getElementById("filtro-categoria-generico");
+  for (const c of catsGenericos) selCatG.insertAdjacentHTML("beforeend", `<option value="${c}">${c}</option>`);
+
+  function renderGenericos() {
+    const q = normaliza(document.getElementById("buscar-genericos").value);
+    const cat = selCatG.value;
+    const filtroMarca = document.getElementById("filtro-marca-g").value;
+    const filtrados = DATOS.genericos.filter((d) => {
+      if (cat && d.categoria !== cat) return false;
+      if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
+      if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
+      return true;
+    });
+    document.getElementById("conteo-genericos").textContent = `${filtrados.length} de ${DATOS.genericos.length}`;
+    document.getElementById("sin-resultados-genericos").style.display = filtrados.length ? "none" : "block";
+    document.getElementById("cuerpo-genericos").innerHTML = filtrados.map((d) => `
+      <tr data-fila-slug="${d.slug}" class="${MARCAS[d.slug] === "quitar" || MARCAS[d.slug] === "quitar:aplicado" ? "marcada-quitar" : ""}">
+        <td class="titulo-celda">${d.titulo}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}</td>
+        <td class="meta">${d.ubicacion || ""}${d.precio ? "<br>" + d.precio : ""}</td>
+        <td>${paginasHtml(d)}</td>
+        <td>${grupoMarca(d.slug)}</td>
+      </tr>
+    `).join("");
+  }
+  ["buscar-genericos"].forEach((id) => document.getElementById(id).addEventListener("input", renderGenericos));
+  ["filtro-categoria-generico", "filtro-marca-g"].forEach((id) => document.getElementById(id).addEventListener("change", renderGenericos));
+
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("activo"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("activo"));
+      btn.classList.add("activo");
+      document.getElementById(`panel-${btn.dataset.tab}`).classList.add("activo");
+    });
+  });
+
+  document.getElementById("stat-puntuales").textContent = DATOS.totalPuntuales;
+  document.getElementById("stat-genericos").textContent = DATOS.totalGenericos;
+  document.getElementById("fecha-informe").textContent = DATOS.generadoEn || "";
+  actualizarContadorMarcados();
+  renderPuntuales();
+  renderGenericos();
+
+  claude.use("artifact").then((ns) => {
+    artifactNs = ns;
+    if (!ns) nota("Vista de solo lectura: esta sesión no puede guardar marcas.", true);
+  });
+</script>

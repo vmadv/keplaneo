@@ -312,7 +312,7 @@ export async function getEvento(
   const { data } = await supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo, origen"
     )
     .eq("municipio_id", municipioId)
     .eq("slug", slug)
@@ -678,7 +678,7 @@ async function getEventosDelMunicipio(
   let query = supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo, origen"
     )
     .eq("municipio_id", municipioId)
     .eq("activo", true);
@@ -768,7 +768,7 @@ export function getEventosActivos(municipioId: string, audiencia?: "pareja" | "f
   return getEventosDelMunicipio(municipioId, undefined, audiencia);
 }
 
-function esPrecioGratis(precio: string | null): boolean {
+export function esPrecioGratis(precio: string | null): boolean {
   // Solo cuenta como gratis lo confirmado explícitamente. Sin precio
   // verificado NO se asume gratis bajo ningún concepto — monumentos como la
   // Catedral o el Alcázar pueden generarse como plan "genérico" (son

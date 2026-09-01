@@ -119,6 +119,11 @@ export interface Evento {
   primera_deteccion: string;
   ultima_deteccion: string;
   activo: boolean;
+  // "gemini" (búsqueda normal con grounding) o "externo" (importado desde un
+  // listado ya extraído de una fuente externa verificada, ver migración
+  // 0021 y generarPlanesDesdeListado en gemini.ts) — para distinguir
+  // procedencia en el artifact de revisión de planes.
+  origen: "gemini" | "externo";
 }
 
 // Temáticas por las que se puede navegar además de fecha/audiencia/precio.
