@@ -147,6 +147,44 @@
   .nota-input:focus { border-color: var(--accent); outline: none; }
   .nota-input::placeholder { color: var(--muted-foreground); }
 
+  .filtro-check {
+    display: flex; align-items: center; gap: .4rem; font-size: .85rem; color: var(--foreground);
+    white-space: nowrap; cursor: pointer;
+  }
+  .filtro-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); cursor: pointer; }
+
+  .titulo-clicable {
+    background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left;
+    cursor: pointer; border-bottom: 1.5px dashed var(--muted-foreground);
+  }
+  .titulo-clicable:hover { border-color: var(--foreground); color: var(--accent); }
+
+  .modal-fondo {
+    display: none; position: fixed; inset: 0; background: rgba(20, 18, 26, .55); z-index: 50;
+    padding: 4vh 1.25rem; overflow-y: auto;
+  }
+  .modal-fondo.activo { display: block; }
+  .modal-caja {
+    background: var(--card); border: 2px solid var(--foreground); border-radius: 1rem; box-shadow: 5px 5px 0 var(--foreground);
+    max-width: 620px; margin: 0 auto; padding: 1.5rem 1.75rem 1.75rem; position: relative;
+  }
+  .modal-cerrar {
+    position: absolute; top: .9rem; right: .9rem; font-family: var(--font-heading); font-weight: 700; font-size: 1.1rem;
+    background: var(--muted); color: var(--foreground); border: 1.5px solid var(--border); border-radius: .5rem;
+    width: 2rem; height: 2rem; cursor: pointer; line-height: 1;
+  }
+  .modal-caja h2 { font-size: 1.35rem; padding-right: 2rem; margin-bottom: .4rem; }
+  .modal-meta { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin-bottom: .9rem; }
+  .modal-linea { font-size: .88rem; color: var(--muted-foreground); margin-bottom: .25rem; }
+  .modal-descripcion { font-size: .92rem; line-height: 1.55; margin-top: 1rem; }
+  .modal-descripcion p { margin: 0 0 .8rem; }
+  .modal-descripcion p:last-child { margin-bottom: 0; }
+  .modal-acciones { margin-top: 1.25rem; display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+  .modal-enlace {
+    font-family: var(--font-heading); font-weight: 700; font-size: .85rem; text-decoration: none;
+    background: var(--accent); color: var(--accent-foreground); border-radius: .6rem; padding: .55rem 1rem;
+  }
+
   .overflow-wrap { overflow-x: auto; border: 1.5px solid var(--border); border-radius: .85rem; background: var(--card); }
   table { min-width: 820px; }
   .sin-resultados { padding: 2rem; text-align: center; color: var(--muted-foreground); display: none; }
@@ -156,7 +194,7 @@
 <header>
   <div>
     <h1>Revisión de planes — Sevilla</h1>
-    <p class="subtitulo">Marca cada plan como <b>Quitar</b>, <b>Potenciar</b> o <b>Mantener</b> — se guarda solo, y al día siguiente se aplica de verdad en la web (Quitar desactiva el evento, Potenciar sube su prioridad). Las filas con ✓ ya están aplicadas. El título abre la ficha real en una pestaña nueva, y en Notas puedes dejar contexto para más adelante.</p>
+    <p class="subtitulo">Marca cada plan como <b>Quitar</b>, <b>Potenciar</b> o <b>Mantener</b> — se guarda solo, y al día siguiente se aplica de verdad en la web (Quitar desactiva el evento, Potenciar sube su prioridad). Las filas con ✓ ya están aplicadas. "Ocultar ya revisados" hace que vayan desapareciendo a medida que las marcas. El título abre un detalle con la descripción completa (con enlace a la ficha real), y en Notas puedes dejar contexto para más adelante.</p>
   </div>
   <div class="stats">
     <div class="stat"><b id="stat-puntuales">–</b><span>Puntuales</span></div>
@@ -176,6 +214,11 @@
   <div class="filtros">
     <input type="text" id="buscar-puntuales" placeholder="Buscar por título o recinto…">
     <select id="filtro-categoria"><option value="">Todas las categorías</option></select>
+    <select id="filtro-semana">
+      <option value="">Cualquier semana</option>
+      <option value="esta-semana">Esta semana</option>
+      <option value="semana-que-viene">Semana que viene</option>
+    </select>
     <select id="filtro-mes"><option value="">Todos los meses</option></select>
     <select id="filtro-marca-p">
       <option value="">Cualquier marca</option>
@@ -190,6 +233,7 @@
       <option value="deteccion-asc">Detectado: más antiguo primero</option>
       <option value="titulo">Título (A-Z)</option>
     </select>
+    <label class="filtro-check"><input type="checkbox" id="ocultar-revisados-p" checked> Ocultar ya revisados</label>
     <span class="conteo-filtro" id="conteo-puntuales"></span>
   </div>
   <div class="overflow-wrap">
@@ -218,6 +262,7 @@
       <option value="deteccion-asc">Detectado: más antiguo primero</option>
       <option value="titulo">Título (A-Z)</option>
     </select>
+    <label class="filtro-check"><input type="checkbox" id="ocultar-revisados-g" checked> Ocultar ya revisados</label>
     <span class="conteo-filtro" id="conteo-genericos"></span>
   </div>
   <div class="overflow-wrap">
@@ -230,6 +275,10 @@
 </div>
 
 <footer>Datos reales de Keplaneo — última actualización <span id="fecha-informe"></span>. Las marcas se guardan en esta misma página y se aplican de verdad en la web al día siguiente.</footer>
+
+<div class="modal-fondo" id="modal-fondo" onclick="if(event.target===this) cerrarModal()">
+  <div class="modal-caja" id="modal-caja"></div>
+</div>
 
 <script id="datos-informe" type="application/json">__DATOS_JSON__</script>
 <script id="datos-marcas" type="application/json">__MARCAS_JSON__</script>
@@ -381,16 +430,77 @@
     return `<input type="text" class="nota-input" placeholder="Escribe y pulsa Intro para guardar…" value="${valor}" onchange="guardarNota('${slugEscapado}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
   }
 
-  // Abre la ficha real del plan en la web (no un modal: el sandbox del
-  // artifact no puede cargar un iframe de otro origen) — nueva pestaña, la
-  // plataforma ya intercepta y gestiona bien los enlaces externos.
+  // La ficha real vive en la web, pero el título ahora abre un modal con el
+  // detalle (título, fechas, recinto, descripción completa) en vez de
+  // navegar fuera — pedido explícito: en móvil, salir a una pestaña nueva
+  // rompía el sitio en el que estabas revisando. El modal no carga la
+  // página real (el sandbox del artifact no puede cargar un iframe de otro
+  // origen) — usa los mismos datos que ya trae el informe. Dentro del
+  // modal, un enlace de verdad ("Ver ficha real") sigue abriendo la web en
+  // una pestaña nueva para quien quiera verla tal cual.
   function enlaceEvento(slug) {
     return `https://keplaneo.com/${DATOS.municipio}/eventos/${slug}`;
   }
 
-  function tituloConEnlace(d) {
-    return `<a class="titulo-link" href="${enlaceEvento(d.slug)}" target="_blank" rel="noopener">${d.titulo}</a>`;
+  // Un <a href> a otro origen SIEMPRE lo intercepta la plataforma del
+  // artifact (para decidir ella si abre pestaña nueva) antes de que este
+  // script pueda actuar — por eso el título usa un <button>, no un enlace,
+  // para poder abrir el modal en su lugar sin que la plataforma se
+  // adelante y navegue de todas formas.
+  function tituloClicable(d) {
+    return `<button type="button" class="titulo-clicable" onclick="abrirModal('${d.slug.replace(/'/g, "\\'")}')">${d.titulo}</button>`;
   }
+
+  function escapeHtml(s) {
+    return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // La descripción real trae "**negritas**" de markdown sin procesar y
+  // párrafos separados por línea en blanco (igual que en la web real,
+  // TextoConNegritas) — versión ligera solo para este modal de revisión.
+  function descripcionHtml(texto) {
+    if (!texto) return "";
+    return texto
+      .split(/\n\s*\n/)
+      .map((parrafo) => `<p>${escapeHtml(parrafo).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`)
+      .join("");
+  }
+
+  const TODOS_POR_SLUG = new Map([...DATOS.puntuales, ...DATOS.genericos].map((d) => [d.slug, d]));
+
+  function contenidoModal(d) {
+    const fechaLinea = d.fecha_inicio
+      ? `<div class="modal-linea">${d.fecha_inicio}${d.fecha_fin && d.fecha_fin !== d.fecha_inicio ? " – " + d.fecha_fin : ""} · ${estadoHtml(d)}</div>`
+      : "";
+    return `
+      <button class="modal-cerrar" type="button" onclick="cerrarModal()" aria-label="Cerrar">✕</button>
+      <h2>${d.titulo}</h2>
+      <div class="modal-meta">${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}</div>
+      ${fechaLinea}
+      ${d.ubicacion ? `<div class="modal-linea">${d.ubicacion}</div>` : ""}
+      ${d.horario ? `<div class="modal-linea">${d.horario}</div>` : ""}
+      ${d.precio ? `<div class="modal-linea">${d.precio}</div>` : ""}
+      <div class="modal-descripcion">${descripcionHtml(d.descripcion) || '<p style="color:var(--muted-foreground)">Sin descripción guardada.</p>'}</div>
+      <div class="modal-acciones">
+        <a class="modal-enlace" href="${enlaceEvento(d.slug)}" target="_blank" rel="noopener">Ver ficha real ↗</a>
+      </div>
+    `;
+  }
+
+  function abrirModal(slug) {
+    const d = TODOS_POR_SLUG.get(slug);
+    if (!d) return;
+    document.getElementById("modal-caja").innerHTML = contenidoModal(d);
+    document.getElementById("modal-fondo").classList.add("activo");
+  }
+
+  function cerrarModal() {
+    document.getElementById("modal-fondo").classList.remove("activo");
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") cerrarModal();
+  });
 
   function fechaCorta(iso) {
     if (!iso) return "—";
@@ -420,6 +530,50 @@
   }
 
   function normaliza(s) { return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+
+  // Mismo formato que redacta Gemini ("D de MES de AAAA") y mismo criterio
+  // que fechaDesdeTextoEspanol del sitio real — reimplementado aquí porque
+  // este script corre solo, sin acceso a src/lib/dates.ts.
+  const NOMBRES_MES = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
+  function parsearFechaEspanola(texto) {
+    if (!texto) return null;
+    const m = texto.toLowerCase().match(/(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+de\s+(\d{4})/);
+    if (!m) return null;
+    const mes = NOMBRES_MES[m[2]];
+    if (mes === undefined) return null;
+    return new Date(Number(m[3]), mes, Number(m[1]));
+  }
+  function diaEpoch(fecha) {
+    return Math.floor(Date.UTC(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()) / 86400000);
+  }
+  // DATOS.hoyISO viene calculado en build.js (huso de Madrid) — no del reloj
+  // de quien esté mirando el artifact, para que "esta semana" no dependa de
+  // en qué zona horaria esté su móvil.
+  const HOY_EP = (() => {
+    const [y, m, d] = (DATOS.hoyISO || "1970-01-01").split("-").map(Number);
+    return diaEpoch(new Date(y, m - 1, d));
+  })();
+
+  // "Esta semana"/"semana que viene" son ventanas rodantes de 7 días desde
+  // hoy (mismo criterio que diasRelevantesEstaSemana del sitio real, no la
+  // semana natural lunes-domingo) — un evento "pertenece" si su rango de
+  // fechas solapa con la ventana, aunque no empiece justo ese día.
+  function perteneceASemana(d, cual) {
+    if (!cual) return true;
+    const inicio = parsearFechaEspanola(d.fecha_inicio);
+    if (!inicio) return false;
+    const fin = d.fecha_fin ? parsearFechaEspanola(d.fecha_fin) : inicio;
+    const desdeEp = diaEpoch(inicio);
+    const hastaEp = fin ? diaEpoch(fin) : desdeEp;
+    const [ini, finRango] = cual === "esta-semana" ? [HOY_EP, HOY_EP + 6] : [HOY_EP + 7, HOY_EP + 13];
+    return desdeEp <= finRango && hastaEp >= ini;
+  }
+
+  // Una fila "revisada" es cualquiera con marca puesta (Quitar/Potenciar/
+  // Mantener o ya aplicada) — Mantener también cuenta como decisión tomada,
+  // no solo Quitar/Potenciar (ver conversación: la idea es poder ir
+  // vaciando la lista a medida que se revisa cada una).
+  function estaRevisado(slug) { return !!MARCAS[slug]; }
 
   const catsPuntuales = [...new Set(DATOS.puntuales.map((d) => d.categoria).filter(Boolean))].sort();
   const selCat = document.getElementById("filtro-categoria");
@@ -455,14 +609,18 @@
   function renderPuntuales() {
     const q = normaliza(document.getElementById("buscar-puntuales").value);
     const cat = selCat.value;
+    const semana = document.getElementById("filtro-semana").value;
     const mes = selMes.value;
     const filtroMarca = document.getElementById("filtro-marca-p").value;
     const orden = document.getElementById("orden-puntuales").value;
+    const ocultarRevisados = document.getElementById("ocultar-revisados-p").checked;
     const filtrados = ordenar(
       DATOS.puntuales.filter((d) => {
         if (cat && d.categoria !== cat) return false;
         if (mes && !d.meses.includes(mes)) return false;
+        if (!perteneceASemana(d, semana)) return false;
         if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
+        if (ocultarRevisados && !filtroMarca && estaRevisado(d.slug)) return false;
         if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
         return true;
       }),
@@ -472,7 +630,7 @@
     document.getElementById("sin-resultados-puntuales").style.display = filtrados.length ? "none" : "block";
     document.getElementById("cuerpo-puntuales").innerHTML = filtrados.map((d) => `
       <tr data-fila-slug="${d.slug}" class="${MARCAS[d.slug] === "quitar" || MARCAS[d.slug] === "quitar:aplicado" ? "marcada-quitar" : ""}">
-        <td class="titulo-celda">${tituloConEnlace(d)}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">${d.ubicacion || ""}</span><br><span class="meta">Detectado: ${fechaCorta(d.primeraDeteccion)}</span></td>
+        <td class="titulo-celda">${tituloClicable(d)}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">${d.ubicacion || ""}</span><br><span class="meta">Detectado: ${fechaCorta(d.primeraDeteccion)}</span></td>
         <td class="fechas">${d.fecha_inicio}${d.fecha_fin && d.fecha_fin !== d.fecha_inicio ? " – " + d.fecha_fin : ""}<br>${estadoHtml(d)}</td>
         <td>${paginasHtml(d)}</td>
         <td>${grupoMarca(d.slug)}</td>
@@ -481,7 +639,7 @@
     `).join("");
   }
   ["buscar-puntuales"].forEach((id) => document.getElementById(id).addEventListener("input", renderPuntuales));
-  ["filtro-categoria", "filtro-mes", "filtro-marca-p", "orden-puntuales"].forEach((id) => document.getElementById(id).addEventListener("change", renderPuntuales));
+  ["filtro-categoria", "filtro-semana", "filtro-mes", "filtro-marca-p", "orden-puntuales", "ocultar-revisados-p"].forEach((id) => document.getElementById(id).addEventListener("change", renderPuntuales));
 
   const catsGenericos = [...new Set(DATOS.genericos.map((d) => d.categoria).filter(Boolean))].sort();
   const selCatG = document.getElementById("filtro-categoria-generico");
@@ -492,10 +650,12 @@
     const cat = selCatG.value;
     const filtroMarca = document.getElementById("filtro-marca-g").value;
     const orden = document.getElementById("orden-genericos").value;
+    const ocultarRevisados = document.getElementById("ocultar-revisados-g").checked;
     const filtrados = ordenar(
       DATOS.genericos.filter((d) => {
         if (cat && d.categoria !== cat) return false;
         if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
+        if (ocultarRevisados && !filtroMarca && estaRevisado(d.slug)) return false;
         if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
         return true;
       }),
@@ -505,7 +665,7 @@
     document.getElementById("sin-resultados-genericos").style.display = filtrados.length ? "none" : "block";
     document.getElementById("cuerpo-genericos").innerHTML = filtrados.map((d) => `
       <tr data-fila-slug="${d.slug}" class="${MARCAS[d.slug] === "quitar" || MARCAS[d.slug] === "quitar:aplicado" ? "marcada-quitar" : ""}">
-        <td class="titulo-celda">${tituloConEnlace(d)}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">Detectado: ${fechaCorta(d.primeraDeteccion)}</span></td>
+        <td class="titulo-celda">${tituloClicable(d)}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">Detectado: ${fechaCorta(d.primeraDeteccion)}</span></td>
         <td class="meta">${d.ubicacion || ""}${d.precio ? "<br>" + d.precio : ""}</td>
         <td>${paginasHtml(d)}</td>
         <td>${grupoMarca(d.slug)}</td>
@@ -514,7 +674,7 @@
     `).join("");
   }
   ["buscar-genericos"].forEach((id) => document.getElementById(id).addEventListener("input", renderGenericos));
-  ["filtro-categoria-generico", "filtro-marca-g", "orden-genericos"].forEach((id) => document.getElementById(id).addEventListener("change", renderGenericos));
+  ["filtro-categoria-generico", "filtro-marca-g", "orden-genericos", "ocultar-revisados-g"].forEach((id) => document.getElementById(id).addEventListener("change", renderGenericos));
 
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const { data: eventos, error: errorEventos } = await supabaseAdmin
     .from("eventos")
     .select(
-      "titulo, slug, categoria, ubicacion, precio, fecha_inicio, fecha_fin, audiencia, origen, primera_deteccion"
+      "titulo, slug, categoria, ubicacion, horario, precio, descripcion, fecha_inicio, fecha_fin, audiencia, origen, primera_deteccion"
     )
     .eq("municipio_id", municipio.id)
     .eq("activo", true)
@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
     | "slug"
     | "categoria"
     | "ubicacion"
+    | "horario"
     | "precio"
+    | "descripcion"
     | "fecha_inicio"
     | "fecha_fin"
     | "audiencia"
@@ -64,7 +66,9 @@ export async function GET(request: NextRequest) {
         slug: e.slug,
         categoria: e.categoria,
         ubicacion: e.ubicacion,
+        horario: e.horario,
         precio: e.precio,
+        descripcion: e.descripcion,
         fecha_inicio: e.fecha_inicio,
         fecha_fin: e.fecha_fin,
         origen: e.origen,
@@ -81,7 +85,9 @@ export async function GET(request: NextRequest) {
         slug: e.slug,
         categoria: e.categoria,
         ubicacion: e.ubicacion,
+        horario: e.horario,
         precio: e.precio,
+        descripcion: e.descripcion,
         origen: e.origen,
         primeraDeteccion: e.primera_deteccion,
         paginasEstaticas: paginas.paginasEstaticas,

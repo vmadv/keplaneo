@@ -33,6 +33,16 @@ datos.generadoEn = new Intl.DateTimeFormat("es", {
   timeZone: "Europe/Madrid",
 }).format(new Date());
 
+// Fecha de "hoy" en formato ISO, huso de Madrid — para que los filtros de
+// semana del propio artifact (esta semana / semana que viene) calculen
+// contra la misma referencia que usa el resto del sitio, no contra el
+// reloj del navegador de quien lo mire.
+{
+  const partes = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).formatToParts(new Date());
+  const valor = (tipo) => partes.find((p) => p.type === tipo).value;
+  datos.hoyISO = `${valor("year")}-${valor("month")}-${valor("day")}`;
+}
+
 const [antes, resto1] = shell.split("__DATOS_JSON__");
 const [medio, resto2] = resto1.split("__MARCAS_JSON__");
 const [medio2, resto3] = resto2.split("__NOTAS_JSON__");
