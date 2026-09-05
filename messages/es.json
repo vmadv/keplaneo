@@ -160,6 +160,7 @@
   "Tiempo": {
     "tituloHoy": "Qué tiempo hace hoy{sufijoHora}",
     "tituloFinde": "Qué tiempo hará {dia}{sufijoHora}",
+    "tituloFecha": "Qué tiempo hará el {fecha}{sufijoHora}",
     "sufijoHora": " a las {hora}",
     "diaSabado": "el sábado",
     "diaDomingo": "el domingo"

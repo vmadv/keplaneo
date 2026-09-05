@@ -160,6 +160,7 @@
   "Tiempo": {
     "tituloHoy": "Today's weather{sufijoHora}",
     "tituloFinde": "Weather for {dia}{sufijoHora}",
+    "tituloFecha": "Weather for {fecha}{sufijoHora}",
     "sufijoHora": " at {hora}",
     "diaSabado": "Saturday",
     "diaDomingo": "Sunday"

@@ -22,6 +22,7 @@ import {
   hoyISO,
   hoyEnMadrid,
   fechaDesdeTextoEspanol,
+  formatearFechaISO,
   fechaFindeParaTiempo,
   fechasFinDeSemanaISO,
   extraerHoraDeHorario,
@@ -116,12 +117,22 @@ function etiquetaOtrosPlanes(
 
 // El widget del tiempo debe reflejar cuándo va a pasar el plan, no el
 // instante en que se carga la página: en contexto "hoy" el pronóstico de
-// hoy; en "finde" el del sábado o domingo que le corresponda. Si
-// evento.horario da una hora concreta (ej. "22:00h") se usa esa; si no (ej.
-// "Horario habitual del museo"), se pide mínima/máxima del tramo
-// aproximado del plan (día u noche) en vez de inventar una hora.
+// hoy; en "finde" el del sábado o domingo que le corresponda; para
+// cualquier otro caso (mes, o vigencia vacía porque el lote curado de hoy
+// no llega a este evento — ver conversación), la fecha REAL del evento, no
+// "hoy" — mostrar el tiempo de hoy en la ficha de un concierto dentro de
+// varias semanas es simplemente falso (bug real encontrado en producción:
+// "Amaia", 10 de septiembre, mostraba "qué tiempo hace hoy" con la
+// temperatura de ese mismo instante). Si el evento cae fuera del horizonte
+// de pronóstico de Open-Meteo (~16 días), obtenerTiempoDelDia ya devuelve
+// null con elegancia y el widget simplemente no se muestra — no hace falta
+// comprobar la distancia aquí. Si evento.horario da una hora concreta (ej.
+// "22:00h") se usa esa; si no (ej. "Horario habitual del museo"), se pide
+// mínima/máxima del tramo aproximado del plan (día u noche) en vez de
+// inventar una hora.
 function datosTiempoParaEvento(
   contexto: string,
+  vigencia: string[],
   evento: Evento,
   tTiempo: Awaited<ReturnType<typeof getTranslations>>
 ): { fecha: string; solicitud: SolicitudTiempo; titulo: string } {
@@ -134,11 +145,31 @@ function datosTiempoParaEvento(
         : { tipo: "rango", horaInicio: 9, horaFin: 20 };
   const sufijoHora = horaExacta !== null ? tTiempo("sufijoHora", { hora: `${String(horaExacta).padStart(2, "0")}:00` }) : "";
 
+  // `contexto === "hoy"` no distingue por sí solo "el evento es de hoy de
+  // verdad" de "no hay fila curada para hoy y elegirContexto cae en 'hoy'
+  // por defecto" (ver elegirContexto) — solo `vigencia` (la vigencia real
+  // de la fila de `planes` de hoy) lo distingue: si está vacía, no fiarse
+  // de "hoy" y usar la fecha real del evento más abajo.
   if (contexto === "finde") {
     const fecha = fechaFindeParaTiempo(evento.fecha_inicio, evento.fecha_fin);
     const { sabado } = fechasFinDeSemanaISO();
     const dia = fecha === sabado ? tTiempo("diaSabado") : tTiempo("diaDomingo");
     return { fecha, solicitud, titulo: tTiempo("tituloFinde", { dia, sufijoHora }) };
+  }
+
+  if (contexto === "hoy" && vigencia.length > 0) {
+    return { fecha: hoyISO(), solicitud, titulo: tTiempo("tituloHoy", { sufijoHora }) };
+  }
+
+  if (evento.fecha_inicio) {
+    const inicio = fechaDesdeTextoEspanol(evento.fecha_inicio);
+    if (inicio) {
+      return {
+        fecha: formatearFechaISO(inicio),
+        solicitud,
+        titulo: tTiempo("tituloFecha", { fecha: evento.fecha_inicio, sufijoHora }),
+      };
+    }
   }
 
   return { fecha: hoyISO(), solicitud, titulo: tTiempo("tituloHoy", { sufijoHora }) };
@@ -234,7 +265,7 @@ export default async function EventoPage({
   const contexto = elegirContexto(vigencia, desde);
   const otrosPlanes = await cargarOtrosPlanes(municipio.id, evento.id, contexto);
   const etiquetaOtros = etiquetaOtrosPlanes(contexto, tEvento, tMeses);
-  const tiempo = datosTiempoParaEvento(contexto, evento, tTiempo);
+  const tiempo = datosTiempoParaEvento(contexto, vigencia, evento, tTiempo);
 
   const titulo = localizado(evento.titulo, evento.titulo_en, locale);
   const descripcion = localizado(evento.descripcion, evento.descripcion_en, locale);
