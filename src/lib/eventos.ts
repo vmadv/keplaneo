@@ -1,8 +1,9 @@
 import { supabaseAdmin } from "./supabase";
 import { slugify } from "./slug";
 import { geocodificar } from "./geocode";
-import { fechaDesdeTextoEspanol } from "./dates";
+import { fechaDesdeTextoEspanol, hoyISO, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "./dates";
 import { mismoEvento, type PlanGenerado } from "./gemini";
+import { calcularFilasPorDia } from "./planesPorDia";
 
 export interface EventoVinculado {
   id: string;
@@ -329,6 +330,53 @@ export async function upsertEventosDelLote(
         throw new Error(`eventos.inactivar (finalizados): ${errorInactivarFinalizados.message}`);
       }
     }
+  }
+
+  return vinculos;
+}
+
+// Como upsertEventosDelLote, pero además deja la(s) fila(s) de `planes` de
+// esta semana (mismo bloque que ya usan generate-daily/generate-weekly) —
+// pensada para importaciones manuales de un listado ya extraído (ver
+// generarPlanesDesdeListado en gemini.ts). Sin esto, un evento importado a
+// mano quedaba bien en `eventos` pero invisible en cualquier página que
+// dependa de `planes` sin relleno propio (categoría+hoy, categoría+fin de
+// semana) — bug real encontrado en conversación, ya cubierto también por
+// relleno en esas dos páginas, pero esta función evita que vuelva a faltar
+// la fila curada de origen la próxima vez que se importe algo a mano.
+// Solo cubre la semana en curso (como el cron diario): un evento puntual
+// muy lejano en el tiempo no recibe fila hasta que su semana llegue — ver
+// conversación, coherente con cómo ya funciona el resto del sitio.
+export async function upsertEventosYPlanesDelLote(
+  municipioId: string,
+  municipioNombre: string,
+  planes: PlanGenerado[]
+): Promise<Map<number, EventoVinculado>> {
+  const hoy = hoyISO();
+  const vinculos = await upsertEventosDelLote(municipioId, municipioNombre, planes, hoy, false);
+  if (!supabaseAdmin) return vinculos;
+
+  const diasRestantesSemana = fechasDeLaSemana(lunesDeLaSemanaActual()).filter(
+    (d) => formatearFechaISO(d) >= hoy
+  );
+  const filas = calcularFilasPorDia(planes, diasRestantesSemana);
+
+  if (filas.length > 0) {
+    const { error: errorInsert } = await supabaseAdmin.from("planes").insert(
+      filas.map((f) => ({
+        municipio_id: municipioId,
+        fecha_generacion: f.fechaISO,
+        titulo: f.plan.titulo,
+        descripcion: f.plan.descripcion,
+        momento: f.plan.momento,
+        vigencia: f.vigencia,
+        audiencia: f.plan.audiencia,
+        tipo: f.plan.tipo,
+        evento_id: vinculos.get(f.indice)?.id ?? null,
+        fuente: f.plan.fuente ?? null,
+      }))
+    );
+    if (errorInsert) throw new Error(`planes.insert (lote manual): ${errorInsert.message}`);
   }
 
   return vinculos;
