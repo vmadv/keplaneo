@@ -312,7 +312,7 @@ export async function getEvento(
   const { data } = await supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo, origen"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo, origen, redirige_a_slug"
     )
     .eq("municipio_id", municipioId)
     .eq("slug", slug)
@@ -678,7 +678,7 @@ async function getEventosDelMunicipio(
   let query = supabase
     .from("eventos")
     .select(
-      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo, origen"
+      "id, municipio_id, slug, titulo, descripcion, momento, audiencia, ubicacion, horario, precio, fecha_inicio, fecha_fin, fuente, preguntas_frecuentes, categoria, relevancia, cartel_url, foto_lugar_nombre, zona_cercana, zona_cercana_minutos, dias_semana, titulo_en, descripcion_en, precio_en, preguntas_frecuentes_en, lat, lon, primera_deteccion, ultima_deteccion, activo, origen, redirige_a_slug"
     )
     .eq("municipio_id", municipioId)
     .eq("activo", true);

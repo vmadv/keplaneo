@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Link } from "@/i18n/navigation";
+import { Link, permanentRedirect } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Sun, Moon, MapPin, Clock, Tag, CalendarRange, Link2, ArrowRight, Navigation } from "lucide-react";
@@ -203,14 +203,22 @@ export default async function EventoPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ municipio: string; evento: string }>;
+  params: Promise<{ locale: string; municipio: string; evento: string }>;
   searchParams: Promise<{ desde?: string }>;
 }) {
-  const { municipio: municipioSlug, evento: eventoSlug } = await params;
+  const { locale: localeDeRuta, municipio: municipioSlug, evento: eventoSlug } = await params;
   const { desde } = await searchParams;
   const encontrado = await cargarEvento(municipioSlug, eventoSlug);
   if (!encontrado) notFound();
   const { municipio, evento } = encontrado;
+
+  // Duplicado desactivado con sustituto (ver migración 0022 y
+  // scripts/revision-planes/detectar-duplicados.js): 308 permanente hacia
+  // el superviviente en vez de servir esta ficha obsoleta — conserva
+  // cualquier backlink/indexación que tuviera esta URL.
+  if (evento.redirige_a_slug) {
+    permanentRedirect({ href: `/${municipioSlug}/eventos/${evento.redirige_a_slug}`, locale: localeDeRuta });
+  }
 
   const base = `/${municipioSlug}`;
   const [vigencia, tNav, tBadges, tAudiencia, tEvento, tTiempo, tMeses, locale] = await Promise.all([

@@ -124,6 +124,10 @@ export interface Evento {
   // 0021 y generarPlanesDesdeListado en gemini.ts) — para distinguir
   // procedencia en el artifact de revisión de planes.
   origen: "gemini" | "externo";
+  // Slug del evento superviviente cuando este se desactivó por ser
+  // duplicado — ver migración 0022. Su página hace un 308 permanente hacia
+  // ahí en vez de servir contenido obsoleto.
+  redirige_a_slug: string | null;
 }
 
 // Temáticas por las que se puede navegar además de fecha/audiencia/precio.

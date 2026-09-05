@@ -65,6 +65,9 @@ create table eventos (
   -- (importado desde un listado ya extraído de una fuente externa
   -- verificada) — ver migración 0021.
   origen text not null default 'gemini',
+  -- destino del 308 permanente cuando este evento se desactiva por ser
+  -- duplicado de otro que sigue activo — ver migración 0022.
+  redirige_a_slug text,
   created_at timestamptz not null default now(),
   unique (municipio_id, slug)
 );

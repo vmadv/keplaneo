@@ -6,23 +6,25 @@
 // la tarea programada diaria pueda reconstruir el artifact sin depender de
 // nada efímero (scratchpad de una sesión concreta).
 //
-// Uso: node build.js <datos.json> <marcas.json> <salida.html>
+// Uso: node build.js <datos.json> <marcas.json> <notas.json> <salida.html>
 //   datos.json  — la respuesta de GET /api/interno/reporte-planes
 //   marcas.json — objeto { [slug]: "quitar"|"potenciar"|"mantener"|"quitar:aplicado"|"potenciar:aplicado" }
+//   notas.json  — objeto { [slug]: "texto libre" }, contexto que deja Victor por fila
 //   salida.html — dónde escribir el HTML final, listo para Artifact.publish()
 
 const fs = require("fs");
 const path = require("path");
 
-const [, , rutaDatos, rutaMarcas, rutaSalida] = process.argv;
-if (!rutaDatos || !rutaMarcas || !rutaSalida) {
-  console.error("Uso: node build.js <datos.json> <marcas.json> <salida.html>");
+const [, , rutaDatos, rutaMarcas, rutaNotas, rutaSalida] = process.argv;
+if (!rutaDatos || !rutaMarcas || !rutaNotas || !rutaSalida) {
+  console.error("Uso: node build.js <datos.json> <marcas.json> <notas.json> <salida.html>");
   process.exit(1);
 }
 
 const shell = fs.readFileSync(path.join(__dirname, "shell.html"), "utf8");
 const datos = JSON.parse(fs.readFileSync(rutaDatos, "utf8"));
 const marcas = JSON.parse(fs.readFileSync(rutaMarcas, "utf8"));
+const notas = JSON.parse(fs.readFileSync(rutaNotas, "utf8"));
 
 datos.generadoEn = new Intl.DateTimeFormat("es", {
   day: "numeric",
@@ -33,19 +35,21 @@ datos.generadoEn = new Intl.DateTimeFormat("es", {
 
 const [antes, resto1] = shell.split("__DATOS_JSON__");
 const [medio, resto2] = resto1.split("__MARCAS_JSON__");
-const [entre, final] = resto2.split("<!--INSERTAR_CONSTANTES_AQUI-->");
+const [medio2, resto3] = resto2.split("__NOTAS_JSON__");
+const [entre, final] = resto3.split("<!--INSERTAR_CONSTANTES_AQUI-->");
 
 // Debe generar EXACTAMENTE lo mismo que reconstruye plantilla() dentro del
 // propio artifact (ver shell.html) — si esta primera versión no trae ya el
-// script con SHELL_ANTES/MEDIO/ENTRE/FINAL definidos, el primer clic en un
-// botón de marca revienta con un ReferenceError (bug real encontrado en
-// producción: la versión anterior de este build.js omitía este bloque por
-// completo, así que ninguna marca se llegó a guardar nunca).
+// script con SHELL_ANTES/MEDIO/MEDIO2/ENTRE/FINAL definidos, el primer clic
+// en un botón de marca revienta con un ReferenceError (bug real encontrado
+// en producción: una versión anterior de este build.js omitía este bloque
+// por completo, así que ninguna marca se llegó a guardar nunca).
 const constantes =
   "<scr" +
   "ipt>" +
   "const SHELL_ANTES=" + JSON.stringify(antes) + ";" +
   "const SHELL_MEDIO=" + JSON.stringify(medio) + ";" +
+  "const SHELL_MEDIO2=" + JSON.stringify(medio2) + ";" +
   "const SHELL_ENTRE=" + JSON.stringify(entre) + ";" +
   "const SHELL_FINAL=" + JSON.stringify(final) + ";" +
   "</scr" + "ipt>";
@@ -53,7 +57,18 @@ const constantes =
 // Sin doctype propio: Artifact.publish ya envuelve el contenido en su
 // propio <!doctype html>...<body> — ver plantilla() en shell.html, debe
 // generar exactamente lo mismo.
-const doc = antes + JSON.stringify(datos) + medio + JSON.stringify(marcas) + entre + constantes + final;
+const doc =
+  antes +
+  JSON.stringify(datos) +
+  medio +
+  JSON.stringify(marcas) +
+  medio2 +
+  JSON.stringify(notas) +
+  entre +
+  constantes +
+  final;
 
 fs.writeFileSync(rutaSalida, doc);
-console.log(`${rutaSalida}: ${doc.length} bytes (${datos.totalPuntuales} puntuales, ${datos.totalGenericos} genéricos, ${Object.keys(marcas).length} marcas)`);
+console.log(
+  `${rutaSalida}: ${doc.length} bytes (${datos.totalPuntuales} puntuales, ${datos.totalGenericos} genéricos, ${Object.keys(marcas).length} marcas, ${Object.keys(notas).length} notas)`
+);

@@ -8,6 +8,11 @@ interface Marca {
   slug: string;
   valor: "quitar" | "potenciar";
   municipio: string; // slug del municipio, para revalidar sus rutas
+  // Solo con valor "quitar": slug del evento que sobrevive cuando este se
+  // desactiva por ser duplicado de otro (ver migración 0022) — su página
+  // pasa a hacer un 308 permanente hacia ahí en vez de servir contenido
+  // obsoleto.
+  redirigeA?: string;
 }
 
 // Aplica de verdad, sobre `eventos`, lo que Victor marcó en el artifact de
@@ -37,7 +42,8 @@ export async function POST(request: NextRequest) {
   const municipiosARevalidar = new Set<string>();
 
   for (const m of marcas) {
-    const cambios = m.valor === "quitar" ? { activo: false } : { relevancia: 10 };
+    const cambios =
+      m.valor === "quitar" ? { activo: false, ...(m.redirigeA ? { redirige_a_slug: m.redirigeA } : {}) } : { relevancia: 10 };
     const { error } = await supabaseAdmin.from("eventos").update(cambios).eq("slug", m.slug);
     if (error) {
       errores.push({ slug: m.slug, error: error.message });

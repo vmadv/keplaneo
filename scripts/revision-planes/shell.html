@@ -136,6 +136,16 @@
   .chip-origen-gemini { background: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border); }
   .chip-origen-externo { background: var(--secondary); color: var(--secondary-foreground); }
 
+  .titulo-link { color: inherit; text-decoration: none; border-bottom: 1.5px dashed var(--muted-foreground); }
+  .titulo-link:hover { border-color: var(--foreground); color: var(--accent); }
+
+  .nota-input {
+    font-family: var(--font-sans); font-size: .82rem; padding: .35rem .55rem; width: 100%; min-width: 150px;
+    border: 1.5px solid var(--border); border-radius: .5rem; background: var(--background); color: var(--foreground);
+  }
+  .nota-input:focus { border-color: var(--accent); outline: none; }
+  .nota-input::placeholder { color: var(--muted-foreground); }
+
   .overflow-wrap { overflow-x: auto; border: 1.5px solid var(--border); border-radius: .85rem; background: var(--card); }
   table { min-width: 820px; }
   .sin-resultados { padding: 2rem; text-align: center; color: var(--muted-foreground); display: none; }
@@ -145,7 +155,7 @@
 <header>
   <div>
     <h1>Revisión de planes — Sevilla</h1>
-    <p class="subtitulo">Marca cada plan como <b>Quitar</b>, <b>Potenciar</b> o <b>Mantener</b> — se guarda solo, y al día siguiente se aplica de verdad en la web (Quitar desactiva el evento, Potenciar sube su prioridad). Las filas con ✓ ya están aplicadas.</p>
+    <p class="subtitulo">Marca cada plan como <b>Quitar</b>, <b>Potenciar</b> o <b>Mantener</b> — se guarda solo, y al día siguiente se aplica de verdad en la web (Quitar desactiva el evento, Potenciar sube su prioridad). Las filas con ✓ ya están aplicadas. El título abre la ficha real en una pestaña nueva, y en Notas puedes dejar contexto para más adelante.</p>
   </div>
   <div class="stats">
     <div class="stat"><b id="stat-puntuales">–</b><span>Puntuales</span></div>
@@ -178,7 +188,7 @@
   </div>
   <div class="overflow-wrap">
     <table>
-      <thead><tr><th>Plan</th><th>Fechas</th><th>Aparece en</th><th>Marca</th></tr></thead>
+      <thead><tr><th>Plan</th><th>Fechas</th><th>Aparece en</th><th>Marca</th><th>Notas</th></tr></thead>
       <tbody id="cuerpo-puntuales"></tbody>
     </table>
     <p class="sin-resultados" id="sin-resultados-puntuales">Nada coincide con ese filtro.</p>
@@ -201,7 +211,7 @@
   </div>
   <div class="overflow-wrap">
     <table>
-      <thead><tr><th>Plan</th><th>Recinto / precio</th><th>Aparece en</th><th>Marca</th></tr></thead>
+      <thead><tr><th>Plan</th><th>Recinto / precio</th><th>Aparece en</th><th>Marca</th><th>Notas</th></tr></thead>
       <tbody id="cuerpo-genericos"></tbody>
     </table>
     <p class="sin-resultados" id="sin-resultados-genericos">Nada coincide con ese filtro.</p>
@@ -212,15 +222,18 @@
 
 <script id="datos-informe" type="application/json">__DATOS_JSON__</script>
 <script id="datos-marcas" type="application/json">__MARCAS_JSON__</script>
+<script id="datos-notas" type="application/json">__NOTAS_JSON__</script>
 <!--INSERTAR_CONSTANTES_AQUI-->
 <script>
   const DATOS = JSON.parse(document.getElementById("datos-informe").textContent);
   let MARCAS = JSON.parse(document.getElementById("datos-marcas").textContent);
+  let NOTAS = JSON.parse(document.getElementById("datos-notas").textContent);
 
-  function plantilla(datos, marcas) {
+  function plantilla(datos, marcas, notas) {
     const constantes = "<scr" + "ipt>" +
       "const SHELL_ANTES=" + JSON.stringify(SHELL_ANTES) + ";" +
       "const SHELL_MEDIO=" + JSON.stringify(SHELL_MEDIO) + ";" +
+      "const SHELL_MEDIO2=" + JSON.stringify(SHELL_MEDIO2) + ";" +
       "const SHELL_ENTRE=" + JSON.stringify(SHELL_ENTRE) + ";" +
       "const SHELL_FINAL=" + JSON.stringify(SHELL_FINAL) + ";" +
       "</scr" + "ipt>";
@@ -232,6 +245,8 @@
       JSON.stringify(datos) +
       SHELL_MEDIO +
       JSON.stringify(marcas) +
+      SHELL_MEDIO2 +
+      JSON.stringify(notas) +
       SHELL_ENTRE +
       constantes +
       SHELL_FINAL
@@ -254,7 +269,7 @@
     guardando = true;
     nota("Guardando…", false);
     try {
-      await artifactNs.publish(plantilla(DATOS, MARCAS));
+      await artifactNs.publish(plantilla(DATOS, MARCAS, NOTAS));
       // Un publish con éxito recarga esta misma vista a la nueva versión.
     } catch (err) {
       guardando = false;
@@ -317,6 +332,40 @@
     return `<span class="chip-origen chip-origen-${externo ? "externo" : "gemini"}">${externo ? "Externo" : "Gemini"}</span>`;
   }
 
+  // El texto libre no cambia la prioridad del plan (eso es Potenciar) — es
+  // solo un cuaderno para que Victor deje contexto y, con el tiempo, saque
+  // aprendizaje de qué tipo de planes le convencen o no (ver conversación).
+  // Se guarda solo al perder el foco (onchange), no en cada tecla, para no
+  // republicar el artifact entero mientras se escribe.
+  function guardarNota(slug, valor) {
+    const limpio = valor.trim();
+    if (limpio) NOTAS[slug] = limpio;
+    else delete NOTAS[slug];
+    guardarCambios();
+  }
+
+  function notaInput(slug) {
+    const valor = (NOTAS[slug] || "").replace(/"/g, "&quot;");
+    return `<input type="text" class="nota-input" placeholder="Añade contexto…" value="${valor}" onchange="guardarNota('${slug.replace(/'/g, "\\'")}', this.value)">`;
+  }
+
+  // Abre la ficha real del plan en la web (no un modal: el sandbox del
+  // artifact no puede cargar un iframe de otro origen) — nueva pestaña, la
+  // plataforma ya intercepta y gestiona bien los enlaces externos.
+  function enlaceEvento(slug) {
+    return `https://keplaneo.com/${DATOS.municipio}/eventos/${slug}`;
+  }
+
+  function tituloConEnlace(d) {
+    return `<a class="titulo-link" href="${enlaceEvento(d.slug)}" target="_blank" rel="noopener">${d.titulo}</a>`;
+  }
+
+  function fechaCorta(iso) {
+    if (!iso) return "—";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
   function paginasHtml(item) {
     const partes = [];
     for (const p of item.paginasEstaticas || []) {
@@ -366,10 +415,11 @@
     document.getElementById("sin-resultados-puntuales").style.display = filtrados.length ? "none" : "block";
     document.getElementById("cuerpo-puntuales").innerHTML = filtrados.map((d) => `
       <tr data-fila-slug="${d.slug}" class="${MARCAS[d.slug] === "quitar" || MARCAS[d.slug] === "quitar:aplicado" ? "marcada-quitar" : ""}">
-        <td class="titulo-celda">${d.titulo}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">${d.ubicacion || ""}</span></td>
+        <td class="titulo-celda">${tituloConEnlace(d)}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">${d.ubicacion || ""}</span><br><span class="meta">Detectado: ${fechaCorta(d.primeraDeteccion)}</span></td>
         <td class="fechas">${d.fecha_inicio}${d.fecha_fin && d.fecha_fin !== d.fecha_inicio ? " – " + d.fecha_fin : ""}<br>${d.enCurso ? '<span class="badge-estado badge-curso">En curso</span>' : '<span class="badge-estado badge-futuro">Futuro</span>'}</td>
         <td>${paginasHtml(d)}</td>
         <td>${grupoMarca(d.slug)}</td>
+        <td>${notaInput(d.slug)}</td>
       </tr>
     `).join("");
   }
@@ -394,10 +444,11 @@
     document.getElementById("sin-resultados-genericos").style.display = filtrados.length ? "none" : "block";
     document.getElementById("cuerpo-genericos").innerHTML = filtrados.map((d) => `
       <tr data-fila-slug="${d.slug}" class="${MARCAS[d.slug] === "quitar" || MARCAS[d.slug] === "quitar:aplicado" ? "marcada-quitar" : ""}">
-        <td class="titulo-celda">${d.titulo}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}</td>
+        <td class="titulo-celda">${tituloConEnlace(d)}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">Detectado: ${fechaCorta(d.primeraDeteccion)}</span></td>
         <td class="meta">${d.ubicacion || ""}${d.precio ? "<br>" + d.precio : ""}</td>
         <td>${paginasHtml(d)}</td>
         <td>${grupoMarca(d.slug)}</td>
+        <td>${notaInput(d.slug)}</td>
       </tr>
     `).join("");
   }

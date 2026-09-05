@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const { data: eventos, error: errorEventos } = await supabaseAdmin
     .from("eventos")
     .select(
-      "titulo, slug, categoria, ubicacion, precio, fecha_inicio, fecha_fin, audiencia, origen"
+      "titulo, slug, categoria, ubicacion, precio, fecha_inicio, fecha_fin, audiencia, origen, primera_deteccion"
     )
     .eq("municipio_id", municipio.id)
     .eq("activo", true)
@@ -41,7 +41,16 @@ export async function GET(request: NextRequest) {
 
   type Fila = Pick<
     Evento,
-    "titulo" | "slug" | "categoria" | "ubicacion" | "precio" | "fecha_inicio" | "fecha_fin" | "audiencia" | "origen"
+    | "titulo"
+    | "slug"
+    | "categoria"
+    | "ubicacion"
+    | "precio"
+    | "fecha_inicio"
+    | "fecha_fin"
+    | "audiencia"
+    | "origen"
+    | "primera_deteccion"
   >;
 
   const puntuales: unknown[] = [];
@@ -59,6 +68,7 @@ export async function GET(request: NextRequest) {
         fecha_inicio: e.fecha_inicio,
         fecha_fin: e.fecha_fin,
         origen: e.origen,
+        primeraDeteccion: e.primera_deteccion,
         meses: paginas.meses,
         enCurso: paginas.enCurso,
         pasado: paginas.pasado,
@@ -73,6 +83,7 @@ export async function GET(request: NextRequest) {
         ubicacion: e.ubicacion,
         precio: e.precio,
         origen: e.origen,
+        primeraDeteccion: e.primera_deteccion,
         paginasEstaticas: paginas.paginasEstaticas,
       });
     }
