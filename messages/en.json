@@ -124,6 +124,8 @@
   "CategoriaCombo": {
     "hoy": "{categoria} today in {municipio} ({fecha})",
     "finde": "{categoria} this weekend in {municipio} ({fecha})",
+    "hoyTitulo": "{categoria} today in {municipio}",
+    "findeTitulo": "{categoria} this weekend in {municipio}",
     "mes": "{categoria} in {municipio} in {mes}",
     "metaDescripcion": "Discover the best {categoria} plans in {municipio} during {mes}: automatically updated every day.",
     "metaDescripcionTemporal": "Discover the best {categoria} plans in {municipio}{temporal}: automatically updated every day.",

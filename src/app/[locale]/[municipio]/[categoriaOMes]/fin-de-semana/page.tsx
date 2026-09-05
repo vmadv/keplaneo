@@ -34,8 +34,10 @@ export async function generateMetadata({
     getLocale(),
   ]);
   const etiqueta = tCategorias(categoriaOMes);
+  // Sin fecha en el <title>/meta — mismo criterio que la página de hoy
+  // (ver ahí el porqué): el H1 sí lleva el rango del fin de semana actual.
   const title = await construirTituloConSufijo(
-    tCombo("finde", { categoria: etiqueta, municipio: municipio.nombre, fecha: rangoFinDeSemanaLegible(locale) })
+    tCombo("findeTitulo", { categoria: etiqueta, municipio: municipio.nombre })
   );
   const description = tCombo("metaDescripcionTemporal", {
     categoria: etiqueta.toLowerCase(),

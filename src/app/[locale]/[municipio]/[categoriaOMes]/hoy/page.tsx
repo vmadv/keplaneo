@@ -34,8 +34,13 @@ export async function generateMetadata({
     getLocale(),
   ]);
   const etiqueta = tCategorias(categoriaOMes);
+  // Sin fecha en el <title>/meta — a diferencia del H1 (más abajo, sí lleva
+  // la fecha de hoy), el título indexado por Google debe quedarse igual
+  // día a día: con la fecha exacta, "hoy" del título quedaba desactualizado
+  // nada más generarse al día siguiente (ver conversación, confirmado en
+  // el propio índice de Google — "TITLE CHANGED" cada día).
   const title = await construirTituloConSufijo(
-    tCombo("hoy", { categoria: etiqueta, municipio: municipio.nombre, fecha: fechaDeHoyLegible(locale) })
+    tCombo("hoyTitulo", { categoria: etiqueta, municipio: municipio.nombre })
   );
   const description = tCombo("metaDescripcionTemporal", {
     categoria: etiqueta.toLowerCase(),
