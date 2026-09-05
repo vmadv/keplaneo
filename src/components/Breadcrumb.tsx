@@ -14,10 +14,18 @@ export default async function Breadcrumb({ items }: { items: BreadcrumbItem[] })
   // incluidos) leen el JSON-LD fuera del contexto de la página, sin base
   // para resolverla (ver conversación).
   const locale = await getLocale();
+  // Google exige que TODO peldaño que no sea el último tenga una URL real
+  // en "item" (el último sí puede omitirla — representa la propia página).
+  // Un peldaño intermedio sin href (ej. "Andalucía": no hay página propia
+  // para solo la comunidad) incumplía esto — Search Console lo marcaba como
+  // "Falta el campo item" en 98 páginas (ver conversación). Se omite del
+  // JSON-LD (no de la miga de pan visual, que sigue mostrándolo como texto)
+  // en vez de inventarle un enlace a una página que no existe.
+  const itemsParaJsonLd = items.filter((item, i) => item.href || i === items.length - 1);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: items.map((item, i) => ({
+    itemListElement: itemsParaJsonLd.map((item, i) => ({
       "@type": "ListItem",
       position: i + 1,
       name: item.label,
