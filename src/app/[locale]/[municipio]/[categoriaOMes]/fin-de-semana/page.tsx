@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import Breadcrumb from "@/components/Breadcrumb";
 import PlanList from "@/components/PlanList";
+import ListaEventos from "@/components/ListaEventos";
 import FiltrosPagina from "@/components/FiltrosPagina";
 import HeroPortada from "@/components/HeroPortada";
-import { getMunicipio, getPlanesCategoriaFinde } from "@/lib/queries";
+import { getMunicipio, getPlanesCategoriaFinde, getEventosPorCategoria } from "@/lib/queries";
 import { esCategoriaConPagina } from "@/lib/types";
 import { rangoFinDeSemanaLegible } from "@/lib/dates";
+import { ordenarParaFinde, idsEventoDePlanes } from "@/lib/semana";
 import { construirFiltrosTemporales, construirFiltrosSecundarios } from "@/lib/filtros";
 import { construirTituloConSufijo, piezasTemporales } from "@/lib/resumenSeleccion";
 import { buscarImagenHero } from "@/lib/heroImage";
@@ -61,8 +63,9 @@ export default async function CategoriaFindePage({
 
   const base = `/${municipioSlug}`;
   const catBase = `${base}/${categoriaOMes}`;
-  const [planes, temporales, secundarios, tNav, tFiltros, tCategorias, tCombo, locale] = await Promise.all([
+  const [planes, eventosCategoria, temporales, secundarios, tNav, tFiltros, tCategorias, tCombo, locale] = await Promise.all([
     getPlanesCategoriaFinde(municipio.id, categoriaOMes),
+    getEventosPorCategoria(municipio.id, categoriaOMes),
     construirFiltrosTemporales(catBase, "finde"),
     // `base` (no `catBase`): mismo criterio que en la página de hoy — ver
     // ahí el porqué.
@@ -74,6 +77,11 @@ export default async function CategoriaFindePage({
     getLocale(),
   ]);
   const etiqueta = tCategorias(categoriaOMes);
+  // Relleno — mismo criterio que la página de categoría + hoy (ver ahí el
+  // porqué) y que /fin-de-semana a secas (PlanesPageLayout).
+  const idsCurados = idsEventoDePlanes(planes);
+  const { eventos: eventosFinde, etiquetas: etiquetasFinde } = ordenarParaFinde(eventosCategoria, locale);
+  const relleno = eventosFinde.filter((e) => !idsCurados.has(e.id));
 
   return (
     <main className="flex-1 bg-dots">
@@ -95,7 +103,23 @@ export default async function CategoriaFindePage({
 
         <FiltrosPagina primarios={temporales} secundarios={secundarios} />
 
-        <PlanList planes={planes} base={base} mostrarDiaFinde contexto="finde" municipioNombre={municipio.nombre} />
+        {planes.length > 0 && (
+          <PlanList planes={planes} base={base} mostrarDiaFinde contexto="finde" municipioNombre={municipio.nombre} />
+        )}
+        {relleno.length > 0 && (
+          <div className={planes.length > 0 ? "mt-5" : undefined}>
+            <ListaEventos
+              eventos={relleno}
+              base={base}
+              contexto="finde"
+              obtenerEtiqueta={(evento) => etiquetasFinde.get(evento.id) ?? null}
+              municipioNombre={municipio.nombre}
+            />
+          </div>
+        )}
+        {planes.length === 0 && relleno.length === 0 && (
+          <PlanList planes={planes} base={base} mostrarDiaFinde contexto="finde" municipioNombre={municipio.nombre} />
+        )}
       </div>
     </main>
   );
