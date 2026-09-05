@@ -381,17 +381,21 @@ export default async function EventoPage({
                 <CalendarRange size={12} strokeWidth={3} color="var(--accent-foreground)" />
               </span>
               <span>
-                {evento.fecha_inicio && evento.fecha_fin ? (
+                {evento.fecha_inicio && evento.fecha_fin && evento.fecha_inicio !== evento.fecha_fin ? (
                   <>
                     <span className="font-bold">{tEvento("fechas")}: </span>
                     {tEvento("desdeEl", { fecha: evento.fecha_inicio })} — {tEvento("hastaEl", { fecha: evento.fecha_fin })}
                   </>
                 ) : (
-                  // Sin fecha_fin es un evento de un solo día (ver
-                  // CAMPOS_JSON en gemini.ts: se omite a propósito cuando no
-                  // dura más de un día) — mostrar "Desde el X" sin más daba
-                  // a entender que sigue abierto sin fecha de fin conocida,
-                  // en vez de que ES solo ese día (ver conversación).
+                  // Sin fecha_fin (o con la misma fecha que fecha_inicio,
+                  // que Gemini a veces rellena igual en vez de omitirla) es
+                  // un evento de un solo día — mostrar "Desde el X" sin más
+                  // daba a entender que sigue abierto sin fecha de fin
+                  // conocida, en vez de que ES solo ese día (ver
+                  // conversación). "Desde el X — Hasta el X" (mismo día dos
+                  // veces) era el bug real: PlanList/ListaEventos/
+                  // TarjetaPlanDestacado ya comprobaban esta igualdad bien,
+                  // solo la ficha del evento no lo hacía.
                   <>
                     <span className="font-bold">{tEvento("fecha")}: </span>
                     {evento.fecha_inicio ?? evento.fecha_fin}
