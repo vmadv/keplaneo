@@ -184,6 +184,11 @@
       <option value="mantener">Mantener</option>
       <option value="aplicado">Ya aplicado</option>
     </select>
+    <select id="orden-puntuales">
+      <option value="deteccion-desc">Detectado: más reciente primero</option>
+      <option value="deteccion-asc">Detectado: más antiguo primero</option>
+      <option value="titulo">Título (A-Z)</option>
+    </select>
     <span class="conteo-filtro" id="conteo-puntuales"></span>
   </div>
   <div class="overflow-wrap">
@@ -206,6 +211,11 @@
       <option value="potenciar">Potenciar</option>
       <option value="mantener">Mantener</option>
       <option value="aplicado">Ya aplicado</option>
+    </select>
+    <select id="orden-genericos">
+      <option value="deteccion-desc">Detectado: más reciente primero</option>
+      <option value="deteccion-asc">Detectado: más antiguo primero</option>
+      <option value="titulo">Título (A-Z)</option>
     </select>
     <span class="conteo-filtro" id="conteo-genericos"></span>
   </div>
@@ -415,18 +425,32 @@
     return MARCAS[slug] === filtro;
   }
 
+  // primeraDeteccion llega en formato ISO ("AAAA-MM-DD"), así que ordena
+  // bien como texto sin necesidad de parsear fechas.
+  function ordenar(lista, criterio) {
+    const copia = [...lista];
+    if (criterio === "titulo") return copia.sort((a, b) => a.titulo.localeCompare(b.titulo));
+    copia.sort((a, b) => (b.primeraDeteccion || "").localeCompare(a.primeraDeteccion || ""));
+    if (criterio === "deteccion-asc") copia.reverse();
+    return copia;
+  }
+
   function renderPuntuales() {
     const q = normaliza(document.getElementById("buscar-puntuales").value);
     const cat = selCat.value;
     const mes = selMes.value;
     const filtroMarca = document.getElementById("filtro-marca-p").value;
-    const filtrados = DATOS.puntuales.filter((d) => {
-      if (cat && d.categoria !== cat) return false;
-      if (mes && !d.meses.includes(mes)) return false;
-      if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
-      if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
-      return true;
-    });
+    const orden = document.getElementById("orden-puntuales").value;
+    const filtrados = ordenar(
+      DATOS.puntuales.filter((d) => {
+        if (cat && d.categoria !== cat) return false;
+        if (mes && !d.meses.includes(mes)) return false;
+        if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
+        if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
+        return true;
+      }),
+      orden
+    );
     document.getElementById("conteo-puntuales").textContent = `${filtrados.length} de ${DATOS.puntuales.length}`;
     document.getElementById("sin-resultados-puntuales").style.display = filtrados.length ? "none" : "block";
     document.getElementById("cuerpo-puntuales").innerHTML = filtrados.map((d) => `
@@ -440,7 +464,7 @@
     `).join("");
   }
   ["buscar-puntuales"].forEach((id) => document.getElementById(id).addEventListener("input", renderPuntuales));
-  ["filtro-categoria", "filtro-mes", "filtro-marca-p"].forEach((id) => document.getElementById(id).addEventListener("change", renderPuntuales));
+  ["filtro-categoria", "filtro-mes", "filtro-marca-p", "orden-puntuales"].forEach((id) => document.getElementById(id).addEventListener("change", renderPuntuales));
 
   const catsGenericos = [...new Set(DATOS.genericos.map((d) => d.categoria).filter(Boolean))].sort();
   const selCatG = document.getElementById("filtro-categoria-generico");
@@ -450,12 +474,16 @@
     const q = normaliza(document.getElementById("buscar-genericos").value);
     const cat = selCatG.value;
     const filtroMarca = document.getElementById("filtro-marca-g").value;
-    const filtrados = DATOS.genericos.filter((d) => {
-      if (cat && d.categoria !== cat) return false;
-      if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
-      if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
-      return true;
-    });
+    const orden = document.getElementById("orden-genericos").value;
+    const filtrados = ordenar(
+      DATOS.genericos.filter((d) => {
+        if (cat && d.categoria !== cat) return false;
+        if (!pasaFiltroMarca(d.slug, filtroMarca)) return false;
+        if (q && !normaliza(d.titulo + " " + (d.ubicacion || "")).includes(q)) return false;
+        return true;
+      }),
+      orden
+    );
     document.getElementById("conteo-genericos").textContent = `${filtrados.length} de ${DATOS.genericos.length}`;
     document.getElementById("sin-resultados-genericos").style.display = filtrados.length ? "none" : "block";
     document.getElementById("cuerpo-genericos").innerHTML = filtrados.map((d) => `
@@ -469,7 +497,7 @@
     `).join("");
   }
   ["buscar-genericos"].forEach((id) => document.getElementById(id).addEventListener("input", renderGenericos));
-  ["filtro-categoria-generico", "filtro-marca-g"].forEach((id) => document.getElementById(id).addEventListener("change", renderGenericos));
+  ["filtro-categoria-generico", "filtro-marca-g", "orden-genericos"].forEach((id) => document.getElementById(id).addEventListener("change", renderGenericos));
 
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
