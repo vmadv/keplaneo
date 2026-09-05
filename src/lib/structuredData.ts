@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { fechaDesdeTextoEspanol, formatearFechaISO, hoyEnMadrid } from "./dates";
 import { SITE_URL } from "./rutasLocale";
-import { urlDeFoto } from "./places";
+import { urlDeFoto, urlFotoProxy } from "./places";
 import type { Evento, PreguntaFrecuente, Lugar, Listado, PuestoListado } from "./types";
 import type { MunicipioConComunidad } from "./queries";
 
@@ -61,15 +61,35 @@ export function construirEventoJsonLd(
   const prefijo = locale === "es" ? "" : `/${locale}`;
   const urlEvento = `${SITE_URL}${prefijo}/${municipioSlug}/eventos/${evento.slug}`;
 
+  // Solo se declara `offers` de pago cuando el precio tiene un formato
+  // claro y de un único número ("20€", "Desde 20€") — rangos ("12-15€"),
+  // texto sin cifra ("Consultar") o excepciones parciales ("6€, gratis
+  // menores de 16") se dejan fuera a propósito, mismo criterio que ya
+  // aplica esGratis arriba: mejor no declarar offers que declarar un precio
+  // mal adivinado (ver conversación, Search Console: "Falta el campo
+  // offers" en eventos de pago que sí tenían precio, solo que no se
+  // mandaba).
+  const precioClaro = !esGratis ? evento.precio?.trim().match(/^(?:desde\s+)?(\d+(?:[.,]\d{1,2})?)\s*€\s*$/i) : null;
+
+  // `image`: el cartel real y verificado si existe (evento.cartel_url, ya
+  // absoluto), si no la foto del recinto vía nuestro propio proxy (siempre
+  // servible, a diferencia de algunos carteles con protección anti-hotlink
+  // — ver HeaderImagenEvento.tsx). Ninguno de los dos se declaraba antes.
+  const imagen = evento.cartel_url ?? (evento.foto_lugar_nombre ? `${SITE_URL}${urlFotoProxy(evento.foto_lugar_nombre, 1200)}` : null);
+
   return {
     "@context": "https://schema.org",
     "@type": "Event",
     name: evento.titulo,
     description: textoPlano(evento.descripcion),
     startDate: formatearFechaISO(inicio),
-    ...(fin && { endDate: formatearFechaISO(fin) }),
+    // Sin fecha_fin explícita, un evento "excepcional" es de un solo día
+    // por definición (ver camposJson en gemini.ts) — endDate = startDate no
+    // es una suposición, es el mismo dato que ya sabemos.
+    endDate: formatearFechaISO(fin ?? inicio),
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    ...(imagen && { image: imagen }),
     location: {
       "@type": "Place",
       name: evento.ubicacion ?? municipio.nombre,
@@ -83,6 +103,15 @@ export function construirEventoJsonLd(
       offers: {
         "@type": "Offer",
         price: "0",
+        priceCurrency: "EUR",
+        availability: "https://schema.org/InStock",
+        url: urlEvento,
+      },
+    }),
+    ...(precioClaro && {
+      offers: {
+        "@type": "Offer",
+        price: precioClaro[1].replace(",", "."),
         priceCurrency: "EUR",
         availability: "https://schema.org/InStock",
         url: urlEvento,
