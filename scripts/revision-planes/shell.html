@@ -112,6 +112,7 @@
   .badge-estado { font-size: .7rem; font-weight: 700; padding: .15rem .5rem; border-radius: .4rem; }
   .badge-curso { background: var(--quaternary); color: var(--quaternary-foreground); }
   .badge-futuro { background: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border); }
+  .badge-pasado { background: var(--rojo); color: var(--rojo-foreground); }
 
   .marca-grupo { display: flex; gap: .3rem; white-space: nowrap; }
   .marca-btn {
@@ -372,7 +373,12 @@
 
   function notaInput(slug) {
     const valor = (NOTAS[slug] || "").replace(/"/g, "&quot;");
-    return `<input type="text" class="nota-input" placeholder="Añade contexto…" value="${valor}" onchange="guardarNota('${slug.replace(/'/g, "\\'")}', this.value)">`;
+    const slugEscapado = slug.replace(/'/g, "\\'");
+    // Sin botón de guardar aparte — se guarda al perder el foco (onchange).
+    // En Intro también se pierde el foco a propósito (blur), porque en
+    // móvil no siempre es obvio que hay que "tocar fuera" para que se
+    // guarde (ver conversación).
+    return `<input type="text" class="nota-input" placeholder="Escribe y pulsa Intro para guardar…" value="${valor}" onchange="guardarNota('${slugEscapado}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
   }
 
   // Abre la ficha real del plan en la web (no un modal: el sandbox del
@@ -390,6 +396,17 @@
     if (!iso) return "—";
     const [y, m, d] = iso.split("-");
     return `${d}/${m}/${y}`;
+  }
+
+  // Antes solo distinguía "en curso" / "futuro" — un evento ya caducado
+  // (pasado === true, ver paginasPlan.ts) salía marcado "Futuro" por error,
+  // justo lo contrario de lo que es. El sistema lo desactiva solo, pero no
+  // hasta el próximo repaso semanal — mientras tanto puede aparecer aquí
+  // real y activo, y toca marcarlo "Quitar" a mano para adelantarlo.
+  function estadoHtml(d) {
+    if (d.enCurso) return '<span class="badge-estado badge-curso">En curso</span>';
+    if (d.pasado) return '<span class="badge-estado badge-pasado">Pasado — puedes Quitarlo</span>';
+    return '<span class="badge-estado badge-futuro">Futuro</span>';
   }
 
   function paginasHtml(item) {
@@ -456,7 +473,7 @@
     document.getElementById("cuerpo-puntuales").innerHTML = filtrados.map((d) => `
       <tr data-fila-slug="${d.slug}" class="${MARCAS[d.slug] === "quitar" || MARCAS[d.slug] === "quitar:aplicado" ? "marcada-quitar" : ""}">
         <td class="titulo-celda">${tituloConEnlace(d)}${origenTag(d.origen)}${d.categoria ? " " + chip(d.categoria, "chip-cat") : ""}<br><span class="meta">${d.ubicacion || ""}</span><br><span class="meta">Detectado: ${fechaCorta(d.primeraDeteccion)}</span></td>
-        <td class="fechas">${d.fecha_inicio}${d.fecha_fin && d.fecha_fin !== d.fecha_inicio ? " – " + d.fecha_fin : ""}<br>${d.enCurso ? '<span class="badge-estado badge-curso">En curso</span>' : '<span class="badge-estado badge-futuro">Futuro</span>'}</td>
+        <td class="fechas">${d.fecha_inicio}${d.fecha_fin && d.fecha_fin !== d.fecha_inicio ? " – " + d.fecha_fin : ""}<br>${estadoHtml(d)}</td>
         <td>${paginasHtml(d)}</td>
         <td>${grupoMarca(d.slug)}</td>
         <td>${notaInput(d.slug)}</td>
