@@ -185,6 +185,14 @@
     background: var(--accent); color: var(--accent-foreground); border-radius: .6rem; padding: .55rem 1rem;
   }
 
+  .deteccion-dias { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0 0 1.5rem; }
+  .chip-dia {
+    display: flex; align-items: baseline; gap: .35rem; font-size: .78rem; color: var(--muted-foreground);
+    background: var(--card); border: 1.5px solid var(--border); border-radius: .6rem; padding: .35rem .65rem;
+  }
+  .chip-dia b { font-family: var(--font-heading); font-size: .95rem; color: var(--foreground); }
+  .chip-dia-vacio { opacity: .55; }
+
   .overflow-wrap { overflow-x: auto; border: 1.5px solid var(--border); border-radius: .85rem; background: var(--card); }
   table { min-width: 820px; }
   .sin-resultados { padding: 2rem; text-align: center; color: var(--muted-foreground); display: none; }
@@ -202,6 +210,8 @@
     <div class="stat"><b id="stat-marcados">–</b><span>Marcados</span></div>
   </div>
 </header>
+
+<div class="deteccion-dias" id="deteccion-por-dia"></div>
 
 <p id="nota-guardado"></p>
 
@@ -229,6 +239,7 @@
       <option value="aplicado">Ya aplicado</option>
     </select>
     <select id="orden-puntuales">
+      <option value="fecha-asc">Fecha del evento: próximos primero</option>
       <option value="deteccion-desc">Detectado: más reciente primero</option>
       <option value="deteccion-asc">Detectado: más antiguo primero</option>
       <option value="titulo">Título (A-Z)</option>
@@ -598,12 +609,51 @@
 
   // primeraDeteccion llega en formato ISO ("AAAA-MM-DD"), así que ordena
   // bien como texto sin necesidad de parsear fechas.
+  // Para revisar en el orden en que de verdad van a pasar las cosas, no en
+  // el orden en que se detectaron: hoy y lo más próximo primero; lo ya
+  // pasado (toca Quitarlo, no revisarlo) al final; sin fecha reconocible
+  // (genéricos, o una fecha rara que no se pudo interpretar) al final del
+  // todo.
+  function claveFechaOrden(d) {
+    const inicio = parsearFechaEspanola(d.fecha_inicio);
+    if (!inicio) return Infinity;
+    const ep = diaEpoch(inicio);
+    return ep < HOY_EP ? 1e15 + ep : ep;
+  }
+
   function ordenar(lista, criterio) {
     const copia = [...lista];
     if (criterio === "titulo") return copia.sort((a, b) => a.titulo.localeCompare(b.titulo));
+    if (criterio === "fecha-asc") return copia.sort((a, b) => claveFechaOrden(a) - claveFechaOrden(b));
     copia.sort((a, b) => (b.primeraDeteccion || "").localeCompare(a.primeraDeteccion || ""));
     if (criterio === "deteccion-asc") copia.reverse();
     return copia;
+  }
+
+  // Cuántos planes (puntuales + genéricos) se detectaron cada uno de los
+  // últimos 7 días — para ver de un vistazo si un día se coló poco o mucho
+  // (ver conversación).
+  const CONTEO_POR_DIA = {};
+  for (const d of [...DATOS.puntuales, ...DATOS.genericos]) {
+    if (d.primeraDeteccion) CONTEO_POR_DIA[d.primeraDeteccion] = (CONTEO_POR_DIA[d.primeraDeteccion] || 0) + 1;
+  }
+  const NOMBRES_DIA_CORTOS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  function fechaISODesdeOffset(offset) {
+    const f = new Date((HOY_EP - offset) * 86400000);
+    return `${f.getUTCFullYear()}-${String(f.getUTCMonth() + 1).padStart(2, "0")}-${String(f.getUTCDate()).padStart(2, "0")}`;
+  }
+  function etiquetaDia(offset) {
+    if (offset === 0) return "Hoy";
+    if (offset === 1) return "Ayer";
+    if (offset === 2) return "Antes de ayer";
+    return NOMBRES_DIA_CORTOS[new Date((HOY_EP - offset) * 86400000).getUTCDay()];
+  }
+  function renderDeteccionPorDia() {
+    const dias = Array.from({ length: 7 }, (_, offset) => {
+      const n = CONTEO_POR_DIA[fechaISODesdeOffset(offset)] || 0;
+      return `<span class="chip-dia${n ? "" : " chip-dia-vacio"}"><b>${n}</b> ${etiquetaDia(offset)}</span>`;
+    });
+    document.getElementById("deteccion-por-dia").innerHTML = dias.join("");
   }
 
   function renderPuntuales() {
@@ -689,6 +739,7 @@
   document.getElementById("stat-genericos").textContent = DATOS.totalGenericos;
   document.getElementById("fecha-informe").textContent = DATOS.generadoEn || "";
   actualizarContadorMarcados();
+  renderDeteccionPorDia();
   renderPuntuales();
   renderGenericos();
 
