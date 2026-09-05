@@ -229,15 +229,18 @@
   let MARCAS = JSON.parse(document.getElementById("datos-marcas").textContent);
   let NOTAS = JSON.parse(document.getElementById("datos-notas").textContent);
 
-  // JSON.stringify no escapa "<" — si el texto de origen contiene un
-  // "</script>" literal (aquí SIEMPRE lo contiene: SHELL_MEDIO es
-  // precisamente el tramo "</script><script id=\"datos-marcas\"...>" entre
-  // dos placeholders del propio shell), el PARSER DE HTML corta la
-  // etiqueta <script> ahí mismo, antes de que el JS dentro se ejecute — no
-  // es un error de JavaScript, es el HTML partiéndose por la mitad. Bug
-  // real encontrado en producción: por esto ninguna marca se guardaba,
-  // aunque las constantes SÍ estuvieran presentes como texto. < es
-  // invisible para JSON.parse pero irreconocible para el parser de HTML.
+  // JSON.stringify no escapa el símbolo "menor que" — y el texto de origen
+  // aquí SIEMPRE incluye la secuencia de cierre de un script seguida de la
+  // apertura del siguiente (SHELL_MEDIO es precisamente el tramo entre dos
+  // placeholders del propio shell, justo el hueco entre esas dos
+  // etiquetas). Ojo al editar este comentario: escribir esa secuencia tal
+  // cual, incluso dentro de un comentario, reproduce el mismo bug — el
+  // parser de HTML no distingue comentarios de código, solo busca esos
+  // bytes. Si aparece sin escapar en cualquier punto de este script, el
+  // parser corta la etiqueta <script> ahí mismo, antes de que el JS llegue
+  // a ejecutarse — no es un fallo de JavaScript, es el HTML partiéndose
+  // por la mitad. Bug real encontrado en producción dos veces seguidas por
+  // este motivo exacto (ver conversación).
   function jsonSeguro(valor) {
     return JSON.stringify(valor).replace(/</g, "\\u003c");
   }
