@@ -1,6 +1,33 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Thermometer, Sun, Droplets, Wind } from "lucide-react";
+import {
+  Thermometer,
+  Droplets,
+  Wind,
+  Sun,
+  CloudSun,
+  Cloud,
+  CloudFog,
+  CloudDrizzle,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
+  type LucideIcon,
+} from "lucide-react";
 import { obtenerTiempoDelDia, type SolicitudTiempo } from "@/lib/weather";
+
+// Códigos WMO de Open-Meteo (weather_code) agrupados por el icono que mejor
+// los representa — ver DESCRIPCIONES_POR_LOCALE en weather.ts para el texto.
+function iconoParaCodigo(codigo: number): LucideIcon {
+  if (codigo === 0) return Sun;
+  if (codigo <= 2) return CloudSun;
+  if (codigo === 3) return Cloud;
+  if (codigo <= 48) return CloudFog;
+  if (codigo <= 55) return CloudDrizzle;
+  if (codigo <= 65) return CloudRain;
+  if (codigo <= 75) return CloudSnow;
+  if (codigo <= 82) return CloudRain;
+  return CloudLightning;
+}
 
 export default async function TiempoDelDia({
   lat,
@@ -21,11 +48,13 @@ export default async function TiempoDelDia({
   const tiempo = await obtenerTiempoDelDia(lat, lon, fecha, solicitud, locale);
   if (!tiempo) return null;
 
+  const condicion = tiempo.descripcion.charAt(0).toUpperCase() + tiempo.descripcion.slice(1);
+
   const tarjetas =
     tiempo.tipo === "puntual"
       ? [
-          { icono: Thermometer, color: "var(--secondary)", etiqueta: t("temperatura"), valor: `${tiempo.temperatura}°C`, nota: tiempo.descripcion },
-          { icono: Sun, color: "var(--tertiary)", etiqueta: t("sensacion"), valor: `${tiempo.sensacionTermica}°C`, nota: t("termica") },
+          { icono: Thermometer, color: "var(--secondary)", etiqueta: t("temperatura"), valor: `${tiempo.temperatura}°C`, nota: "" },
+          { icono: iconoParaCodigo(tiempo.codigo), color: "var(--tertiary)", etiqueta: t("condicion"), valor: condicion, nota: "" },
           { icono: Droplets, color: "var(--quaternary)", etiqueta: t("humedad"), valor: `${tiempo.humedad}%`, nota: "" },
           { icono: Wind, color: "var(--accent)", etiqueta: t("viento"), valor: `${tiempo.viento} km/h`, nota: "" },
         ]

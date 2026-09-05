@@ -52,10 +52,10 @@ const DESCRIPCIONES_POR_LOCALE: Record<string, Record<number, string>> = {
 export interface TiempoPuntual {
   tipo: "puntual";
   temperatura: number;
-  sensacionTermica: number;
   humedad: number;
   viento: number;
   descripcion: string;
+  codigo: number;
 }
 
 export interface TiempoRango {
@@ -65,6 +65,7 @@ export interface TiempoRango {
   humedad: number;
   viento: number;
   descripcion: string;
+  codigo: number;
 }
 
 export type TiempoDelDia = TiempoPuntual | TiempoRango;
@@ -105,7 +106,7 @@ export async function obtenerTiempoDelDia(
   locale: string = "es"
 ): Promise<TiempoDelDia | null> {
   const descripciones = DESCRIPCIONES_POR_LOCALE[locale] ?? DESCRIPCIONES_POR_LOCALE.es;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code&start_date=${fechaISO}&end_date=${fechaISO}&timezone=auto`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&start_date=${fechaISO}&end_date=${fechaISO}&timezone=auto`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
@@ -126,10 +127,10 @@ export async function obtenerTiempoDelDia(
       return {
         tipo: "puntual",
         temperatura: Math.round(temperatura),
-        sensacionTermica: Math.round(data.hourly.apparent_temperature[i]),
         humedad: Math.round(data.hourly.relative_humidity_2m[i]),
         viento: Math.round(data.hourly.wind_speed_10m[i]),
         descripcion: descripciones[data.hourly.weather_code[i]] ?? "",
+        codigo: data.hourly.weather_code[i],
       };
     }
 
@@ -147,6 +148,7 @@ export async function obtenerTiempoDelDia(
     const humedades = indices.map((i) => data.hourly.relative_humidity_2m[i]);
     const vientos = indices.map((i) => data.hourly.wind_speed_10m[i]);
     const codigos = indices.map((i) => data.hourly.weather_code[i]);
+    const codigoFrecuente = codigoMasFrecuente(codigos);
 
     return {
       tipo: "rango",
@@ -154,7 +156,8 @@ export async function obtenerTiempoDelDia(
       temperaturaMax: Math.round(Math.max(...temperaturas)),
       humedad: Math.round(humedades.reduce((a: number, b: number) => a + b, 0) / humedades.length),
       viento: Math.round(Math.max(...vientos)),
-      descripcion: descripciones[codigoMasFrecuente(codigos)] ?? "",
+      descripcion: descripciones[codigoFrecuente] ?? "",
+      codigo: codigoFrecuente,
     };
   } catch {
     return null;

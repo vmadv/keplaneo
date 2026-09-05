@@ -148,12 +148,11 @@
   },
   "TiempoWidget": {
     "temperatura": "Temperature",
-    "sensacion": "Feels like",
+    "condicion": "Sky",
     "humedad": "Humidity",
     "viento": "Wind",
     "minima": "Low",
     "maxima": "High",
-    "termica": "",
     "media": "average",
     "maximo": "peak"
   },

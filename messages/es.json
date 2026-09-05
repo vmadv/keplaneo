@@ -148,12 +148,11 @@
   },
   "TiempoWidget": {
     "temperatura": "Temperatura",
-    "sensacion": "Sensación",
+    "condicion": "Cielo",
     "humedad": "Humedad",
     "viento": "Viento",
     "minima": "Mínima",
     "maxima": "Máxima",
-    "termica": "térmica",
     "media": "media",
     "maximo": "máximo"
   },
