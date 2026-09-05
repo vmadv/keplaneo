@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
-import { generarNovedades, fusionarPlanesDuplicados, traducirPlanesAIngles, estimarCoste, estimarCosteTraduccion } from "@/lib/gemini";
+import {
+  generarNovedades,
+  generarPlanesEnfocados,
+  fusionarPlanesDuplicados,
+  traducirPlanesAIngles,
+  estimarCoste,
+  estimarCosteTraduccion,
+} from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
-import { hoyISO, hoyEnMadrid, fechaDeHoyLegible, lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO } from "@/lib/dates";
+import {
+  hoyISO,
+  hoyEnMadrid,
+  fechaDeHoyLegible,
+  formatearFechaLegible,
+  lunesDeLaSemanaActual,
+  fechasDeLaSemana,
+  formatearFechaISO,
+} from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
-import { diasRepasoDiario } from "@/lib/nivelesMunicipio";
+import { diasRepasoDiario, focoDiarioExtra } from "@/lib/nivelesMunicipio";
 import { revalidarSitemaps } from "@/lib/sitemapData";
 
 export const maxDuration = 300;
@@ -111,13 +126,34 @@ export async function GET(request: NextRequest) {
         .filter((m) => m.id !== municipio.id)
         .map((m) => m.nombre);
 
-      const { planes: planesCrudos, usage: usageGeneracion } = await generarNovedades(
-        municipio.nombre,
-        fechaDeHoyLegible(),
-        titulosConocidos,
-        enfoqueFinde,
-        municipiosExcluidos
+      // Mediano añade una búsqueda dedicada de conciertos (categoría más
+      // volátil, se anuncia con poca antelación) los mismos días que ya
+      // hace repaso diario — ver conversación sobre coste: no le tocan las
+      // 7 enfocadas semanales de "grande", pero esta sí compensa a diario.
+      // Grande no la necesita (ya la tiene en el semanal); pequeño no hace
+      // repaso diario en absoluto.
+      const focoExtra = focoDiarioExtra(municipio.slug);
+      const fechaHastaExtraLegible = formatearFechaLegible(
+        new Date(hoyEnMadrid().getTime() + 21 * 86400000)
       );
+      const [{ planes: planesNovedades, usage: usageNovedades }, resultadoExtra] = await Promise.all([
+        generarNovedades(municipio.nombre, fechaDeHoyLegible(), titulosConocidos, enfoqueFinde, municipiosExcluidos),
+        focoExtra
+          ? generarPlanesEnfocados(
+              municipio.nombre,
+              fechaDeHoyLegible(),
+              fechaHastaExtraLegible,
+              focoExtra,
+              municipiosExcluidos
+            )
+          : (Promise.resolve({ planes: [], usage: {} }) as ReturnType<typeof generarPlanesEnfocados>),
+      ]);
+      const planesCrudos = [...planesNovedades, ...resultadoExtra.planes];
+      const usageGeneracion = {
+        promptTokenCount: (usageNovedades.promptTokenCount ?? 0) + (resultadoExtra.usage.promptTokenCount ?? 0),
+        candidatesTokenCount:
+          (usageNovedades.candidatesTokenCount ?? 0) + (resultadoExtra.usage.candidatesTokenCount ?? 0),
+      };
       // Gemini puede describir el mismo evento real dos veces en una misma
       // respuesta (dos redacciones distintas) sin que eso choque con
       // ninguno de los `titulosConocidos` — se fusiona aquí, antes de que

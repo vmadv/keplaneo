@@ -6,7 +6,6 @@ import {
   generarPlanesEnfocados,
   generarPlanesGenericos,
   generarPlanesGenericosNinos,
-  FOCOS_SEMANALES,
   fusionarPlanesDuplicados,
   traducirPlanesAIngles,
   estimarCoste,
@@ -15,9 +14,16 @@ import {
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { revalidarSitemaps } from "@/lib/sitemapData";
 import { getTitulosGenericosActivos } from "@/lib/queries";
-import { lunesDeLaSemanaActual, fechasDeLaSemana, formatearFechaISO, formatearFechaLegible, hoyISO } from "@/lib/dates";
+import {
+  lunesDeLaSemanaActual,
+  fechasDeLaSemana,
+  formatearFechaISO,
+  formatearFechaLegible,
+  hoyISO,
+  numeroSemanaDesde2020,
+} from "@/lib/dates";
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
-import { llevaEnfocadas, fuentesReferenciaCategoria } from "@/lib/nivelesMunicipio";
+import { focosParaEstaSemana, fuentesReferenciaCategoria } from "@/lib/nivelesMunicipio";
 
 export const maxDuration = 300;
 
@@ -48,11 +54,12 @@ export const maxDuration = 300;
 // (municipiosExcluidos), para que un genérico de zona cercana no duplique
 // el catálogo de otro municipio con página propia — los puntuales sí
 // pueden venir de esos municipios si son relevantes (ver conversación).
-// Hasta 9 llamadas por municipio (3 si es "mediano"/"pequeño", sin las 6
-// enfocadas — ver src/lib/nivelesMunicipio.ts) van en paralelo (el reintento con
-// jitter de llamarGeminiConReintentos ya cuenta con esto); los municipios
-// se procesan en lotes para no acercarse al límite
-// de 300s de la función.
+// Hasta 10 llamadas por municipio ("grande", con las 7 enfocadas), 5-6 si es
+// "mediano" (2-3 enfocadas rotando esa semana) o 3 si es "pequeño" (ninguna
+// enfocada — ver src/lib/nivelesMunicipio.ts) van en paralelo (el reintento
+// con jitter de llamarGeminiConReintentos ya cuenta con esto); los
+// municipios se procesan en lotes para no acercarse al límite de 300s de la
+// función.
 
 async function enLotes<T, R>(items: T[], tamano: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const resultados: R[] = [];
@@ -158,10 +165,11 @@ export async function GET(request: NextRequest) {
       const municipiosExcluidos = municipios
         .filter((m) => m.id !== municipio.id)
         .map((m) => m.nombre);
-      // Nivel por tamaño (ver conversación sobre coste): solo los
-      // municipios "grande" pagan las 6 búsquedas enfocadas — mediano y
-      // pequeño se quedan con la general + genéricos + niños.
-      const focos = llevaEnfocadas(municipio.slug) ? FOCOS_SEMANALES : [];
+      // Nivel por tamaño (ver conversación sobre coste): "grande" paga las
+      // 7 búsquedas enfocadas cada semana; "mediano" solo 2-3, rotando cada
+      // semana (ver focosParaEstaSemana); "pequeño" ninguna — todos
+      // mantienen la general + genéricos + niños.
+      const focos = focosParaEstaSemana(municipio.slug, numeroSemanaDesde2020());
       const [mixta, generico, ninos, ...enfocadas] = await Promise.all([
         generarPlanesSemanales(municipio.nombre, fechaLunesLegible, fechaDomingoLegible, municipiosExcluidos),
         generarPlanesGenericos(municipio.nombre, conocidos, municipiosExcluidos),

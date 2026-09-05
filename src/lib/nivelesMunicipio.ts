@@ -1,10 +1,15 @@
+import { FOCOS_SEMANALES, type Foco } from "./gemini";
+
 // Niveles de profundidad de generación por tamaño de municipio (ver
 // conversación sobre coste): no todos necesitan el mismo despliegue.
-// - "grande": paquete completo — semanal con las 6 búsquedas enfocadas,
+// - "grande": paquete completo — semanal con las 7 búsquedas enfocadas,
 //   repaso diario todos los días que ya toca (martes a domingo).
-// - "mediano": semanal sin las 6 enfocadas (mixta + genéricos + niños se
-//   mantienen), repaso diario recortado a 2 días por semana.
-// - "pequeno": igual que mediano en lo semanal, pero SIN repaso diario.
+// - "mediano": semanal con 2-3 de las 7 enfocadas, rotando cada semana (ver
+//   focosParaEstaSemana) — en unas 3 semanas pasan por las 7 — y repaso
+//   diario recortado a 2 días por semana, con conciertos como enfocada
+//   añadida esos días (ver diasRepasoDiario/focoDiarioExtra).
+// - "pequeno": semanal sin ninguna enfocada, sin repaso diario en absoluto
+//   — agenda real demasiado escasa para justificar el gasto.
 //
 // Mapeo a mano por slug, no en base de datos — con 9 municipios no
 // compensa la migración; si esto se valida y escalamos a muchos más,
@@ -31,6 +36,53 @@ export function nivelMunicipio(slug: string): NivelMunicipio {
 
 export function llevaEnfocadas(slug: string): boolean {
   return nivelMunicipio(slug) === "grande";
+}
+
+// Grupos de 2-3 focos que rotan semana a semana para los municipios
+// "mediano" — mismo criterio que ya usa generate-monthly para repartir los
+// meses lejanos en 4 grupos (ver route.ts), aplicado aquí a los focos: en
+// vez de pagar las 7 búsquedas cada semana (coste de "grande") o ninguna,
+// en ~3 semanas un mediano pasa por las 7 sin disparar el gasto de golpe.
+// gratis/conciertos/pareja van primero por ser los de mayor impacto
+// percibido (ver conversación).
+const GRUPOS_FOCOS_MEDIANO: Foco[][] = [
+  [
+    { tipo: "precio", valor: "gratis" },
+    { tipo: "categoria", valor: "conciertos" },
+    { tipo: "audiencia", valor: "pareja" },
+  ],
+  [
+    { tipo: "audiencia", valor: "familia" },
+    { tipo: "categoria", valor: "exposiciones" },
+  ],
+  [
+    { tipo: "categoria", valor: "teatro" },
+    { tipo: "categoria", valor: "monologos" },
+  ],
+];
+
+// Qué focos le tocan a este municipio ESTA semana, según su nivel —
+// `numeroSemana` es el mismo contador que ya usa generate-monthly
+// (numeroSemanaDesde2020, en src/lib/dates.ts) para que la rotación de
+// focos y la de meses lejanos avancen con el mismo reloj, aunque roten en
+// grupos de tamaño distinto (3 vs 4).
+export function focosParaEstaSemana(slug: string, numeroSemana: number): Foco[] {
+  const nivel = nivelMunicipio(slug);
+  if (nivel === "grande") return FOCOS_SEMANALES;
+  if (nivel === "mediano") {
+    return GRUPOS_FOCOS_MEDIANO[((numeroSemana % GRUPOS_FOCOS_MEDIANO.length) + GRUPOS_FOCOS_MEDIANO.length) % GRUPOS_FOCOS_MEDIANO.length];
+  }
+  return [];
+}
+
+// Foco enfocado extra que se añade al repaso DIARIO (no al semanal) de los
+// municipios "mediano" los días que ya hacen ese repaso — conciertos es la
+// categoría más volátil (se anuncia con poca antelación), así que es la que
+// más se beneficia de un repaso más frecuente que una vez por semana. Sin
+// cambios para "grande" (ya lleva las 7 focos completas cada semana) ni
+// "pequeno" (sin repaso diario en absoluto).
+export function focoDiarioExtra(slug: string): Foco | null {
+  return nivelMunicipio(slug) === "mediano" ? { tipo: "categoria", valor: "conciertos" } : null;
 }
 
 // Días de la semana (0=domingo…6=sábado) en que un municipio de este nivel

@@ -444,11 +444,14 @@ ${instruccionesFormato(municipioNombre, municipiosExcluidos)}
 }
 
 // Una variable filtrable del sitio con página/filtro propio — audiencia
-// (pareja, familia) o categoría con página dedicada (conciertos,
-// exposiciones, teatro, monólogos).
+// (pareja, familia), categoría con página dedicada (conciertos,
+// exposiciones, teatro, monólogos), o precio (gratis — filtro por franja
+// atemporal, como pareja/familia, no por categoría con archivo mensual;
+// ver conversación).
 export type Foco =
   | { tipo: "audiencia"; valor: "pareja" | "familia" }
-  | { tipo: "categoria"; valor: "conciertos" | "exposiciones" | "teatro" | "monologos" };
+  | { tipo: "categoria"; valor: "conciertos" | "exposiciones" | "teatro" | "monologos" }
+  | { tipo: "precio"; valor: "gratis" };
 
 export const FOCOS_SEMANALES: Foco[] = [
   { tipo: "audiencia", valor: "pareja" },
@@ -457,6 +460,7 @@ export const FOCOS_SEMANALES: Foco[] = [
   { tipo: "categoria", valor: "exposiciones" },
   { tipo: "categoria", valor: "teatro" },
   { tipo: "categoria", valor: "monologos" },
+  { tipo: "precio", valor: "gratis" },
 ];
 
 const DESCRIPCION_FOCO: Record<string, string> = {
@@ -469,12 +473,16 @@ const DESCRIPCION_FOCO: Record<string, string> = {
   teatro:
     "obras de teatro, danza/ballet u ópera/zarzuela con fecha concreta — NO monólogos ni comedia, esa es otra categoría aparte",
   monologos: "monólogos y comedia en directo con fecha concreta",
+  gratis:
+    "planes realmente gratuitos y verificables — no supongas ni fuerces que algo es gratis sin confirmarlo: museos con entrada libre o días de gratuidad, conciertos o actuaciones al aire libre sin entrada, talleres o visitas guiadas gratuitas, ferias o fiestas populares de acceso libre",
 };
 
 function etiquetaCampoFoco(foco: Foco): string {
-  return foco.tipo === "audiencia"
-    ? `El campo "audiencia" debe incluir "${foco.valor}".`
-    : `El campo "categoria" debe ser exactamente "${foco.valor}".`;
+  if (foco.tipo === "audiencia") return `El campo "audiencia" debe incluir "${foco.valor}".`;
+  if (foco.tipo === "precio") {
+    return 'El campo "precio" debe dejar claro que es gratuito (empezando por "Gratis" o "Gratuito").';
+  }
+  return `El campo "categoria" debe ser exactamente "${foco.valor}".`;
 }
 
 // Búsqueda dedicada a UNA sola variable (audiencia o categoría con página
