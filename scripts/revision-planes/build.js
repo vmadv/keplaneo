@@ -38,20 +38,27 @@ const [medio, resto2] = resto1.split("__MARCAS_JSON__");
 const [medio2, resto3] = resto2.split("__NOTAS_JSON__");
 const [entre, final] = resto3.split("<!--INSERTAR_CONSTANTES_AQUI-->");
 
-// Debe generar EXACTAMENTE lo mismo que reconstruye plantilla() dentro del
-// propio artifact (ver shell.html) — si esta primera versión no trae ya el
-// script con SHELL_ANTES/MEDIO/MEDIO2/ENTRE/FINAL definidos, el primer clic
-// en un botón de marca revienta con un ReferenceError (bug real encontrado
-// en producción: una versión anterior de este build.js omitía este bloque
-// por completo, así que ninguna marca se llegó a guardar nunca).
+// JSON.stringify no escapa "<" — antes/medio/medio2/entre SIEMPRE contienen
+// un "</script>" literal de verdad (son precisamente los tramos entre dos
+// <script> del propio shell), así que embeberlos sin escapar corta la
+// etiqueta <script> a mitad de camino en cuanto el navegador la parsea —
+// no es un error de JavaScript, es el HTML partiéndose por la mitad. Bug
+// real encontrado en producción (ver conversación): las constantes
+// quedaban presentes como texto pero nunca llegaban a ejecutarse como JS,
+// así que ninguna marca se guardaba pese a que este bloque ya existía.
+// Mismo criterio en jsonSeguro() de shell.html — deben coincidir.
+function jsonSeguro(valor) {
+  return JSON.stringify(valor).replace(/</g, "\\u003c");
+}
+
 const constantes =
   "<scr" +
   "ipt>" +
-  "const SHELL_ANTES=" + JSON.stringify(antes) + ";" +
-  "const SHELL_MEDIO=" + JSON.stringify(medio) + ";" +
-  "const SHELL_MEDIO2=" + JSON.stringify(medio2) + ";" +
-  "const SHELL_ENTRE=" + JSON.stringify(entre) + ";" +
-  "const SHELL_FINAL=" + JSON.stringify(final) + ";" +
+  "const SHELL_ANTES=" + jsonSeguro(antes) + ";" +
+  "const SHELL_MEDIO=" + jsonSeguro(medio) + ";" +
+  "const SHELL_MEDIO2=" + jsonSeguro(medio2) + ";" +
+  "const SHELL_ENTRE=" + jsonSeguro(entre) + ";" +
+  "const SHELL_FINAL=" + jsonSeguro(final) + ";" +
   "</scr" + "ipt>";
 
 // Sin doctype propio: Artifact.publish ya envuelve el contenido en su
@@ -59,11 +66,11 @@ const constantes =
 // generar exactamente lo mismo.
 const doc =
   antes +
-  JSON.stringify(datos) +
+  jsonSeguro(datos) +
   medio +
-  JSON.stringify(marcas) +
+  jsonSeguro(marcas) +
   medio2 +
-  JSON.stringify(notas) +
+  jsonSeguro(notas) +
   entre +
   constantes +
   final;
