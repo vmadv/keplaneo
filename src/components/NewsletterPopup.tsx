@@ -5,12 +5,22 @@ import { useTranslations } from "next-intl";
 import { Mail, X } from "lucide-react";
 
 const CLAVE_DESCARTADO = "planes-newsletter-descartado";
-const RETRASO_MS = 5000;
+// Cuánto tiene que haber bajado el visitante (como fracción de lo que se
+// puede hacer scroll) para que el popup se sienta como una reacción a su
+// interés real, no una interrupción a los 5s de haber entrado — pedido
+// explícito: que aparezca "de manera más natural, cuando el usuario
+// interactúa con la página".
+const UMBRAL_SCROLL = 0.4;
+// Fallback para páginas demasiado cortas para llegar a ese umbral (apenas
+// hay contenido debajo del primer pantallazo) — sin esto, el popup no
+// aparecería nunca en esas páginas.
+const RETRASO_FALLBACK_MS = 15000;
 
 // Solo captura el interés (guarda el email en Supabase vía /api/suscribirse)
 // — no manda ningún correo todavía, eso es una fase aparte. Aparece una
-// sola vez por navegador (localStorage), a los 5s, y nunca vuelve a
-// molestar si se cierra o ya se suscribió.
+// sola vez por navegador (localStorage), cuando el visitante ya ha bajado
+// un tramo de la página, y nunca vuelve a molestar si se cierra o ya se
+// suscribió.
 export default function NewsletterPopup({
   municipioId,
   municipioNombre,
@@ -25,8 +35,25 @@ export default function NewsletterPopup({
 
   useEffect(() => {
     if (localStorage.getItem(CLAVE_DESCARTADO)) return;
-    const temporizador = setTimeout(() => setVisible(true), RETRASO_MS);
-    return () => clearTimeout(temporizador);
+
+    function comprobarScroll() {
+      const alturaScrollable = document.documentElement.scrollHeight - window.innerHeight;
+      if (alturaScrollable <= 0 || window.scrollY / alturaScrollable >= UMBRAL_SCROLL) {
+        mostrar();
+      }
+    }
+    function mostrar() {
+      setVisible(true);
+      window.removeEventListener("scroll", comprobarScroll);
+      clearTimeout(temporizadorFallback);
+    }
+
+    const temporizadorFallback = setTimeout(mostrar, RETRASO_FALLBACK_MS);
+    window.addEventListener("scroll", comprobarScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", comprobarScroll);
+      clearTimeout(temporizadorFallback);
+    };
   }, []);
 
   function cerrar() {
