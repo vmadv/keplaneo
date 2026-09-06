@@ -381,6 +381,10 @@
     guardando = true;
     nota("Guardando…", false);
     try {
+      // Un publish con éxito recarga esta misma vista desde cero (ver más
+      // abajo) — sin esto, cada marca devolvía al usuario arriba del todo
+      // en vez de dejarlo donde estaba revisando (bug real, ver conversación).
+      try { sessionStorage.setItem("rp_scrollY", String(window.scrollY)); } catch {}
       await artifactNs.publish(plantilla(DATOS, MARCAS, NOTAS));
       // Un publish con éxito recarga esta misma vista a la nueva versión.
     } catch (err) {
@@ -767,6 +771,19 @@
   renderDeteccionPorDia();
   renderPuntuales();
   renderGenericos();
+
+  // Restaura el scroll guardado justo antes del publish que recargó esta
+  // vista (ver guardarCambios) — no queda pixel-perfecto porque la fila
+  // recién marcada puede haber desaparecido de la lista (Ocultar ya
+  // revisados) desplazando el resto hacia arriba, pero evita el salto a
+  // arriba del todo tras cada marca.
+  try {
+    const y = sessionStorage.getItem("rp_scrollY");
+    if (y !== null) {
+      sessionStorage.removeItem("rp_scrollY");
+      window.scrollTo(0, Number(y));
+    }
+  } catch {}
 
   claude.use("artifact").then((ns) => {
     artifactNs = ns;
