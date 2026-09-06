@@ -10,7 +10,7 @@ const CLAVE_DESCARTADO = "planes-newsletter-descartado";
 // interés real, no una interrupción a los 5s de haber entrado — pedido
 // explícito: que aparezca "de manera más natural, cuando el usuario
 // interactúa con la página".
-const UMBRAL_SCROLL = 0.4;
+const UMBRAL_SCROLL = 0.2;
 // Fallback para páginas demasiado cortas para llegar a ese umbral (apenas
 // hay contenido debajo del primer pantallazo) — sin esto, el popup no
 // aparecería nunca en esas páginas.
