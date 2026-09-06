@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { routing } from "@/i18n/routing";
 import SiteHeader from "@/components/SiteHeader";
 import { getComunidadBySlug, getMunicipiosByComunidad } from "@/lib/queries";
@@ -84,6 +85,7 @@ export default async function LocaleLayout({
           <SiteHeader municipios={municipios.map((m) => ({ slug: m.slug, nombre: m.nombre }))} />
           {children}
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );
