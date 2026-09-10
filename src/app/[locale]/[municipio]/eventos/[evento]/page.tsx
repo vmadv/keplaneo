@@ -367,6 +367,13 @@ export default async function EventoPage({
           ))}
         </div>
 
+        {(evento.ubicacion ||
+          (evento.zona_cercana && evento.zona_cercana_minutos != null) ||
+          evento.horario ||
+          precio ||
+          evento.fecha_inicio ||
+          evento.fecha_fin ||
+          evento.fuente) && (
         <dl className="card-sticker grid gap-3 text-sm p-5 mb-6">
           {evento.ubicacion && (
             <div className="flex gap-2.5 items-start">
@@ -453,6 +460,7 @@ export default async function EventoPage({
             </div>
           )}
         </dl>
+        )}
 
         {preguntasFrecuentes.length > 0 && (
           <section className="mb-6">
