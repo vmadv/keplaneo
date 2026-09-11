@@ -95,11 +95,67 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const actividad = await construirActividadCrons(supabaseAdmin);
+
   return NextResponse.json({
     municipio: municipio.slug,
     totalPuntuales: puntuales.length,
     totalGenericos: genericos.length,
     puntuales,
     genericos,
+    actividad,
   });
+}
+
+// Resumen de actividad de los crons (generate-daily/weekly/monthly) de los
+// últimos 30 días, para la pestaña "Actividad" del artifact de revisión —
+// a diferencia de puntuales/genericos, esto es de TODOS los municipios, no
+// solo del que se está revisando: el gasto y los fallos son una cuenta
+// compartida entre todos (ver conversación: Victor no se enteraba de que
+// llevaba 3 días fallando por créditos de Gemini agotados hasta que
+// preguntó por qué apenas había planes nuevos).
+async function construirActividadCrons(admin: NonNullable<typeof supabaseAdmin>) {
+  const DIAS = 30;
+  const desde = new Date(Date.now() - DIAS * 86400000).toISOString().slice(0, 10);
+
+  const [{ data: municipios }, { data: logs }, { data: detecciones }] = await Promise.all([
+    admin.from("municipios").select("id, slug, nombre"),
+    admin
+      .from("generation_log")
+      .select("fecha, municipio_id, estado, tokens_input, tokens_output, coste_estimado, error_mensaje")
+      .gte("fecha", desde)
+      .order("fecha", { ascending: false }),
+    admin.from("eventos").select("municipio_id, primera_deteccion").gte("primera_deteccion", desde),
+  ]);
+
+  const nombrePorMunicipio = new Map((municipios ?? []).map((m) => [m.id, m.slug]));
+
+  const nuevosPorDia = new Map<string, number>();
+  for (const e of detecciones ?? []) {
+    if (!e.primera_deteccion) continue;
+    const clave = `${e.primera_deteccion}|${e.municipio_id}`;
+    nuevosPorDia.set(clave, (nuevosPorDia.get(clave) ?? 0) + 1);
+  }
+
+  const entradas = (logs ?? []).map((l) => ({
+    fecha: l.fecha,
+    municipio: nombrePorMunicipio.get(l.municipio_id) ?? "?",
+    estado: l.estado,
+    tokensInput: l.tokens_input,
+    tokensOutput: l.tokens_output,
+    coste: l.coste_estimado,
+    error: l.error_mensaje,
+    nuevos: nuevosPorDia.get(`${l.fecha}|${l.municipio_id}`) ?? 0,
+  }));
+
+  const costeTotal = entradas.reduce((acc, e) => acc + (e.coste ?? 0), 0);
+  // OJO: nunca sumar `nuevos` por fila de `entradas` — un mismo día puede
+  // tener varias filas de generation_log para el mismo municipio (semanal +
+  // mensual el mismo lunes, o relanzamientos manuales), y cada una repite el
+  // mismo recuento de ese día. Sumar desde nuevosPorDia (una entrada por
+  // fecha+municipio real) es lo único que no duplica.
+  const nuevosTotal = [...nuevosPorDia.values()].reduce((acc, n) => acc + n, 0);
+  const errores = entradas.filter((e) => e.estado === "error").length;
+
+  return { entradas, resumen: { dias: DIAS, costeTotal, nuevosTotal, errores } };
 }

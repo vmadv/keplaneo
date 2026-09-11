@@ -243,6 +243,7 @@
 <div class="tabs">
   <button class="tab-btn activo" data-tab="puntuales">Puntuales (con fecha)</button>
   <button class="tab-btn" data-tab="genericos">Genéricos (siempre)</button>
+  <button class="tab-btn" data-tab="actividad">Actividad de los crons</button>
 </div>
 
 <div class="panel activo" id="panel-puntuales">
@@ -307,6 +308,30 @@
       <tbody id="cuerpo-genericos"></tbody>
     </table>
     <p class="sin-resultados" id="sin-resultados-genericos">Nada coincide con ese filtro.</p>
+  </div>
+</div>
+
+<div class="panel" id="panel-actividad">
+  <div class="stats" style="margin-bottom: 1.1rem;">
+    <div class="stat"><b id="stat-actividad-coste">–</b><span>Coste (30 días)</span></div>
+    <div class="stat"><b id="stat-actividad-nuevos">–</b><span>Planes nuevos</span></div>
+    <div class="stat"><b id="stat-actividad-errores">–</b><span>Fallos</span></div>
+  </div>
+  <div class="filtros">
+    <select id="filtro-municipio-actividad"><option value="">Todos los municipios</option></select>
+    <select id="filtro-estado-actividad">
+      <option value="">Cualquier estado</option>
+      <option value="ok">Solo OK</option>
+      <option value="error">Solo fallos</option>
+    </select>
+    <span class="conteo-filtro" id="conteo-actividad"></span>
+  </div>
+  <div class="overflow-wrap">
+    <table>
+      <thead><tr><th>Fecha</th><th>Municipio</th><th>Estado</th><th>Nuevos</th><th>Coste</th><th>Detalle</th></tr></thead>
+      <tbody id="cuerpo-actividad"></tbody>
+    </table>
+    <p class="sin-resultados" id="sin-resultados-actividad">Nada coincide con ese filtro.</p>
   </div>
 </div>
 
@@ -755,6 +780,51 @@
   ["buscar-genericos"].forEach((id) => document.getElementById(id).addEventListener("input", renderGenericos));
   ["filtro-categoria-generico", "filtro-marca-g", "orden-genericos", "ocultar-revisados-g"].forEach((id) => document.getElementById(id).addEventListener("change", renderGenericos));
 
+  // Pestaña "Actividad de los crons" — a diferencia de las otras dos, esto
+  // es de TODOS los municipios (el gasto y los fallos de Gemini son una
+  // cuenta compartida, ver conversación: 3 días fallando por créditos
+  // agotados y nadie se enteró hasta que se preguntó por qué apenas había
+  // planes nuevos). ACTIVIDAD ya viene calculada del lado del servidor
+  // (reporte-planes) para no repetir aquí sumas de coste ni el cruce con
+  // primeraDeteccion.
+  const ACTIVIDAD = DATOS.actividad || { entradas: [], resumen: { dias: 30, costeTotal: 0, nuevosTotal: 0, errores: 0 } };
+  document.getElementById("stat-actividad-coste").textContent = "€" + ACTIVIDAD.resumen.costeTotal.toFixed(2);
+  document.getElementById("stat-actividad-nuevos").textContent = ACTIVIDAD.resumen.nuevosTotal;
+  document.getElementById("stat-actividad-errores").textContent = ACTIVIDAD.resumen.errores;
+
+  const municipiosActividad = [...new Set(ACTIVIDAD.entradas.map((e) => e.municipio))].sort();
+  const selMunicipioActividad = document.getElementById("filtro-municipio-actividad");
+  for (const m of municipiosActividad) selMunicipioActividad.insertAdjacentHTML("beforeend", `<option value="${m}">${m}</option>`);
+
+  function badgeEstado(estado) {
+    return estado === "error"
+      ? '<span class="badge-estado badge-pasado">Error</span>'
+      : '<span class="badge-estado badge-curso">OK</span>';
+  }
+
+  function renderActividad() {
+    const municipio = selMunicipioActividad.value;
+    const estado = document.getElementById("filtro-estado-actividad").value;
+    const filtradas = ACTIVIDAD.entradas.filter((e) => {
+      if (municipio && e.municipio !== municipio) return false;
+      if (estado && e.estado !== estado) return false;
+      return true;
+    });
+    document.getElementById("conteo-actividad").textContent = `${filtradas.length} de ${ACTIVIDAD.entradas.length}`;
+    document.getElementById("sin-resultados-actividad").style.display = filtradas.length ? "none" : "block";
+    document.getElementById("cuerpo-actividad").innerHTML = filtradas.map((e) => `
+      <tr>
+        <td class="fechas" data-label="Fecha">${e.fecha}</td>
+        <td data-label="Municipio">${e.municipio}</td>
+        <td data-label="Estado">${badgeEstado(e.estado)}</td>
+        <td data-label="Nuevos">${e.nuevos}</td>
+        <td class="fechas" data-label="Coste">${e.coste != null ? "€" + e.coste.toFixed(4) : "—"}</td>
+        <td data-label="Detalle" class="meta">${e.error ? escapeHtml(e.error).slice(0, 200) : ""}</td>
+      </tr>
+    `).join("");
+  }
+  ["filtro-municipio-actividad", "filtro-estado-actividad"].forEach((id) => document.getElementById(id).addEventListener("change", renderActividad));
+
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("activo"));
@@ -771,6 +841,7 @@
   renderDeteccionPorDia();
   renderPuntuales();
   renderGenericos();
+  renderActividad();
 
   // Restaura el scroll guardado justo antes del publish que recargó esta
   // vista (ver guardarCambios) — no queda pixel-perfecto porque la fila
