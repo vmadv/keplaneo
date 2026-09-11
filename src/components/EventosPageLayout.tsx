@@ -53,7 +53,6 @@ export default async function EventosPageLayout({
   const imagenHero = buscarImagenHero(municipio.slug);
   const itemsResumen = eventos.map((e) => ({
     categoria: e.categoria,
-    fechaActualizacion: e.ultima_deteccion,
     puntual: e.fecha_inicio !== null,
   }));
   const preguntas = await construirFaqSeleccion(itemsResumen, municipio.nombre, current.vigencia, current.extra);

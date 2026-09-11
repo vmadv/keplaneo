@@ -1,5 +1,4 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { formatearFechaLegible } from "./dates";
 import type { Categoria, PreguntaFrecuente } from "./types";
 import type { Vigencia, Extra } from "./filtros";
 
@@ -11,9 +10,6 @@ export interface ItemResumible {
   // Para Evento: e.fecha_inicio !== null (mismo criterio que decide si
   // lleva JSON-LD de Event, ver structuredData.ts).
   puntual?: boolean;
-  // ISO (fecha_generacion de Plan, o ultima_deteccion de Evento) — de dónde
-  // sacar la fecha de "última actualización" real de la selección.
-  fechaActualizacion?: string | null;
 }
 
 export interface ConteoCategoria {
@@ -41,19 +37,6 @@ export function contarCategorias(items: ItemResumible[]): ConteoCategoria[] {
   return [...conteo.entries()]
     .map(([categoria, { cantidad, puntual }]) => ({ categoria, cantidad, puntual }))
     .sort((a, b) => b.cantidad - a.cantidad);
-}
-
-// La fecha más reciente entre todos los planes de la selección — sirve
-// como "última actualización" real (no una fecha de sistema arbitraria).
-export function fechaActualizacionMasReciente(items: ItemResumible[]): Date | null {
-  let masReciente: Date | null = null;
-  for (const item of items) {
-    if (!item.fechaActualizacion) continue;
-    const fecha = new Date(item.fechaActualizacion);
-    if (Number.isNaN(fecha.getTime())) continue;
-    if (!masReciente || fecha > masReciente) masReciente = fecha;
-  }
-  return masReciente;
 }
 
 // Frases propias en vez de reutilizar las etiquetas de los filtros
@@ -307,10 +290,13 @@ export async function construirFaqSeleccion(
         ? t("faq1RespuestaSoloPuntual", { total, desglose })
         : t("faq1RespuestaSoloGenerico", { total, temporal });
 
-  const fecha = fechaActualizacionMasReciente(items);
-  const respuesta2 =
-    t("criterio", { municipio: municipioNombre, calificador, temporal }) +
-    (fecha ? ` ${t("actualizado", { fecha: formatearFechaLegible(fecha, locale) })}` : "");
+  // Sin fecha de "última actualización" a propósito: Google la leía del
+  // texto de esta FAQ y la mostraba como fecha de publicación/modificación
+  // de la página entera en el snippet de búsqueda — dando a entender que
+  // una página siempre activa (sin fecha propia) estaba "caducada" o
+  // desactualizada cada vez que pasaban unos días sin que Google
+  // recrawleara el snippet (ver conversación).
+  const respuesta2 = t("criterio", { municipio: municipioNombre, calificador, temporal });
 
   return [
     { pregunta: t("faq1Pregunta", { calificador, municipio: municipioNombre, temporal }), respuesta: respuesta1 },

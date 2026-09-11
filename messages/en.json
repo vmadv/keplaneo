@@ -293,7 +293,6 @@
     "intro": "{total, plural, =0 {There are no plans} one {We found one plan} other {We found # plans}}{calificador} in {municipio}{temporal}{desglose}.",
     "conDesglose": ", including {lista}",
     "criterio": "This selection gathers the plans{calificador} in {municipio}{temporal} that are currently active, automatically reviewed from real sources.",
-    "actualizado": "Last updated: {fecha}.",
     "calificadorGratis": " that are free",
     "calificadorPareja": " for couples",
     "calificadorFamilia": " with kids",

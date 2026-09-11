@@ -293,7 +293,6 @@
     "intro": "{total, plural, =0 {Ahora mismo no hay planes} one {Hemos encontrado un plan} other {Hemos encontrado # planes}}{calificador} en {municipio}{temporal}{desglose}.",
     "conDesglose": ", entre ellos {lista}",
     "criterio": "Esta selección reúne los planes{calificador} en {municipio}{temporal} que siguen activos ahora mismo, revisados de forma automática a partir de fuentes reales.",
-    "actualizado": "Última actualización: {fecha}.",
     "calificadorGratis": " gratuitos",
     "calificadorPareja": " en pareja",
     "calificadorFamilia": " con niños",

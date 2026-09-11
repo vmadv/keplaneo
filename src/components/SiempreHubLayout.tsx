@@ -123,7 +123,6 @@ export default async function SiempreHubLayout({
   // FAQ propias, solo tarjetas — un hueco real de cara a SEO.
   const itemsResumen = eventos.map((e) => ({
     categoria: e.categoria,
-    fechaActualizacion: e.ultima_deteccion,
     puntual: e.fecha_inicio !== null,
   }));
   const preguntas = await construirFaqSeleccion(itemsResumen, municipio.nombre, "siempre", extra);

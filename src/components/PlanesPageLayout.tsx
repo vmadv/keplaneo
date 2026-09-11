@@ -62,12 +62,10 @@ export default async function PlanesPageLayout({
   const itemsResumen = [
     ...planes.map((p) => ({
       categoria: p.evento_categoria,
-      fechaActualizacion: p.fecha_generacion,
       puntual: p.tipo === "excepcional",
     })),
     ...(relleno ?? []).map((e) => ({
       categoria: e.categoria,
-      fechaActualizacion: e.ultima_deteccion,
       puntual: true,
     })),
   ];
