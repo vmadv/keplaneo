@@ -35,6 +35,42 @@ export async function enviarEnlaceEdicion(email: string, token: string, nombreLu
   if (error) throw new Error(`Resend: ${error.message}`);
 }
 
+// Los crons de generación (generate-daily/weekly/monthly) escriben sus
+// fallos en `generation_log`, pero eso es pasivo — nadie se entera salvo
+// que alguien vaya a mirarlo (ver conversación: 3 días seguidos fallando
+// por créditos de Gemini agotados y Victor no se enteró hasta preguntar
+// por qué apenas había planes nuevos). Un aviso por email, aunque sea
+// básico, cierra ese hueco. No lanza si falla el envío (ver llamadas en los
+// crons) — un error de aviso no debe tirar la respuesta del cron.
+export async function enviarAvisoErroresGeneracion(
+  cronNombre: string,
+  fecha: string,
+  errores: { municipio: string; mes?: string; error: string }[]
+) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!resend || !adminEmail) throw new Error("Falta RESEND_API_KEY o ADMIN_EMAIL");
+  if (errores.length === 0) return;
+
+  const filas = errores
+    .map(
+      (e) =>
+        `<li><strong>${e.municipio}${e.mes ? ` (${e.mes})` : ""}:</strong> ${e.error.slice(0, 300)}</li>`
+    )
+    .join("");
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    subject: `⚠️ ${cronNombre} falló para ${errores.length} municipio${errores.length === 1 ? "" : "s"} (${fecha})`,
+    html: `
+      <p><strong>${cronNombre}</strong> del ${fecha} terminó con errores en ${errores.length} caso${errores.length === 1 ? "" : "s"}:</p>
+      <ul>${filas}</ul>
+      <p>Revisa <code>generation_log</code> o el dashboard de Vercel (Cron Jobs) para más detalle.</p>
+    `,
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
+}
+
 export async function enviarAvisoRevision(params: {
   nombreLugar: string;
   email: string;

@@ -22,6 +22,7 @@ import {
 import { calcularFilasPorDia } from "@/lib/planesPorDia";
 import { diasRepasoDiario, focoDiarioExtra } from "@/lib/nivelesMunicipio";
 import { revalidarSitemaps } from "@/lib/sitemapData";
+import { enviarAvisoErroresGeneracion } from "@/lib/email";
 
 export const maxDuration = 300;
 
@@ -245,5 +246,17 @@ export async function GET(request: NextRequest) {
   }
 
   revalidarSitemaps();
+
+  const errores = resultados.filter(
+    (r): r is { municipio: string; estado: "error"; error: string } => r.estado === "error"
+  );
+  if (errores.length > 0) {
+    try {
+      await enviarAvisoErroresGeneracion("generate-daily", hoy, errores);
+    } catch (err) {
+      console.error(`enviarAvisoErroresGeneracion: ${err}`);
+    }
+  }
+
   return NextResponse.json({ fecha: hoy, resultados });
 }

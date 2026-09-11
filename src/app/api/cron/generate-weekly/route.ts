@@ -13,6 +13,7 @@ import {
 } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { revalidarSitemaps } from "@/lib/sitemapData";
+import { enviarAvisoErroresGeneracion } from "@/lib/email";
 import { getTitulosGenericosActivos } from "@/lib/queries";
 import {
   lunesDeLaSemanaActual,
@@ -273,5 +274,17 @@ export async function GET(request: NextRequest) {
   });
 
   revalidarSitemaps();
+
+  const errores = resultados.filter(
+    (r): r is { municipio: string; estado: "error"; error: string } => r.estado === "error"
+  );
+  if (errores.length > 0) {
+    try {
+      await enviarAvisoErroresGeneracion("generate-weekly", hoyISOStr, errores);
+    } catch (err) {
+      console.error(`enviarAvisoErroresGeneracion: ${err}`);
+    }
+  }
+
   return NextResponse.json({ semana: fechasISOSemana, resultados });
 }

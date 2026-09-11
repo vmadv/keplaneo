@@ -11,6 +11,7 @@ import {
 } from "@/lib/gemini";
 import { upsertEventosDelLote } from "@/lib/eventos";
 import { revalidarSitemaps } from "@/lib/sitemapData";
+import { enviarAvisoErroresGeneracion } from "@/lib/email";
 import {
   hoyISO,
   proximosMesesSlugs,
@@ -215,5 +216,17 @@ export async function GET(request: NextRequest) {
   });
 
   revalidarSitemaps();
+
+  const errores = resultados
+    .filter((r) => r.estado === "error")
+    .map((r) => ({ municipio: r.municipio, mes: r.mes, error: (r as { error: string }).error }));
+  if (errores.length > 0) {
+    try {
+      await enviarAvisoErroresGeneracion("generate-monthly", hoy, errores);
+    } catch (err) {
+      console.error(`enviarAvisoErroresGeneracion: ${err}`);
+    }
+  }
+
   return NextResponse.json({ fecha: hoy, meses, resultados });
 }
